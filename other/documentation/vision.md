@@ -89,6 +89,18 @@ timeout = 30
 - Example URL with variables: `https://api.example.com/@version/users/?pokename` (@ and ? in URLs)
 - **Future Enhancement**: Variables in request commands: `saul testapi set url https://api.com/@endpoint` and `saul testapi set method @method`
 
+**Smart Variable Deduplication:**
+Variables with the same name are prompted only once, allowing consistent values across multiple locations:
+
+```bash
+saul api set url https://httpbin.org/@method
+saul api set method @method
+saul call api
+method: post_    # Single prompt fills both URL and method
+```
+
+This eliminates redundancy and enforces consistency - perfect for REST APIs where the HTTP method often matches the URL path segment.
+
 ### Variable Resolution System
 - **Timing**: Variables resolve at `fire` time (not pre-fire)
 - **Storage**: Keep resolved data in memory during execution
@@ -208,12 +220,12 @@ TOML files → Parse-merge-write → Variable resolution → JSON conversion →
 ```
 
 ### Implementation Priority Order
-1. **TOML manipulation system** (parse-merge-write approach)
-2. **Variable substitution system** (`?/$` variable handling)  
-3. **JSON conversion** (TOML → Go structs → JSON)
-4. **HTTP execution engine** (using go-resty)
-5. **Single-line commands** (primary interface)
-6. **Interactive mode** (secondary interface built on single-line)
+1. **TOML manipulation system** (parse-merge-write approach) ✅ **COMPLETED**
+2. **Variable substitution system** (`?/@` variable handling) ✅ **COMPLETED**
+3. **JSON conversion** (TOML → Go structs → JSON) ✅ **COMPLETED**
+4. **HTTP execution engine** (using go-resty) ✅ **COMPLETED**
+5. **Single-line commands** (primary interface) ✅ **COMPLETED**
+6. **Interactive mode** (secondary interface built on single-line) ⏳ **PENDING**
 
 ### Libraries and Dependencies
 - `github.com/pelletier/go-toml/v1` - TOML parsing and manipulation

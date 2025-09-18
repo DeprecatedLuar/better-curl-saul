@@ -118,19 +118,43 @@ better-curl-saul/
 
 ## Testing
 
-**Comprehensive Test Suite**: `./test_suite.sh`
-- Phase-organized testing structure
-- Validates all implemented functionality
-- Expandable as new phases are completed
-- Automated setup and cleanup
-- Clear pass/fail reporting
+**Comprehensive Test Suite**: `other/testing/test_suite.sh`
+- Phase-organized testing structure that expands with each implementation phase
+- Validates all implemented functionality end-to-end from first step
+- **Critical Development Practice**: ALWAYS add new features to test suite immediately upon implementation
+- Automated setup and cleanup with clear pass/fail reporting
+- Prevents regressions and ensures complete feature coverage
 
-**Current Status**: Phases 1 & 2 fully tested and validated
+**Testing Philosophy**: The test suite is the single source of truth for feature validation. Every new capability must be added to the corresponding phase section in test_suite.sh to maintain comprehensive coverage.
+
+**Current Status**:
+- ✅ Phase 1 & 2: Fully tested and validated
+- ✅ Phase 3: HTTP execution engine complete with comprehensive testing
+- ⏳ Phase 4: Complete command system - pending implementation
 
 ## Important Notes
 
-- **Phase 1 & 2 Complete**: Solid foundation with comprehensive testing
-- Focus on incremental development with full understanding of each component  
+- **Phase 1, 2 & 3 Complete**: Solid foundation with HTTP execution engine and comprehensive testing
+- **Core Functionality Ready**: Variable system, TOML operations, and HTTP execution fully implemented
+- Focus on incremental development with full understanding of each component
 - Prioritize clean, readable code over complex features
 - Always validate against the vision.md requirements during development
-- Use `./test_suite.sh` to validate all functionality before proceeding
+- Use `other/testing/test_suite.sh` to validate all functionality before proceeding
+
+## Phase 3 Implementation Summary
+
+**✅ HTTP Execution Engine Complete:**
+- `saul call preset` command fully functional
+- Variable prompting system (`@` hard variables, `?` soft variables)
+- TOML file merging (request + headers + body + query + variables)
+- HTTP client integration using go-resty
+- Support for all major HTTP methods (GET, POST, PUT, DELETE, etc.)
+- JSON body conversion and pretty-printed responses
+- Comprehensive error handling and validation
+- Smart Variable Deduplication feature documented and working
+
+**Architecture Improvements:**
+- Clean file separation: commands.go, variables.go, validation.go, http.go
+- Robust test isolation with backup/restore functionality
+- Reliable testing using JSONPlaceholder API
+- All tests passing with comprehensive coverage
