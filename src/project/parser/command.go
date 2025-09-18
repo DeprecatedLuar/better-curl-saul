@@ -1,0 +1,55 @@
+package parser
+
+import (
+	"fmt"
+	"strings"
+)
+
+type Command struct {
+	Global    string
+	Preset    string
+	Command   string
+	Target    string
+	ValueType string
+	Key       string
+	Value     string
+	Mode      string
+}
+
+func ParseCommand(args []string) (Command, error) {
+	var cmd Command
+
+	if len(args) < 1 {
+		return cmd, fmt.Errorf("you gonna need more arguments than that buddy (no pressure)")
+	}
+
+	switch args[0] {
+	case "rm", "list", "version", "help":
+		cmd.Global = args[0]
+		if len(args) >= 2 {
+			cmd.Preset = args[1]
+		}
+		return cmd, nil
+	}
+
+	cmd.Preset = args[0]
+
+	if len(args) > 1 {
+		cmd.Command = args[1]
+	}
+	if len(args) > 2 {
+		cmd.Target = args[2]
+	}
+	if len(args) > 3 {
+		keyValue := args[3]
+		parts := strings.SplitN(keyValue, "=", 2)
+		if len(parts) != 2 {
+			return cmd, fmt.Errorf("what am I even supposed to do with: %s? Value=Key c'mon not that hard buddy", keyValue)
+		}
+
+		cmd.Key = parts[0]
+		cmd.Value = parts[1]
+	}
+
+	return cmd, nil
+}
