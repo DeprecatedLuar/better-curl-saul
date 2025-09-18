@@ -37,7 +37,7 @@ func ExecuteSetCommand(cmd parser.Command) error {
 	if normalizedTarget == "" {
 		return fmt.Errorf("invalid target '%s'. Use: body, headers/header, query, request, variables", cmd.Target)
 	}
-	
+
 	// Use normalized target for file operations
 	cmd.Target = normalizedTarget
 
@@ -62,7 +62,7 @@ func ExecuteSetCommand(cmd parser.Command) error {
 		if err != nil {
 			return fmt.Errorf("failed to store variable info: %v", err)
 		}
-		
+
 		// Set the raw variable in the target file for now
 		handler.Set(cmd.Key, cmd.Value)
 	} else {
@@ -160,7 +160,7 @@ func ExecuteCheckCommand(cmd parser.Command) error {
 		if value == nil {
 			return fmt.Errorf("key '%s' not found in %s", cmd.Key, cmd.Target)
 		}
-		
+
 		// Format based on type
 		switch v := value.(type) {
 		case []interface{}:
@@ -188,13 +188,13 @@ func ExecuteCheckCommand(cmd parser.Command) error {
 func displayTOMLFile(handler *toml.TomlHandler, target string) error {
 	// For now, use a simple approach - we'll enhance this as needed
 	// This is a basic implementation that can be improved
-	
+
 	fmt.Printf("# %s.toml contents:\n", target)
-	
+
 	// Get the raw TOML content and display it
 	// Note: This is a simplified version - we might need to enhance formatting later
 	fmt.Println("(Full file display not yet implemented - use specific keys for now)")
-	
+
 	return nil
 }
 
@@ -228,7 +228,7 @@ func DetectVariableType(value string) (isVariable bool, varType string, varName 
 func InferValueType(value string) interface{} {
 	// For now, keep everything as strings to avoid TOML handler issues
 	// TODO: Implement proper type handling once TOML handler supports all types
-	
+
 	// Try to parse as boolean (keep this as it's simple)
 	if boolVal, err := strconv.ParseBool(value); err == nil {
 		return boolVal
@@ -284,7 +284,7 @@ func storeVariableInfo(preset, key, varType, varName string) error {
 	// Note: varName can be empty (bare $) - that's fine, we store by field path
 	handler.Set(key, "") // Empty value initially
 
-	// Save variables.toml  
+	// Save variables.toml
 	return presets.SavePresetFile(preset, "variables", handler)
 }
 
@@ -305,28 +305,28 @@ func validateRequestField(key, value string) error {
 // validateHTTPMethod checks if the HTTP method is valid
 func validateHTTPMethod(method string) error {
 	validMethods := []string{
-		"GET", "POST", "PUT", "DELETE", "PATCH", 
+		"GET", "POST", "PUT", "DELETE", "PATCH",
 		"HEAD", "OPTIONS", "TRACE", "CONNECT",
 	}
-	
+
 	methodUpper := strings.ToUpper(method)
 	for _, valid := range validMethods {
 		if methodUpper == valid {
 			return nil
 		}
 	}
-	
-	return fmt.Errorf("Sorry champ \"%s\" isn't really a thing, but i'll let you try again", method)
+
+	return fmt.Errorf("sorry champ \"%s\" isn't really a thing, but i'll let you try again", method)
 }
 
 // validateURL performs basic URL validation
 func validateURL(url string) error {
 	if url == "" {
-		return fmt.Errorf("URL cannot be empty")
+		return fmt.Errorf("listen pal, at least put in the URL. Come on")
 	}
 	// Basic check - should start with http:// or https://
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		return fmt.Errorf("URL should start with http:// or https://")
+		return fmt.Errorf("alright, so the \"U R L\" needs to start with one of these two here: 'http://' or 'https://'. Go get'em tiger")
 	}
 	return nil
 }

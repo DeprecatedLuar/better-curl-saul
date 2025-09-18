@@ -13,7 +13,7 @@ func main() {
 	args := os.Args[1:]
 
 	if len(args) == 0 {
-		fmt.Println("Ok so let me break it down to you buddy: saul [preset] [set/rm/edit...] [url/body...] [key=value]")
+		fmt.Println("\nOkay, so let me break it down to you buddy:\nsaul [preset] [set/rm/edit...] [url/body...] [key=value]\n ")
 		return
 	}
 
