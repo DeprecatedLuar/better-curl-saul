@@ -37,6 +37,36 @@ func ParseCommand(args []string) (Command, error) {
 	if len(args) > 1 {
 		cmd.Command = args[1]
 	}
+
+	// Handle special request commands with no-equals syntax
+	if len(args) >= 4 && cmd.Command == "set" {
+		if isSpecialRequestCommand(args[2]) {
+			// Special syntax: "saul preset set url https://..." 
+			cmd.Target = "request"
+			cmd.Key = args[2]
+			cmd.Value = args[3]
+			return cmd, nil
+		}
+	}
+
+	// Handle check command (special syntax: check target [key])
+	if cmd.Command == "check" {
+		if len(args) > 2 {
+			// Check if it's a special request field (auto-map to request target)
+			if isSpecialRequestCommand(args[2]) {
+				cmd.Target = "request"
+				cmd.Key = args[2]
+			} else {
+				cmd.Target = args[2]
+				if len(args) > 3 {
+					cmd.Key = args[3] // Optional key for specific field
+				}
+			}
+		}
+		return cmd, nil
+	}
+
+	// Handle regular commands with key=value syntax
 	if len(args) > 2 {
 		cmd.Target = args[2]
 	}
@@ -52,4 +82,17 @@ func ParseCommand(args []string) (Command, error) {
 	}
 
 	return cmd, nil
+}
+
+// isSpecialRequestCommand checks if a command is a special request command (no = syntax)
+func isSpecialRequestCommand(command string) bool {
+	specialCommands := []string{"url", "method", "timeout"}
+	command = strings.ToLower(command)
+	
+	for _, special := range specialCommands {
+		if command == special {
+			return true
+		}
+	}
+	return false
 }
