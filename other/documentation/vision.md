@@ -17,6 +17,7 @@ A workspace-based HTTP client that builds requests incrementally using separate 
   - `query.toml` - Query/search payload data (NOT URL parameters)
   - `request.toml` - HTTP method, URL, and request settings
   - `variables.toml` - Hard variables only (soft variables never stored)
+  - `history/` - Response history storage (optional, per-preset)
 
 ### TOML File Structure
 Uses proper TOML sections (not flat keys) for clean manual editing that auto-converts to JSON:
@@ -24,12 +25,12 @@ Uses proper TOML sections (not flat keys) for clean manual editing that auto-con
 **body.toml example:**
 ```toml
 [pokemon]
-name = "?name"
+name = "{?name}"
 level = 25
 
 [pokemon.stats]
 hp = 100
-attack = "$attack"
+attack = "{@attack}"
 
 [pokemon.abilities]
 primary = "static"
@@ -40,11 +41,11 @@ secondary = "lightning-rod"
 ```json
 {
   "pokemon": {
-    "name": "?name",
+    "name": "{?name}",
     "level": 25,
     "stats": {
       "hp": 100,
-      "attack": "$attack"
+      "attack": "{@attack}"
     },
     "abilities": {
       "primary": "static",
@@ -59,6 +60,9 @@ secondary = "lightning-rod"
 method = "POST"
 url = "https://pokeapi.co/api/v2/pokemon"
 timeout = 30
+
+[settings]
+history_count = 5  # 0 = disabled, N = keep last N responses
 ```
 
 **variables.toml example:**
@@ -71,30 +75,30 @@ timeout = 30
 ### Variable System
 
 **Soft Variables (Always Prompt):**
-- Syntax: `field=?` or `field=?customname`
-- Example: `set body pokemon.name=?` → prompts `pokemon.name:` on fire (uses full field path)
-- Example: `set body pokemon.name=?pokename` → prompts `pokename:` on fire (uses custom name)
+- Syntax: `field={?}` or `field={?customname}`
+- Example: `set body pokemon.name={?}` → prompts `pokemon.name:` on call (uses full field path)
+- Example: `set body pokemon.name={?pokename}` → prompts `pokename:` on call (uses custom name)
 
 **Hard Variables (Persistent):**
-- Syntax: `field=@` or `field=@customname`  
-- Example: `set body pokemon.age=@` → prompts `pokemon.age:` when using persistence flag
-- Example: `set body pokemon.age=@age` → prompts `age:` when using persistence flag
+- Syntax: `field={@}` or `field={@customname}`  
+- Example: `set body pokemon.age={@}` → prompts `pokemon.age:` when using persistence flag
+- Example: `set body pokemon.age={@age}` → prompts `age:` when using persistence flag
 - Values stored in `variables.toml` as flat key-value pairs
 - Prompting shows current value: `attack: 80_` (delete to change, Enter to keep)
 - **Storage design**: Only hard variables stored (soft variables never stored - always prompt fresh)
-- **Naming**: Bare `@` uses full field path for prompting (no conflicts), named `@customname` uses custom name
+- **Naming**: Bare `{@}` uses full field path for prompting (no conflicts), named `{@customname}` uses custom name
 
 **Variable Usage:**
 - Variables can be used anywhere: URL, headers, body, query parameters
-- Example URL with variables: `https://api.example.com/@version/users/?pokename` (@ and ? in URLs)
-- **Future Enhancement**: Variables in request commands: `saul testapi set url https://api.com/@endpoint` and `saul testapi set method @method`
+- Example URL with variables: `https://api.example.com/{@version}/users/{?pokename}` (braced syntax prevents conflicts)
+- **Future Enhancement**: Variables in request commands: `saul testapi set url https://api.com/{@endpoint}` and `saul testapi set method {@method}`
 
 **Smart Variable Deduplication:**
 Variables with the same name are prompted only once, allowing consistent values across multiple locations:
 
 ```bash
-saul api set url https://httpbin.org/@method
-saul api set method @method
+saul api set url https://httpbin.org/{@method}
+saul api set method {@method}
 saul call api
 method: post_    # Single prompt fills both URL and method
 ```
@@ -102,15 +106,20 @@ method: post_    # Single prompt fills both URL and method
 This eliminates redundancy and enforces consistency - perfect for REST APIs where the HTTP method often matches the URL path segment.
 
 ### Variable Resolution System
-- **Timing**: Variables resolve at `fire` time (not pre-fire)
+- **Timing**: Variables resolve at `call` time (not pre-call)
 - **Storage**: Keep resolved data in memory during execution
 - **Process**: TOML files → variable resolution → JSON conversion → HTTP execution
+
+### Response History System
+- **Storage**: `~/.config/saul/presets/[preset]/history/response-001.json` (numbered, latest first)
+- **Configuration**: Per-preset history count in `request.toml` under `[settings]`
+- **Rotation**: Automatic cleanup when limit exceeded (delete oldest, keep newest N)
 
 ### File Management Strategy
 - **Approach**: Parse-merge-write (not append-only)
 - **Process**: Read existing TOML → Parse → Modify → Write back
 - **Benefits**: Reliable, handles conflicts, maintains data integrity
-- **Tool**: Repurpose MinseokOh/toml-cli source code for TOML manipulation
+- **Tool**: Repurposed MinseokOh/toml-cli source code for TOML manipulation
 
 ### Dot Notation Support
 Dot notation creates proper TOML sections:
@@ -158,6 +167,7 @@ saul pokeapi          # Enter preset mode
 - `set url https://api.example.com` - Set endpoint URL
 - `set method POST` - Set HTTP method (GET, POST, PUT, DELETE, etc.)
 - `set timeout 30` - Set request timeout in seconds
+- `set history N` - Set response history count (0 = disabled)
 
 **Regular TOML Configuration (With = Syntax):**
 - `set header key=value` - Add HTTP header
@@ -170,6 +180,12 @@ saul pokeapi          # Enter preset mode
 - `check method` - Display current HTTP method  
 - `check body pokemon.name` - Display specific field with formatting
 - `check headers` - Display all headers (full file view)
+- `check history` - Interactive history menu or show available responses
+- `check history N` - Show specific response (1 = most recent, 2 = second most recent)
+- `check history last` - Show most recent response
+
+**History Management:**
+- `rm history` - Delete all stored responses (with confirmation: "Delete all history for 'preset'? (y/N):")
 
 **Execution:**
 - `call preset` - Execute HTTP request (prompts for soft variables only)
@@ -196,8 +212,10 @@ saul [global] [preset] [command] [target] [field=value]
 
 Examples:
 saul pokeapi set header Authorization=Bearer123
-saul pokeapi set body pokemon.name=?
+saul pokeapi set body pokemon.name={?}
 saul call pokeapi
+saul pokeapi check history
+saul pokeapi rm history
 ```
 
 ### File Editing
@@ -216,16 +234,17 @@ saul call pokeapi
 
 ### Data Pipeline
 ```
-TOML files → Parse-merge-write → Variable resolution → JSON conversion → HTTP execution
+TOML files → Parse-merge-write → Variable resolution → JSON conversion → HTTP execution → Response history storage
 ```
 
 ### Implementation Priority Order
 1. **TOML manipulation system** (parse-merge-write approach) ✅ **COMPLETED**
-2. **Variable substitution system** (`?/@` variable handling) ✅ **COMPLETED**
+2. **Variable substitution system** (`{?}/{@}` variable handling) ✅ **COMPLETED** 
 3. **JSON conversion** (TOML → Go structs → JSON) ✅ **COMPLETED**
 4. **HTTP execution engine** (using go-resty) ✅ **COMPLETED**
 5. **Single-line commands** (primary interface) ✅ **COMPLETED**
-6. **Interactive mode** (secondary interface built on single-line) ⏳ **PENDING**
+6. **Response history system** ⏳ **Phase 4 - PENDING**
+7. **Interactive mode** (secondary interface built on single-line) ⏳ **Phase 5 - PENDING**
 
 ### Libraries and Dependencies
 - `github.com/pelletier/go-toml/v1` - TOML parsing and manipulation
@@ -240,6 +259,7 @@ TOML files → Parse-merge-write → Variable resolution → JSON conversion →
 - **Reusable:** Save and reuse complex request configurations
 - **Interactive:** Smart prompting for variable values
 - **Readable:** Pretty-formatted response display for easy analysis
+- **Debuggable:** Response history for API development and troubleshooting
 
 ## Target Users
 - Developers testing APIs
@@ -251,6 +271,7 @@ TOML files → Parse-merge-write → Variable resolution → JSON conversion →
 - **AI-Assisted Development:** Leverage AI for rapid iteration and learning
 - **Parse-merge-write:** Reliable over fast for file operations
 - **Single-line first:** Build interactive mode on proven single-line foundation
+- **Unix Philosophy:** Each file has one purpose, commands are composable
 
 ## Final Polish & Easter Eggs
 
@@ -262,7 +283,7 @@ TOML files → Parse-merge-write → Variable resolution → JSON conversion →
   - https://www.youtube.com/watch?v=zj2IhcuS5iM
   - https://www.youtube.com/watch?v=SH_mdu8W0bc
   - https://www.youtube.com/watch?v=z9_OX1WVXXU
-  - https://www.youtube.com/watch?v=XfQQ7CIOEoM
+  - https://www.youtube.com/Watch?v=XfQQ7CIOEoM
   - https://www.youtube.com/watch?v=pL4fke8vkFE
 - **Implementation:** Random URL selection + cross-platform browser opening with graceful fallback
 - **Priority:** Implement after all core functionality is complete and tested
