@@ -79,6 +79,12 @@ func executeGlobalCommand(cmd parser.Command) error {
 		showHelp()
 		return nil
 
+	case "call":
+		if cmd.Preset == "" {
+			return fmt.Errorf("preset name required for call command")
+		}
+		return executor.ExecuteCallCommand(cmd)
+
 	default:
 		return fmt.Errorf("unknown global command: %s", cmd.Global)
 	}
@@ -132,6 +138,7 @@ func showHelp() {
 	fmt.Println("  saul version              Show version information")
 	fmt.Println("  saul list                 List all presets")
 	fmt.Println("  saul rm [preset]          Delete a preset")
+	fmt.Println("  saul call [preset]        Execute HTTP request")
 	fmt.Println("  saul help                 Show this help")
 	fmt.Println()
 	fmt.Println("PRESET COMMANDS:")

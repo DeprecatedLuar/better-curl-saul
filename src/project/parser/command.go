@@ -24,7 +24,7 @@ func ParseCommand(args []string) (Command, error) {
 	}
 
 	switch args[0] {
-	case "rm", "list", "version", "help":
+	case "rm", "list", "version", "help", "call":
 		cmd.Global = args[0]
 		if len(args) >= 2 {
 			cmd.Preset = args[1]
