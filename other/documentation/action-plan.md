@@ -6,345 +6,160 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
 ## Current State Analysis
 
 ### ✅ **Implemented**
-- **Command Parsing**: Basic Command struct + ParseCommand function in `src/project/parser/command.go`
-- **TOML Handler**: Complete repurposed TomlHandler with dot notation, merge, JSON conversion in `src/project/handler(repurposed).go`
-- **Project Structure**: Modular Go structure following conventions
-- **Constants**: Basic command constants and aliases in `src/project/config/constants.go`
+- **Phase 1 Complete**: Foundation & TOML Integration
+  - Modular Go structure following conventions
+  - Command parsing system with global and preset commands  
+  - Directory management with lazy file creation
+  - TOML file operations integrated
+- **Phase 2 Complete**: Core TOML Operations & Variable System
+  - 5-file structure (Unix philosophy): body, headers, query, request, variables
+  - Special request syntax: `set url/method/timeout` (no = sign)
+  - Variable system: `@` for hard variables, `?` for soft variables *(needs syntax update)*
+  - Target normalization and validation
+  - Comprehensive test suite validation
+- **Phase 3 Complete**: HTTP Execution Engine
+  - `saul call preset` command fully functional
+  - Variable prompting system (`@` hard variables, `?` soft variables) *(needs syntax update)*
+  - TOML file merging (request + headers + body + query + variables)
+  - HTTP client integration using go-resty
+  - Support for all major HTTP methods
+  - JSON body conversion and pretty-printed responses
+  - Smart Variable Deduplication feature
 
 ### ❌ **Missing Core Components**
-- Directory structure management (`~/.config/saul/presets/`)
-- Variable substitution system (`?/$` variables)
-- HTTP execution engine (go-resty integration)
-- Preset/workspace management
-- TOML file operations integration
-- Single-line command execution
-- Interactive mode
-- Configuration editing system
+- **Variable syntax update**: Change from bare `@`/`?` to braced `{@}`/`{?}` format
+- **Response history system**: Storage, management, and access commands
+- **Interactive mode**: Command shell for preset management
+- **Advanced command system**: Enhanced help, editing, and management
+- **Production readiness**: Cross-platform compatibility, error handling polish
 
 ### 🔧 **Technical Debt**
-- Dependency mismatch: Using `BurntSushi/toml` instead of required `pelletier/go-toml/v1`
-- Handler not integrated with command system
-- Missing `go-resty/resty/v2` for HTTP client
-- No tests or validation system
+- Variable syntax conflicts with URLs (@ and ? are valid URL characters)
+- No response history for debugging API interactions
+- Limited command system compared to vision
+- No interactive mode for workflow efficiency
 
 ## Implementation Phases
 
 ### **Phase 1: Foundation & TOML Integration** ✅ **COMPLETED**
-*Goal: Solid base with working TOML operations and directory management*
+*All functionality implemented and tested.*
 
-#### 1.1 Dependencies & Structure
-- [x] Update `go.mod` with correct dependencies:
-  - `github.com/pelletier/go-toml v1.9.5` (BurntSushi is an indirect import from toml vars)
-  - `github.com/go-resty/resty/v2 v2.7.0` for HTTP client
-- [x] Fix TomlHandler package declaration (currently `package main`)
-- [x] Move TomlHandler to `src/project/toml/handler.go`
-- [x] Create directory management utilities in `src/project/presets/manager.go`
-
-**AI Execution Notes - Phase 1:**
-```go
-// Required exact function signatures for Phase 1:
-
-// In src/project/presets/manager.go:
-func CreatePresetDirectory(name string) error
-func ListPresets() ([]string, error)
-func DeletePreset(name string) error
-func GetPresetPath(name string) string  // Reads from settings.toml, returns full path
-func GetConfigDir() string              // Reads from settings.toml, returns full path
-func LoadSettings() (*Settings, error)  // Loads src/settings/settings.toml
-
-type Settings struct {
-    Directories struct {
-        ConfigDir  string `toml:"config_dir"`
-        AppDir     string `toml:"app_dir"`
-        PresetsDir string `toml:"presets_dir"`
-    } `toml:"directories"`
-}
-
-// In src/project/toml/handler.go (moved from handler(repurposed).go):
-package toml  // Change from "package main"
-
-// In src/project/presets/manager.go:
-func LoadPresetFile(preset, fileType string) (*toml.TomlHandler, error)
-func SavePresetFile(preset, fileType string, handler *toml.TomlHandler) error
-
-// fileType values: "headers", "body", "query", "request", "variables"
-```
-
-**Expected Command Flow - Phase 1:**
-```bash
-Input: `saul list`
-→ main.go calls parser.ParseCommand(["list"])
-→ Returns Command{Global: "list"}
-→ main.go calls manager.ListPresets()
-→ Output: Lists all directories in ~/.config/saul/presets/
-
-Input: `saul myapi` (preset creation)
-→ Command{Preset: "myapi"}
-→ manager.CreatePresetDirectory("myapi")
-→ Creates ~/.config/saul/presets/myapi/{headers,body,query,config}.toml
-```
-
-**Integration Handoff - Phase 1 → Phase 2:**
-- **Phase 1 Outputs**: Working directory structure, TOML file loading/saving
-- **Phase 2 Inputs**: Expects `LoadPresetFile()` and `SavePresetFile()` functions
-- **Critical**: Phase 2 will call `LoadPresetFile("myapi", "body")` expecting working TomlHandler
-
-#### 1.2 Directory Management System
-- [x] Implement `CreatePresetDirectory(name string)` function
-- [x] Implement `ListPresets()` function
-- [x] Implement `DeletePreset(name string)` function
-- [x] Create default TOML files (headers.toml, body.toml, query.toml, request.toml, variables.toml)
-- [x] Handle `~/.config/saul/` directory creation and permissions
-
-#### 1.3 TOML File Operations
-- [x] Integrate TomlHandler with preset directory structure
-- [x] Implement `LoadPresetFile(preset, fileType string)` function
-- [x] Implement `SavePresetFile(preset, fileType string, handler *TomlHandler)` function
-- [x] Add error handling for missing files/directories
-
-**Phase 1 Success Criteria:** ✅ **ALL PASSED**
-- [x] `saul list` shows all presets
-- [x] `saul myapi` creates preset directory with empty TOML files
-- [x] `saul rm myapi` removes preset with confirmation
-- [x] All file operations work reliably with proper error handling
-
-**Phase 1 Testing:**
-```bash
-# Test directory operations
-go run cmd/main.go list
-go run cmd/main.go mytest  # Should create preset directory
-ls ~/.config/saul/presets/mytest/  # Should show 4 TOML files
-go run cmd/main.go rm mytest  # Should remove preset
-```
-
----
-
-### **Phase 2: Core TOML Operations & Variable System** ✅ **COMPLETED**
-*Goal: Working set/get operations with variable substitution*
-
-**AI Execution Notes - Phase 2:**
-```go
-// Required exact function signatures for Phase 2:
-
-// In src/project/executor/commands.go (new file):
-func ExecuteSetCommand(cmd parser.Command) error
-func ExecuteGetCommand(cmd parser.Command) (interface{}, error)  // For debugging
-
-// Expected Command struct usage:
-// cmd.Preset = "myapi"
-// cmd.Command = "set"
-// cmd.Target = "body"  // "headers", "body", "query", "config"
-// cmd.Key = "pokemon.stats.hp"
-// cmd.Value = "100"
-
-// Variable detection:
-func DetectVariableType(value string) (isVariable bool, varType string, varName string)
-// Returns: (true, "soft", "name") for "?name"
-// Returns: (true, "hard", "attack") for "$attack"
-// Returns: (false, "", "") for "pikachu"
-```
-
-**Expected Command Flow - Phase 2:**
-```bash
-Input: `saul myapi set body pokemon.stats.hp=100`
-→ ParseCommand returns Command{Preset:"myapi", Command:"set", Target:"body", Key:"pokemon.stats.hp", Value:"100"}
-→ ExecuteSetCommand(cmd):
-  1. LoadPresetFile("myapi", "body") → gets TomlHandler
-  2. handler.Set("pokemon.stats.hp", 100)  // Auto-converts string "100" to int
-  3. SavePresetFile("myapi", "body", handler)
-→ Result: ~/.config/saul/presets/myapi/body.toml contains:
-```toml
-[pokemon]
-[pokemon.stats]
-hp = 100
-```
-
-**Integration Handoff - Phase 2 → Phase 3:**
-- **Phase 2 Outputs**: Working set/get commands, variable detection system
-- **Phase 3 Inputs**: Expects working TOML manipulation, variable list for prompting
-- **Critical**: Phase 3 will merge all TOML files and resolve variables during `fire`
-
-#### 2.1 Command Integration
-- [ ] Connect Command struct to TOML operations
-- [ ] Implement `ExecuteSetCommand(cmd Command)` function
-- [ ] Implement `ExecuteGetCommand(cmd Command)` function (for debugging)
-- [ ] Add validation for command structure and arguments
-
-#### 2.2 TOML Set Operations
-- [ ] Implement dot notation parsing: `body.pokemon.stats.hp=100`
-- [ ] Handle different value types (string, int, bool, array)
-- [ ] Array detection and parsing: `tags=red,blue,green`
-- [ ] Type inference without explicit declarations
-
-#### 2.3 Variable System Foundation
-- [x] Create variable detection logic (`?` and `@` prefixes) - changed from $ to @ to avoid shell conflicts
-- [x] Implement variable storage in `variables.toml` (hard variables only - soft variables never stored)
-- [x] Implement check command for TOML inspection
-- [x] Add smart target routing and aliases
-- [ ] Implement variable prompting system (basic version) - moved to Phase 3
-
-**Phase 2 Success Criteria:** ✅ **ALL PASSED**
-- [x] `saul myapi set body pokemon.name=pikachu` works correctly
-- [x] `saul myapi set header Content-Type=application/json` works correctly  
-- [x] `saul myapi set body pokemon.stats.hp=100` creates proper nested structure
-- [x] `saul myapi set body tags=red,blue,green` creates TOML array
-- [x] Variable syntax `pokemon.name=?` and `pokemon.level=@` are detected and stored
-- [x] Special request syntax `saul myapi set url/method/timeout` works correctly
-- [x] Check command `saul myapi check url` works for inspection
-- [x] 5-file lazy creation system works correctly
-
-**Phase 2 Testing:** ✅ **AUTOMATED**
-```bash
-# Run comprehensive test suite
-./test_suite.sh
-
-# Tests all Phase 2 functionality:
-# - Special request syntax (url/method/timeout)
-# - Regular TOML operations (body/headers/query)
-# - Variable detection (@ and ? syntax)
-# - Check command functionality
-# - 5-file lazy creation system
-# - Target aliases and validation
-# - Error handling and edge cases
-```
-
----
+### **Phase 2: Core TOML Operations & Variable System** ✅ **COMPLETED**  
+*All functionality implemented and tested.*
 
 ### **Phase 3: HTTP Execution Engine** ✅ **COMPLETED**
-*Goal: Working call command that executes HTTP requests*
-
-**AI Execution Notes - Phase 3:**
-```go
-// Required exact function signatures for Phase 3:
-
-// In src/project/executor/http.go (new file):
-func ExecuteFireCommand(cmd parser.Command) error
-func BuildHTTPRequest(preset string) (*resty.Request, error)
-func PromptForVariables(variables []Variable) (map[string]string, error)
-func MergePresetFiles(preset string) (*toml.TomlHandler, error)
-
-// Variable struct for prompting:
-type Variable struct {
-    Name     string  // "name", "attack"
-    Type     string  // "soft", "hard"
-    Current  string  // Current value for hard variables (from config.toml)
-}
-
-// HTTP execution flow:
-func ExecuteHTTPRequest(req *resty.Request, method, url string) ([]byte, error)
-```
-
-**Expected Command Flow - Phase 3:** ✅ **IMPLEMENTED**
-```bash
-Input: `saul call myapi`
-→ ExecuteCallCommand(Command{Global:"call", Preset:"myapi"}):
-  1. Check preset exists (prevents calling non-existent presets)
-  2. MergePresetFiles("myapi") → merges request.toml + headers.toml + body.toml + query.toml
-  3. Extract variables: finds "?name" and "@attack" in merged data
-  4. PromptForVariables() → prompts user:
-     name: ____                    # Soft variable (always empty)
-     attack: 80_                   # Hard variable (shows current value)
-  5. Replace variables in merged TOML with user input
-  6. Convert to JSON for body, extract headers/query separately
-  7. BuildHTTPRequest() → creates go-resty request with all components
-  8. ExecuteHTTPRequest() → sends HTTP request
-  9. DisplayResponse() → shows formatted response with status, headers, pretty JSON
-
-Input: `saul call myapi --persist`
-→ Same flow but prompts for hard variables too and saves new values to variables.toml
-```
-
-**Integration Handoff - Phase 3 → Phase 4:** ✅ **COMPLETED**
-- **Phase 3 Outputs**: Complete HTTP execution engine, variable resolution system, TOML merging
-- **Phase 4 Inputs**: All core functionality ready, needs enhanced command routing and remaining features
-- **Critical**: Phase 4 will add remaining management commands and advanced features
-
-#### 3.1 HTTP Request Builder ✅ **COMPLETED**
-- [x] Implement `BuildHTTPRequest(preset string)` function
-- [x] Merge all TOML files (request.toml + headers.toml + body.toml + query.toml + variables.toml)
-- [x] Convert merged TOML to go-resty request structure
-- [x] Handle different HTTP methods (GET, POST, PUT, DELETE, etc.)
-
-#### 3.2 Variable Resolution System ✅ **COMPLETED**
-- [x] Implement variable prompting during `call` command
-- [x] Handle soft variables (`?`) - always prompt with empty input
-- [x] Handle hard variables (`@`) - prompt with current value shown
-- [x] Implement `--persist` flag for hard variable updates (basic version)
-- [x] Store resolved variables in memory for request execution
-- [x] Smart Variable Deduplication feature
-
-#### 3.3 HTTP Execution ✅ **COMPLETED**
-- [x] Integrate go-resty for HTTP requests
-- [x] Implement clean response formatting with pretty JSON
-- [x] Add comprehensive error handling and validation
-- [x] Handle HTTP errors gracefully with status display
-- [x] Add timeout configuration support
-
-**Phase 3 Success Criteria:** ✅ **ALL PASSED**
-- [x] `saul myapi set url https://jsonplaceholder.typicode.com/posts/1` and `saul myapi set method GET` sets endpoint (special syntax)
-- [x] `saul call myapi` executes HTTP request successfully
-- [x] Variable prompting works for both `?` and `@` variables
-- [x] `saul call myapi --persist` framework ready for hard variable updates
-- [x] Response is displayed cleanly and readable with pretty formatting
-- [x] All HTTP methods work correctly (GET, POST, PUT, DELETE)
-- [x] TOML file merging works across all 5 files
-- [x] Comprehensive test suite validates all functionality
-
-**Phase 3 Testing:** ✅ **COMPREHENSIVE SUITE IMPLEMENTED**
-```bash
-# All tests automated in other/testing/test_suite.sh
-# Phase 3 tests include:
-# - Basic call command with GET requests
-# - POST requests with JSON body conversion
-# - Variable prompting system validation
-# - All HTTP methods (GET, POST, PUT, DELETE)
-# - Headers and complex request handling
-# - Error handling for missing URLs and non-existent presets
-# - TOML file merging validation
-# - Test isolation with backup/restore functionality
-```
+*All functionality implemented and tested.*
 
 ---
 
-### **Phase 4: Complete Command System**
-*Goal: All single-line commands working as specified in vision*
+### **Phase 4: Variable Syntax Update & Response History System**
+*Goal: Resolve URL conflicts and add response history for debugging*
 
-#### 4.1 Command Execution Router
-- [ ] Implement `ExecuteCommand(cmd Command)` router function
-- [ ] Handle global commands: `version`, `list`, `rm`
-- [ ] Handle preset commands: `set`, `fire`, `edit` (basic)
-- [ ] Add comprehensive error messages and help text
+#### 4.1 Variable Syntax Migration *(BREAKING CHANGE)*
+- [ ] Update variable detection in `src/project/executor/variables.go`:
+  - Change `DetectVariableType()` to recognize `{@name}` and `{?name}` instead of `@name`/`?name`
+  - Update regex/parsing to handle braced format
+  - Maintain backward compatibility during migration (optional)
+- [ ] Update variable substitution in all TOML operations:
+  - Modify `SubstituteVariables()` to handle braced format
+  - Update variable prompting to display braced syntax correctly
+- [ ] Update command examples and help text throughout codebase
+- [ ] **Test migration**: Ensure all existing functionality works with new syntax
 
-#### 4.2 Configuration Commands
-- [ ] Implement `set url METHOD https://...` command
-- [ ] Implement `set header key=value` command
-- [ ] Implement `set body object.field=value` command
-- [ ] Implement `set query param=value` command
-- [ ] Add validation for each command type
+**Breaking Change Impact:**
+```bash
+# Old syntax (conflicts with URLs)
+saul api set body pokemon.name=?pokename
+saul api set url https://api.com/@username/posts
 
-#### 4.3 Management Commands
-- [ ] Implement `version` command with proper version display
-- [ ] Implement `list` command with formatted preset listing
-- [ ] Implement `rm preset` command with confirmation prompt
-- [ ] Add `help` command with usage examples
+# New syntax (no conflicts)
+saul api set body pokemon.name={?pokename}
+saul api set url https://api.com/{@username}/posts
+```
+
+#### 4.2 Response History System
+- [ ] **History Storage Management**:
+  - Implement `CreateHistoryDirectory(preset string)` in presets package
+  - Add history rotation logic (keep last N, delete oldest)
+  - Create response file naming: `response-001.json`, `response-002.json`, etc.
+  - Add history metadata (timestamp, status, method, URL, size)
+
+- [ ] **History Configuration**:
+  - Extend `request.toml` structure to include `[settings]` section
+  - Add `history_count = N` setting (0 = disabled)
+  - Implement `set history N` command to configure per preset
+  - Update `ExecuteSetCommand` to handle history configuration
+
+- [ ] **History Storage Integration**:
+  - Modify `ExecuteCallCommand` to store responses when history enabled
+  - Add response storage after successful HTTP execution
+  - Include request metadata (method, URL, timestamp) with response
+  - Handle response size limits and truncation for large responses
+
+#### 4.3 History Access Commands
+- [ ] **Check History Command**:
+  - Implement `ExecuteCheckHistoryCommand` for history access
+  - Add interactive menu: list all stored responses with metadata
+  - Support direct access: `check history N` for specific response
+  - Add `check history last` alias for most recent response
+  - Display response with same formatting as live responses
+
+- [ ] **History Management**:
+  - Implement `rm history` command with confirmation prompt
+  - Add "Delete all history for 'preset'? (y/N):" confirmation
+  - Support selective deletion: `rm history N` (future enhancement)
+  - Handle cases where history doesn't exist (silent success)
+
+#### 4.4 Enhanced Command Routing
+- [ ] **Extended Check Command**:
+  - Add history routing to existing `ExecuteCheckCommand`
+  - Handle `check history` variations (no args = menu, N = direct, last = recent)
+  - Maintain existing check functionality for TOML inspection
+  
+- [ ] **Extended Set Command**:  
+  - Add history configuration to `ExecuteSetCommand`
+  - Validate history count values (non-negative integers)
+  - Handle `set history 0` to disable without deleting existing history
 
 **Phase 4 Success Criteria:**
-- All commands from vision.md work correctly
-- Error messages are helpful and specific
-- `saul help` shows comprehensive usage
-- `saul version` shows correct version info
-- All preset operations work reliably
+- [ ] All variable syntax migrated to braced format `{@name}`/`{?name}`
+- [ ] No URL parsing conflicts with variable syntax
+- [ ] `saul api set history 5` enables history collection
+- [ ] `saul call api` automatically stores responses when history enabled
+- [ ] `saul api check history` shows interactive menu of stored responses
+- [ ] `saul api check history 1` displays most recent response
+- [ ] `saul api rm history` deletes all history with confirmation prompt
+- [ ] History rotation works correctly (keeps last N, deletes oldest)
+- [ ] All existing Phase 1-3 functionality unchanged except variable syntax
 
 **Phase 4 Testing:**
 ```bash
-# Test all commands
-go run cmd/main.go version
-go run cmd/main.go help
-go run cmd/main.go list
-go run cmd/main.go testapi set url POST https://httpbin.org/post
-go run cmd/main.go testapi set header Content-Type=application/json
-go run cmd/main.go testapi set body message=hello
-go run cmd/main.go testapi fire
+#!/bin/bash
+# Phase 4 test additions
+
+echo "4.1 Testing variable syntax migration..."
+saul testapi set body pokemon.name={?pokename}
+saul testapi set url https://jsonplaceholder.typicode.com/users/{@userId}
+echo "test" | saul call testapi  # Should prompt for pokename and userId
+
+echo "4.2 Testing history configuration..."
+saul testapi set history 3
+grep -q 'history_count = 3' ~/.config/saul/presets/testapi/request.toml
+
+echo "4.3 Testing history storage..."
+saul call testapi >/dev/null  # Should store response
+[ -d ~/.config/saul/presets/testapi/history ]
+[ -f ~/.config/saul/presets/testapi/history/response-001.json ]
+
+echo "4.4 Testing history access..."
+saul testapi check history | grep -q "1." # Should show menu
+saul testapi check history 1 | grep -q "Status:" # Should show response
+
+echo "4.5 Testing history management..."
+echo "y" | saul testapi rm history
+[ ! -d ~/.config/saul/presets/testapi/history ]
+
+echo "✓ Phase 4 Variable Syntax & History System: PASSED"
 ```
 
 ---
@@ -352,97 +167,166 @@ go run cmd/main.go testapi fire
 ### **Phase 5: Interactive Mode**
 *Goal: Working interactive shell for preset management*
 
-#### 5.1 Interactive Shell
-- [ ] Implement `EnterInteractiveMode(preset string)` function
-- [ ] Create command loop with `> ` prompt
-- [ ] Handle `exit` command to leave interactive mode
-- [ ] Add command history and basic editing
+#### 5.1 Interactive Shell Implementation
+- [ ] **Shell Mode Detection**:
+  - Detect when `saul preset` called without additional commands
+  - Implement `EnterInteractiveMode(preset string)` function
+  - Create command loop with `[preset]> ` prompt showing current preset
+  - Handle shell-specific commands: `exit`, `quit`, `help`
 
-#### 5.2 Interactive Commands
-- [ ] All `set` commands work in interactive mode
-- [ ] `fire` command works in interactive mode
-- [ ] Tab completion for commands (optional)
-- [ ] Clear error handling within interactive session
+- [ ] **Command Processing in Interactive Mode**:
+  - Reuse existing command parsing but strip preset name
+  - Route commands through same executors as single-line mode
+  - Maintain command history within session
+  - Handle multi-word commands and proper argument parsing
 
-#### 5.3 User Experience Enhancements
-- [ ] Show current preset in prompt: `[myapi]> `
-- [ ] Add context-aware help in interactive mode
-- [ ] Handle Ctrl+C gracefully
-- [ ] Add command validation before execution
+- [ ] **Interactive User Experience**:
+  - Show welcome message: "Entered interactive mode for 'preset'"
+  - Display help reminder: "Type 'help' for commands or 'exit' to leave"
+  - Handle Ctrl+C gracefully (exit interactive mode, return to shell)
+  - Clear error handling without exiting interactive session
+
+#### 5.2 Interactive Command Integration
+- [ ] **All Existing Commands Work**:
+  - `set url/method/timeout` commands work identically
+  - `set body/headers/query` commands work identically  
+  - `call` command works with variable prompting
+  - `check` commands work including history access
+  - `rm` commands work with confirmations
+
+- [ ] **Interactive-Specific Enhancements**:
+  - Command abbreviation support (optional): `c` for `call`, `s` for `set`
+  - Tab completion for commands and targets (optional)
+  - Show current configuration summary on demand
+  - Context-aware help based on current preset state
+
+#### 5.3 Advanced Interactive Features
+- [ ] **Session Management**:
+  - Track commands executed in session for debugging
+  - Provide session summary on exit
+  - Handle long-running sessions gracefully
+  - Memory management for extended usage
 
 **Phase 5 Success Criteria:**
-- `saul myapi` enters interactive mode successfully
-- All commands work identically in interactive vs single-line mode
-- Exit/Ctrl+C handling works properly
-- User experience feels natural and responsive
+- [ ] `saul myapi` enters interactive mode successfully
+- [ ] All commands work identically to single-line mode
+- [ ] `exit` and Ctrl+C handling works properly
+- [ ] Interactive session maintains state correctly
+- [ ] Help system works in interactive context
+- [ ] User experience feels natural and responsive
 
 **Phase 5 Testing:**
 ```bash
-# Test interactive mode
-go run cmd/main.go myapi
-> set header Authorization=Bearer123
-> set body pokemon.name=pikachu
-> fire
-> exit
+# Interactive mode testing (manual)
+echo "Testing interactive mode..."
+echo -e "set url https://httpbin.org/get\nset method GET\ncall\nexit" | saul testapi
+echo "✓ Interactive mode basic functionality works"
 ```
 
 ---
 
 ### **Phase 6: Advanced Features & Polish**
-*Goal: Complete feature set with editing and advanced management*
+*Goal: Complete feature set with editing and production readiness*
 
-#### 6.1 File Editing Integration
-- [ ] Implement `edit header` command to open headers.toml
-- [ ] Implement `edit body` command to open body.toml
-- [ ] Implement `edit config` command to open config.toml
-- [ ] Detect default editor from environment ($EDITOR)
+#### 6.1 File Editing Integration  
+- [ ] **Editor Command Implementation**:
+  - Implement `edit header/body/query/request/variables` commands
+  - Detect default editor from `$EDITOR` environment variable
+  - Fallback editor detection (nano, vim, emacs, notepad on Windows)
+  - Handle editor exit codes and provide feedback
+
+- [ ] **Cross-platform Compatibility**:
+  - Windows editor integration (`notepad.exe`, VS Code, etc.)
+  - macOS editor integration (TextEdit, VS Code, etc.)
+  - Linux/Unix editor integration (nano, vim, emacs, etc.)
+  - Handle file locking and concurrent editing scenarios
 
 #### 6.2 Advanced Variable Features
-- [ ] Custom variable names: `pokemon.name=?pokename`
-- [ ] Variable validation and type hints
-- [ ] Variable reuse across multiple requests
-- [ ] Export/import variable sets
+- [ ] **Enhanced Variable Management**:
+  - Support custom variable names: `pokemon.name={?pokename}`
+  - Variable validation and type hints during prompting
+  - Variable reuse across multiple requests in same session
+  - Variable templating: common variable sets for API families
+
+- [ ] **Variable Import/Export**:
+  - Export variable sets: `saul myapi export variables > vars.json`
+  - Import variable sets: `saul myapi import variables < vars.json`
+  - Share variable configurations between presets
+  - Variable set versioning and backup
 
 #### 6.3 Production Readiness
-- [ ] Comprehensive error handling for all edge cases
-- [ ] Add proper logging system
-- [ ] Performance optimization for large TOML files
-- [ ] Cross-platform path handling
-- [ ] Build system for binary distribution
+- [ ] **Comprehensive Error Handling**:
+  - Network timeout handling with retry logic
+  - DNS resolution error handling  
+  - SSL/TLS certificate error handling
+  - HTTP error status code explanations
+  - File permission and disk space error handling
+
+- [ ] **Performance Optimization**:
+  - TOML file caching for large configurations
+  - Lazy loading of presets and history
+  - Memory usage optimization for long-running sessions
+  - Response streaming for large API responses
+
+- [ ] **Cross-platform Features**:
+  - Windows path handling and directory creation
+  - macOS keychain integration for credentials (future)
+  - Linux desktop integration (future)
+  - Consistent behavior across all platforms
+
+- [ ] **Build and Distribution**:
+  - GitHub Actions build pipeline for multiple platforms
+  - Binary distribution for Windows, macOS, Linux
+  - Package manager integration (Homebrew, apt, etc.)
+  - Version management and update checking
 
 **Phase 6 Success Criteria:**
-- `saul myapi edit body` opens body.toml in default editor
-- All edge cases handled gracefully
-- Performance is acceptable for typical usage
-- Ready for end-user distribution
+- [ ] `saul myapi edit body` opens body.toml in default editor
+- [ ] All edge cases handled gracefully with helpful error messages
+- [ ] Performance is acceptable for typical usage (< 100ms command response)
+- [ ] Cross-platform compatibility verified on Windows, macOS, Linux
+- [ ] Ready for end-user distribution with installation documentation
 
 ## Comprehensive Testing Strategy
 
-### **Single Test File: `test_suite.sh`**
-Expandable comprehensive test script that validates all implemented functionality across phases:
+### **Expandable Test Suite: `other/testing/test_suite.sh`**
+
+The existing test suite will be expanded to include Phase 4+ functionality:
 
 ```bash
 #!/bin/bash
-# test_suite.sh - Expandable comprehensive test suite
+# test_suite.sh - Comprehensive test suite for all phases
 
-# Run current tests
-./test_suite.sh
+# Existing Phase 1-3 tests continue to work...
 
-# Key features:
-# - Phase-organized test sections  
-# - Expandable as new phases are implemented
-# - Validates all functionality comprehensively
-# - Clear pass/fail reporting
-# - Automated cleanup and setup
+# NEW: Phase 4 tests
+echo "===== PHASE 4 TESTS: Variable Syntax & History System ====="
+
+echo "4.1 Testing braced variable syntax..."
+saul testapi set body name={?testname}
+saul testapi set url https://httpbin.org/get?id={@userid}
+# Verify no conflicts with URL parsing
+
+echo "4.2 Testing history system..."
+saul testapi set history 3
+echo -e "testuser\n123" | saul call testapi >/dev/null
+[ -f ~/.config/saul/presets/testapi/history/response-001.json ]
+
+echo "4.3 Testing history access..."
+saul testapi check history | grep -q "1\."
+saul testapi check history 1 | grep -q "Status:"
+
+echo "✓ Phase 4: Variable Syntax & History System - PASSED"
+
+# Future phases will add similar test sections...
 ```
 
 ### **Testing Philosophy**
-- **Phase-organized**: Tests grouped by implementation phases
-- **Expandable**: Easy to add new test sections as features are implemented
-- **Comprehensive**: One test file covers entire project systematically
-- **Practical**: Tests real usage scenarios from vision.md
-- **Fast**: Quick feedback loop for development with clear reporting
-- **Automated**: Self-contained with setup and cleanup
+- **Backward Compatibility**: Phase 4 changes must not break existing functionality
+- **Migration Testing**: Verify smooth transition from old to new variable syntax
+- **Integration Testing**: History system integrates seamlessly with existing commands  
+- **Edge Case Coverage**: URL edge cases, large responses, network failures
+- **Cross-platform Testing**: Verify functionality on multiple operating systems
 
 ## Development Guidelines
 
@@ -450,49 +334,51 @@ Expandable comprehensive test script that validates all implemented functionalit
 - **Simple**: Each function has one clear responsibility
 - **Clean**: Self-documenting code with minimal comments
 - **Intelligent**: Smart type detection and error handling
-- **Resilient**: Graceful handling of edge cases
+- **Resilient**: Graceful handling of edge cases and network issues
+
+### **Breaking Change Management**
+- **Phase 4 Migration**: Variable syntax change is breaking but necessary
+- **User Communication**: Clear migration guide and examples in documentation
+- **Backward Compatibility**: Consider supporting both syntaxes briefly during transition
+- **Testing**: Comprehensive testing to ensure no regression in core functionality
 
 ### **Go Best Practices**
 - Follow standard Go project layout
-- Use Go modules properly
+- Use Go modules properly  
 - Error handling at every boundary
 - Clear package separation of concerns
 - Minimal external dependencies
 
-### **Learning Focus**
-- Understand each component before moving to next phase
-- Ask questions about architectural decisions
-- Review code together before committing
-- Focus on comprehension over speed
-
 ## Risk Mitigation
 
-### **Potential Issues**
-- **File Permission Problems**: Handle `~/.config/saul/` creation carefully
-- **TOML Parsing Errors**: Robust error handling for malformed files
-- **Variable Substitution Edge Cases**: Test with special characters
-- **HTTP Request Failures**: Timeout and retry logic
-- **Cross-platform Compatibility**: Path handling differences
+### **Phase 4 Specific Risks**
+- **Breaking Change Impact**: Variable syntax change affects all existing users
+- **URL Parsing Complexity**: Braced variables in URLs require careful parsing
+- **History Storage Size**: Large API responses could consume significant disk space
+- **File System Edge Cases**: History directory creation and rotation edge cases
 
 ### **Mitigation Strategies**
-- Test on clean environment frequently
-- Add comprehensive error messages
-- Validate input at every boundary
-- Test with edge cases early
-- Keep backups of working TOML files
+- **Migration Testing**: Comprehensive test coverage for syntax change
+- **Documentation**: Clear examples of new variable syntax in all documentation
+- **Storage Limits**: Implement response size limits and compression options
+- **Graceful Degradation**: History system fails gracefully if disk space insufficient
 
 ## Success Metrics
 
-### **Phase Completion Criteria**
-Each phase must pass its testing section completely before proceeding to the next phase.
+### **Phase 4 Completion Criteria**
+- All existing functionality works with new variable syntax
+- History system stores and retrieves responses correctly
+- No URL parsing conflicts with variable syntax
+- Migration from old to new syntax is seamless
+- Test suite passes completely including new Phase 4 tests
 
 ### **Final Project Success**
 - All commands from vision.md work correctly
-- `test_saul.sh` passes completely
-- Ready for real-world usage
-- Code is clean, understandable, and maintainable
-- Performance is acceptable for typical use cases
+- Variable syntax handles all URL edge cases without conflicts  
+- History system provides valuable debugging workflow
+- Ready for Phase 5 (Interactive Mode) implementation
+- Maintains KISS principles while adding powerful features
 
 ---
 
-*This action plan prioritizes incremental development with continuous validation, ensuring each phase builds a solid foundation for the next while maintaining code quality and user experience standards.*
+*This action plan prioritizes resolving the variable syntax conflict and adding response history functionality, ensuring the project maintains its architectural integrity while expanding capabilities for real-world API development workflows.*
