@@ -1,6 +1,2 @@
-github.com/BurntSushi/toml v1.5.0 h1:W5quZX/G/csjUnuI8SUYlsHs9M38FC7znL0lIO+DvMg=
-github.com/BurntSushi/toml v1.5.0/go.mod h1:ukJfTF/6rtPPRCnwkur4qwRxa8vTRFBF0uk2lLoLwho=
-github.com/DeprecatedLuar/toml-vars-letsgooo v0.0.0-20250918082739-c7694061763d h1:B/HXOv/GKieAXdhxydrcnbqxbRScdQ1ysSj9CWng5FY=
-github.com/DeprecatedLuar/toml-vars-letsgooo v0.0.0-20250918082739-c7694061763d/go.mod h1:zYgkmn4l/GqhwUlbmQZDMCBOza/UysFjWG7E0xAaoHA=
-github.com/a8m/envsubst v1.4.3 h1:kDF7paGK8QACWYaQo6KtyYBozY2jhQrTuNNuUxQkhJY=
-github.com/a8m/envsubst v1.4.3/go.mod h1:4jjHWQlZoaXPoLQUb7H2qT4iLkZDdmEQiOUogdUmqVU=
+github.com/pelletier/go-toml v1.9.5 h1:4yBQzkHv+7BHq2PQUZF3Mx0IYxG7LsP222s7Agd3ve8=
+github.com/pelletier/go-toml v1.9.5/go.mod h1:u1nR/EPcESfeI/szUZKdtJ0xRNbUoANCkoOuaOx1Y+c=

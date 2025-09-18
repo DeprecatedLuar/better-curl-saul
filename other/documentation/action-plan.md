@@ -1,0 +1,503 @@
+# Better-Curl (Saul) - Action Plan
+
+## Project Overview
+Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTTP client that eliminates complex curl command pain through TOML-based configuration.
+
+## Current State Analysis
+
+### ✅ **Implemented**
+- **Command Parsing**: Basic Command struct + ParseCommand function in `src/project/parser/command.go`
+- **TOML Handler**: Complete repurposed TomlHandler with dot notation, merge, JSON conversion in `src/project/handler(repurposed).go`
+- **Project Structure**: Modular Go structure following conventions
+- **Constants**: Basic command constants and aliases in `src/project/config/constants.go`
+
+### ❌ **Missing Core Components**
+- Directory structure management (`~/.config/saul/presets/`)
+- Variable substitution system (`?/$` variables)
+- HTTP execution engine (go-resty integration)
+- Preset/workspace management
+- TOML file operations integration
+- Single-line command execution
+- Interactive mode
+- Configuration editing system
+
+### 🔧 **Technical Debt**
+- Dependency mismatch: Using `BurntSushi/toml` instead of required `pelletier/go-toml/v1`
+- Handler not integrated with command system
+- Missing `go-resty/resty/v2` for HTTP client
+- No tests or validation system
+
+## Implementation Phases
+
+### **Phase 1: Foundation & TOML Integration**
+*Goal: Solid base with working TOML operations and directory management*
+
+#### 1.1 Dependencies & Structure
+- [ ] Update `go.mod` with correct dependencies:
+  - `github.com/pelletier/go-toml v1.9.5` (BurntSushi is an indirect import from toml vars)
+  - `github.com/go-resty/resty/v2 v2.7.0` for HTTP client
+- [ ] Fix TomlHandler package declaration (currently `package main`)
+- [ ] Move TomlHandler to `src/project/toml/handler.go`
+- [ ] Create directory management utilities in `src/project/presets/manager.go`
+
+**AI Execution Notes - Phase 1:**
+```go
+// Required exact function signatures for Phase 1:
+
+// In src/project/presets/manager.go:
+func CreatePresetDirectory(name string) error
+func ListPresets() ([]string, error)
+func DeletePreset(name string) error
+func GetPresetPath(name string) string  // Reads from settings.toml, returns full path
+func GetConfigDir() string              // Reads from settings.toml, returns full path
+func LoadSettings() (*Settings, error)  // Loads src/settings/settings.toml
+
+type Settings struct {
+    Directories struct {
+        ConfigDir  string `toml:"config_dir"`
+        AppDir     string `toml:"app_dir"`
+        PresetsDir string `toml:"presets_dir"`
+    } `toml:"directories"`
+}
+
+// In src/project/toml/handler.go (moved from handler(repurposed).go):
+package toml  // Change from "package main"
+
+// In src/project/presets/manager.go:
+func LoadPresetFile(preset, fileType string) (*toml.TomlHandler, error)
+func SavePresetFile(preset, fileType string, handler *toml.TomlHandler) error
+
+// fileType values: "headers", "body", "query", "config"
+```
+
+**Expected Command Flow - Phase 1:**
+```bash
+Input: `saul list`
+→ main.go calls parser.ParseCommand(["list"])
+→ Returns Command{Global: "list"}
+→ main.go calls manager.ListPresets()
+→ Output: Lists all directories in ~/.config/saul/presets/
+
+Input: `saul myapi` (preset creation)
+→ Command{Preset: "myapi"}
+→ manager.CreatePresetDirectory("myapi")
+→ Creates ~/.config/saul/presets/myapi/{headers,body,query,config}.toml
+```
+
+**Integration Handoff - Phase 1 → Phase 2:**
+- **Phase 1 Outputs**: Working directory structure, TOML file loading/saving
+- **Phase 2 Inputs**: Expects `LoadPresetFile()` and `SavePresetFile()` functions
+- **Critical**: Phase 2 will call `LoadPresetFile("myapi", "body")` expecting working TomlHandler
+
+#### 1.2 Directory Management System
+- [ ] Implement `CreatePresetDirectory(name string)` function
+- [ ] Implement `ListPresets()` function
+- [ ] Implement `DeletePreset(name string)` function
+- [ ] Create default TOML files (headers.toml, body.toml, query.toml, config.toml)
+- [ ] Handle `~/.config/saul/` directory creation and permissions
+
+#### 1.3 TOML File Operations
+- [ ] Integrate TomlHandler with preset directory structure
+- [ ] Implement `LoadPresetFile(preset, fileType string)` function
+- [ ] Implement `SavePresetFile(preset, fileType string, handler *TomlHandler)` function
+- [ ] Add error handling for missing files/directories
+
+**Phase 1 Success Criteria:**
+- `saul list` shows all presets
+- `saul myapi` creates preset directory with empty TOML files
+- `saul rm myapi` removes preset with confirmation
+- All file operations work reliably with proper error handling
+
+**Phase 1 Testing:**
+```bash
+# Test directory operations
+go run cmd/main.go list
+go run cmd/main.go mytest  # Should create preset directory
+ls ~/.config/saul/presets/mytest/  # Should show 4 TOML files
+go run cmd/main.go rm mytest  # Should remove preset
+```
+
+---
+
+### **Phase 2: Core TOML Operations & Variable System**
+*Goal: Working set/get operations with variable substitution*
+
+**AI Execution Notes - Phase 2:**
+```go
+// Required exact function signatures for Phase 2:
+
+// In src/project/executor/commands.go (new file):
+func ExecuteSetCommand(cmd parser.Command) error
+func ExecuteGetCommand(cmd parser.Command) (interface{}, error)  // For debugging
+
+// Expected Command struct usage:
+// cmd.Preset = "myapi"
+// cmd.Command = "set"
+// cmd.Target = "body"  // "headers", "body", "query", "config"
+// cmd.Key = "pokemon.stats.hp"
+// cmd.Value = "100"
+
+// Variable detection:
+func DetectVariableType(value string) (isVariable bool, varType string, varName string)
+// Returns: (true, "soft", "name") for "?name"
+// Returns: (true, "hard", "attack") for "$attack"
+// Returns: (false, "", "") for "pikachu"
+```
+
+**Expected Command Flow - Phase 2:**
+```bash
+Input: `saul myapi set body pokemon.stats.hp=100`
+→ ParseCommand returns Command{Preset:"myapi", Command:"set", Target:"body", Key:"pokemon.stats.hp", Value:"100"}
+→ ExecuteSetCommand(cmd):
+  1. LoadPresetFile("myapi", "body") → gets TomlHandler
+  2. handler.Set("pokemon.stats.hp", 100)  // Auto-converts string "100" to int
+  3. SavePresetFile("myapi", "body", handler)
+→ Result: ~/.config/saul/presets/myapi/body.toml contains:
+```toml
+[pokemon]
+[pokemon.stats]
+hp = 100
+```
+
+**Integration Handoff - Phase 2 → Phase 3:**
+- **Phase 2 Outputs**: Working set/get commands, variable detection system
+- **Phase 3 Inputs**: Expects working TOML manipulation, variable list for prompting
+- **Critical**: Phase 3 will merge all TOML files and resolve variables during `fire`
+
+#### 2.1 Command Integration
+- [ ] Connect Command struct to TOML operations
+- [ ] Implement `ExecuteSetCommand(cmd Command)` function
+- [ ] Implement `ExecuteGetCommand(cmd Command)` function (for debugging)
+- [ ] Add validation for command structure and arguments
+
+#### 2.2 TOML Set Operations
+- [ ] Implement dot notation parsing: `body.pokemon.stats.hp=100`
+- [ ] Handle different value types (string, int, bool, array)
+- [ ] Array detection and parsing: `tags=red,blue,green`
+- [ ] Type inference without explicit declarations
+
+#### 2.3 Variable System Foundation
+- [ ] Create variable detection logic (`?` and `$` prefixes)
+- [ ] Implement `VariableInfo` struct to track variable types
+- [ ] Create variable storage in `config.toml` under `[hard_variables]`
+- [ ] Implement variable prompting system (basic version)
+
+**Phase 2 Success Criteria:**
+- `saul myapi set body pokemon.name=pikachu` works correctly
+- `saul myapi set header Content-Type=application/json` works correctly
+- `saul myapi set body pokemon.stats.hp=100` creates proper nested structure
+- `saul myapi set body tags=red,blue,green` creates TOML array
+- Variable syntax `pokemon.name=?` and `pokemon.level=$` are detected and stored
+
+**Phase 2 Testing:**
+```bash
+# Test TOML operations
+go run cmd/main.go myapi set body pokemon.name=pikachu
+go run cmd/main.go myapi set header Authorization=Bearer123
+go run cmd/main.go myapi set body pokemon.stats.hp=100
+cat ~/.config/saul/presets/myapi/body.toml  # Should show proper structure
+cat ~/.config/saul/presets/myapi/headers.toml  # Should show headers
+```
+
+---
+
+### **Phase 3: HTTP Execution Engine**
+*Goal: Working fire command that executes HTTP requests*
+
+**AI Execution Notes - Phase 3:**
+```go
+// Required exact function signatures for Phase 3:
+
+// In src/project/executor/http.go (new file):
+func ExecuteFireCommand(cmd parser.Command) error
+func BuildHTTPRequest(preset string) (*resty.Request, error)
+func PromptForVariables(variables []Variable) (map[string]string, error)
+func MergePresetFiles(preset string) (*toml.TomlHandler, error)
+
+// Variable struct for prompting:
+type Variable struct {
+    Name     string  // "name", "attack"
+    Type     string  // "soft", "hard"
+    Current  string  // Current value for hard variables (from config.toml)
+}
+
+// HTTP execution flow:
+func ExecuteHTTPRequest(req *resty.Request, method, url string) ([]byte, error)
+```
+
+**Expected Command Flow - Phase 3:**
+```bash
+Input: `saul myapi fire`
+→ ExecuteFireCommand(Command{Preset:"myapi", Command:"fire"}):
+  1. MergePresetFiles("myapi") → merges headers.toml + body.toml + query.toml + config.toml
+  2. Extract variables: finds "?name" and "$attack" in merged data
+  3. PromptForVariables() → prompts user:
+     name: ____                    # Soft variable (empty)
+     attack: 80_                   # Hard variable (shows current)
+  4. Replace variables in merged TOML with user input
+  5. Convert to JSON for body, extract headers/query separately
+  6. BuildHTTPRequest() → creates go-resty request
+  7. ExecuteHTTPRequest() → sends HTTP request
+  8. Display formatted response
+
+Input: `saul myapi fire --persist`
+→ Same flow but prompts for hard variables too and saves new values to config.toml
+```
+
+**Integration Handoff - Phase 3 → Phase 4:**
+- **Phase 3 Outputs**: Working HTTP execution, variable resolution system
+- **Phase 4 Inputs**: Expects working `fire` command, complete command routing
+- **Critical**: Phase 4 will add remaining commands and route all through main.go
+
+#### 3.1 HTTP Request Builder
+- [ ] Implement `BuildHTTPRequest(preset string)` function
+- [ ] Merge all TOML files (config.toml + headers.toml + body.toml + query.toml)
+- [ ] Convert merged TOML to go-resty request structure
+- [ ] Handle different HTTP methods (GET, POST, PUT, DELETE, etc.)
+
+#### 3.2 Variable Resolution System
+- [ ] Implement variable prompting during `fire` command
+- [ ] Handle soft variables (`?`) - always prompt with empty input
+- [ ] Handle hard variables (`$`) - prompt with current value shown
+- [ ] Implement `--persist` flag for hard variable updates
+- [ ] Store resolved variables in memory for request execution
+
+#### 3.3 HTTP Execution
+- [ ] Integrate go-resty for HTTP requests
+- [ ] Implement clean response formatting
+- [ ] Add request/response logging for debugging
+- [ ] Handle HTTP errors gracefully
+- [ ] Add timeout and retry logic
+
+**Phase 3 Success Criteria:**
+- `saul myapi set url GET https://pokeapi.co/api/v2/pokemon/1` sets endpoint
+- `saul myapi fire` executes HTTP request successfully
+- Variable prompting works for both `?` and `$` variables
+- `saul myapi fire --persist` allows hard variable updates
+- Response is displayed cleanly and readable
+
+**Phase 3 Testing:**
+```bash
+# Test HTTP execution
+go run cmd/main.go pokeapi set url GET https://pokeapi.co/api/v2/pokemon/1
+go run cmd/main.go pokeapi fire  # Should fetch Pokémon data
+go run cmd/main.go pokeapi set body pokemon.name=?
+go run cmd/main.go pokeapi fire  # Should prompt for name
+```
+
+---
+
+### **Phase 4: Complete Command System**
+*Goal: All single-line commands working as specified in vision*
+
+#### 4.1 Command Execution Router
+- [ ] Implement `ExecuteCommand(cmd Command)` router function
+- [ ] Handle global commands: `version`, `list`, `rm`
+- [ ] Handle preset commands: `set`, `fire`, `edit` (basic)
+- [ ] Add comprehensive error messages and help text
+
+#### 4.2 Configuration Commands
+- [ ] Implement `set url METHOD https://...` command
+- [ ] Implement `set header key=value` command
+- [ ] Implement `set body object.field=value` command
+- [ ] Implement `set query param=value` command
+- [ ] Add validation for each command type
+
+#### 4.3 Management Commands
+- [ ] Implement `version` command with proper version display
+- [ ] Implement `list` command with formatted preset listing
+- [ ] Implement `rm preset` command with confirmation prompt
+- [ ] Add `help` command with usage examples
+
+**Phase 4 Success Criteria:**
+- All commands from vision.md work correctly
+- Error messages are helpful and specific
+- `saul help` shows comprehensive usage
+- `saul version` shows correct version info
+- All preset operations work reliably
+
+**Phase 4 Testing:**
+```bash
+# Test all commands
+go run cmd/main.go version
+go run cmd/main.go help
+go run cmd/main.go list
+go run cmd/main.go testapi set url POST https://httpbin.org/post
+go run cmd/main.go testapi set header Content-Type=application/json
+go run cmd/main.go testapi set body message=hello
+go run cmd/main.go testapi fire
+```
+
+---
+
+### **Phase 5: Interactive Mode**
+*Goal: Working interactive shell for preset management*
+
+#### 5.1 Interactive Shell
+- [ ] Implement `EnterInteractiveMode(preset string)` function
+- [ ] Create command loop with `> ` prompt
+- [ ] Handle `exit` command to leave interactive mode
+- [ ] Add command history and basic editing
+
+#### 5.2 Interactive Commands
+- [ ] All `set` commands work in interactive mode
+- [ ] `fire` command works in interactive mode
+- [ ] Tab completion for commands (optional)
+- [ ] Clear error handling within interactive session
+
+#### 5.3 User Experience Enhancements
+- [ ] Show current preset in prompt: `[myapi]> `
+- [ ] Add context-aware help in interactive mode
+- [ ] Handle Ctrl+C gracefully
+- [ ] Add command validation before execution
+
+**Phase 5 Success Criteria:**
+- `saul myapi` enters interactive mode successfully
+- All commands work identically in interactive vs single-line mode
+- Exit/Ctrl+C handling works properly
+- User experience feels natural and responsive
+
+**Phase 5 Testing:**
+```bash
+# Test interactive mode
+go run cmd/main.go myapi
+> set header Authorization=Bearer123
+> set body pokemon.name=pikachu
+> fire
+> exit
+```
+
+---
+
+### **Phase 6: Advanced Features & Polish**
+*Goal: Complete feature set with editing and advanced management*
+
+#### 6.1 File Editing Integration
+- [ ] Implement `edit header` command to open headers.toml
+- [ ] Implement `edit body` command to open body.toml
+- [ ] Implement `edit config` command to open config.toml
+- [ ] Detect default editor from environment ($EDITOR)
+
+#### 6.2 Advanced Variable Features
+- [ ] Custom variable names: `pokemon.name=?pokename`
+- [ ] Variable validation and type hints
+- [ ] Variable reuse across multiple requests
+- [ ] Export/import variable sets
+
+#### 6.3 Production Readiness
+- [ ] Comprehensive error handling for all edge cases
+- [ ] Add proper logging system
+- [ ] Performance optimization for large TOML files
+- [ ] Cross-platform path handling
+- [ ] Build system for binary distribution
+
+**Phase 6 Success Criteria:**
+- `saul myapi edit body` opens body.toml in default editor
+- All edge cases handled gracefully
+- Performance is acceptable for typical usage
+- Ready for end-user distribution
+
+## Comprehensive Testing Strategy
+
+### **Single Test File: `test_saul.sh`**
+Create one comprehensive test script that validates all implemented functionality:
+
+```bash
+#!/bin/bash
+# test_saul.sh - Comprehensive test suite for Better-Curl (Saul)
+
+set -e  # Exit on any error
+
+echo "=== Better-Curl (Saul) Test Suite ==="
+
+# Phase 1: Directory Management
+echo "Testing Phase 1: Directory Management..."
+go run cmd/main.go list
+go run cmd/main.go testapi
+[ -d ~/.config/saul/presets/testapi ] || exit 1
+go run cmd/main.go rm testapi
+
+# Phase 2: TOML Operations
+echo "Testing Phase 2: TOML Operations..."
+go run cmd/main.go testapi set body pokemon.name=pikachu
+grep -q "pikachu" ~/.config/saul/presets/testapi/body.toml || exit 1
+
+# Phase 3: HTTP Execution
+echo "Testing Phase 3: HTTP Execution..."
+go run cmd/main.go testapi set url GET https://httpbin.org/get
+go run cmd/main.go testapi fire
+
+# Phase 4: Command System
+echo "Testing Phase 4: Command System..."
+go run cmd/main.go version
+go run cmd/main.go help
+
+# Phase 5: Interactive Mode (manual test)
+echo "Testing Phase 5: Interactive Mode (manual verification needed)"
+
+# Phase 6: Advanced Features
+echo "Testing Phase 6: Advanced Features..."
+go run cmd/main.go testapi edit body
+
+echo "=== All tests passed! ==="
+```
+
+### **Testing Philosophy**
+- **Incremental**: Add tests for each phase as implemented
+- **Comprehensive**: One test file covers entire project
+- **Practical**: Tests real usage scenarios from vision.md
+- **Fast**: Quick feedback loop for development
+- **Clear**: Obvious pass/fail criteria for each phase
+
+## Development Guidelines
+
+### **KISS Principles**
+- **Simple**: Each function has one clear responsibility
+- **Clean**: Self-documenting code with minimal comments
+- **Intelligent**: Smart type detection and error handling
+- **Resilient**: Graceful handling of edge cases
+
+### **Go Best Practices**
+- Follow standard Go project layout
+- Use Go modules properly
+- Error handling at every boundary
+- Clear package separation of concerns
+- Minimal external dependencies
+
+### **Learning Focus**
+- Understand each component before moving to next phase
+- Ask questions about architectural decisions
+- Review code together before committing
+- Focus on comprehension over speed
+
+## Risk Mitigation
+
+### **Potential Issues**
+- **File Permission Problems**: Handle `~/.config/saul/` creation carefully
+- **TOML Parsing Errors**: Robust error handling for malformed files
+- **Variable Substitution Edge Cases**: Test with special characters
+- **HTTP Request Failures**: Timeout and retry logic
+- **Cross-platform Compatibility**: Path handling differences
+
+### **Mitigation Strategies**
+- Test on clean environment frequently
+- Add comprehensive error messages
+- Validate input at every boundary
+- Test with edge cases early
+- Keep backups of working TOML files
+
+## Success Metrics
+
+### **Phase Completion Criteria**
+Each phase must pass its testing section completely before proceeding to the next phase.
+
+### **Final Project Success**
+- All commands from vision.md work correctly
+- `test_saul.sh` passes completely
+- Ready for real-world usage
+- Code is clean, understandable, and maintainable
+- Performance is acceptable for typical use cases
+
+---
+
+*This action plan prioritizes incremental development with continuous validation, ensuring each phase builds a solid foundation for the next while maintaining code quality and user experience standards.*

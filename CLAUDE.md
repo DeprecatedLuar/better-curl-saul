@@ -59,6 +59,19 @@ better-curl-saul/
 - ✅ **Dual command support** (global commands like `rm`, `list` + preset commands)
 - ⏳ **Next**: TOML file operations and directory structure management
 
+## TOML Manipulation System
+
+**Core Library**: Repurposed TomlHandler from toml-cli project
+- **Location**: `src/project/toml/handler.go`
+- **Purpose**: Dot notation TOML manipulation for Saul commands
+- **Key methods**: `.Set()`, `.Get()`, `.ToJSON()` for HTTP conversion
+
+**Integration Pattern:**
+- Command: `saul pokeapi set body pokemon.stats.hp=100`
+- Flow: Parse command → TomlHandler.Set("pokemon.stats.hp", 100) → Write to body.toml
+
+**Variable Substitution**: Integrate with existing tomv library after TOML operations
+
 ## Development Approach
 
 **Key Technical Components to Implement:**
