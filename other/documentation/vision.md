@@ -128,7 +128,7 @@ tags = ["red", "blue", "green"]
 ```bash
 saul pokeapi set header Content-Type=application/json
 saul pokeapi set body pokemon.name=pikachu
-saul pokeapi fire
+saul call pokeapi
 ```
 
 **Interactive Mode (Secondary):**
@@ -136,7 +136,7 @@ saul pokeapi fire
 saul pokeapi          # Enter preset mode
 > set header Content-Type=application/json
 > set body pokemon.name=pikachu
-> fire                # Execute request
+> call                # Execute request
 > exit                # Exit preset mode
 ```
 
@@ -153,13 +153,19 @@ saul pokeapi          # Enter preset mode
 - `set query param=value` - Add query parameters
 - `set variables varname=value` - Set hard variable values directly
 
+**Inspection Commands:**
+- `check url` - Display current URL (smart routing to request.toml)
+- `check method` - Display current HTTP method  
+- `check body pokemon.name` - Display specific field with formatting
+- `check headers` - Display all headers (full file view)
+
 **Execution:**
-- `fire` - Execute HTTP request (prompts for soft variables only)
-- `fire --persist` - Execute with prompting for both soft and hard variables
+- `call preset` - Execute HTTP request (prompts for soft variables only)
+- `call preset --persist` - Execute with prompting for both soft and hard variables
 
 **Variable Prompting Flow:**
 ```bash
-> fire --persist
+> call pokeapi --persist
 name: ____                    # Soft variable (always empty)
 attack: 80_                   # Hard variable (shows current value)
 trainer_id: ash123_           # Hard variable (shows current value)
@@ -179,7 +185,7 @@ saul [global] [preset] [command] [target] [field=value]
 Examples:
 saul pokeapi set header Authorization=Bearer123
 saul pokeapi set body pokemon.name=?
-saul pokeapi fire
+saul call pokeapi
 ```
 
 ### File Editing
@@ -233,3 +239,18 @@ TOML files → Parse-merge-write → Variable resolution → JSON conversion →
 - **AI-Assisted Development:** Leverage AI for rapid iteration and learning
 - **Parse-merge-write:** Reliable over fast for file operations
 - **Single-line first:** Build interactive mode on proven single-line foundation
+
+## Final Polish & Easter Eggs
+
+### Better Call Saul Easter Egg
+- **Command:** `saul call saul`
+- **Behavior:** Opens browser to random Better Call Saul video
+- **URLs:**
+  - https://www.youtube.com/watch?v=gDjMZvYWUdo
+  - https://www.youtube.com/watch?v=zj2IhcuS5iM
+  - https://www.youtube.com/watch?v=SH_mdu8W0bc
+  - https://www.youtube.com/watch?v=z9_OX1WVXXU
+  - https://www.youtube.com/watch?v=XfQQ7CIOEoM
+  - https://www.youtube.com/watch?v=pL4fke8vkFE
+- **Implementation:** Random URL selection + cross-platform browser opening with graceful fallback
+- **Priority:** Implement after all core functionality is complete and tested
