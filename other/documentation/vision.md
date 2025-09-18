@@ -239,12 +239,13 @@ TOML files → Parse-merge-write → Variable resolution → JSON conversion →
 
 ### Implementation Priority Order
 1. **TOML manipulation system** (parse-merge-write approach) ✅ **COMPLETED**
-2. **Variable substitution system** (`{?}/{@}` variable handling) ✅ **COMPLETED** 
+2. **Variable substitution system** (`{?}/{@}` variable handling) ✅ **COMPLETED**
 3. **JSON conversion** (TOML → Go structs → JSON) ✅ **COMPLETED**
 4. **HTTP execution engine** (using go-resty) ✅ **COMPLETED**
 5. **Single-line commands** (primary interface) ✅ **COMPLETED**
-6. **Response history system** ⏳ **Phase 4 - PENDING**
-7. **Interactive mode** (secondary interface built on single-line) ⏳ **Phase 5 - PENDING**
+6. **Variable syntax migration** (braced format for URL safety) ✅ **COMPLETED**
+7. **Response history system** ⏳ **Phase 4 - CURRENT FOCUS**
+8. **Interactive mode** (secondary interface built on single-line) ⏳ **Phase 5 - PENDING**
 
 ### Libraries and Dependencies
 - `github.com/pelletier/go-toml/v1` - TOML parsing and manipulation

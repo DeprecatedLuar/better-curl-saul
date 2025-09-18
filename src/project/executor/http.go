@@ -15,6 +15,15 @@ import (
 	"main/src/project/toml"
 )
 
+// PresetHandlers holds separate TOML handlers for each file type
+type PresetHandlers struct {
+	Request   *toml.TomlHandler
+	Headers   *toml.TomlHandler
+	Query     *toml.TomlHandler
+	Body      *toml.TomlHandler
+	Variables *toml.TomlHandler
+}
+
 // ExecuteCallCommand handles HTTP execution for call commands
 func ExecuteCallCommand(cmd parser.Command) error {
 	if cmd.Preset == "" {
@@ -42,20 +51,20 @@ func ExecuteCallCommand(cmd parser.Command) error {
 		return fmt.Errorf("variable prompting failed: %v", err)
 	}
 
-	// Merge all TOML files into one
-	mergedHandler, err := MergePresetFiles(cmd.Preset)
+	// Load all TOML files into separate handlers
+	handlers, err := LoadPresetFiles(cmd.Preset)
 	if err != nil {
-		return fmt.Errorf("failed to merge preset files: %v", err)
+		return fmt.Errorf("failed to load preset files: %v", err)
 	}
 
-	// Apply variable substitutions
-	err = SubstituteVariables(mergedHandler, substitutions)
+	// Apply variable substitutions across all handlers
+	err = SubstituteVariablesInHandlers(handlers, substitutions)
 	if err != nil {
 		return fmt.Errorf("variable substitution failed: %v", err)
 	}
 
-	// Extract HTTP request components
-	request, err := BuildHTTPRequest(mergedHandler)
+	// Extract HTTP request components using file-based classification
+	request, err := BuildHTTPRequest(handlers)
 	if err != nil {
 		return fmt.Errorf("failed to build HTTP request: %v", err)
 	}
@@ -82,109 +91,120 @@ type HTTPRequestConfig struct {
 	Query   map[string]string
 }
 
-// MergePresetFiles merges all TOML files in a preset into one handler
-func MergePresetFiles(preset string) (*toml.TomlHandler, error) {
+// LoadPresetFiles loads all TOML files in a preset into separate handlers
+func LoadPresetFiles(preset string) (*PresetHandlers, error) {
 	presetPath, err := presets.GetPresetPath(preset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get preset path: %v", err)
 	}
 
-	// List of files to merge in order
-	files := []string{"request.toml", "headers.toml", "query.toml", "body.toml"}
-	var handlers []*toml.TomlHandler
+	handlers := &PresetHandlers{}
 
-	// Load each file that exists
-	for _, filename := range files {
+	// Map of file names to handler pointers
+	files := map[string]**toml.TomlHandler{
+		"request.toml":   &handlers.Request,
+		"headers.toml":   &handlers.Headers,
+		"query.toml":     &handlers.Query,
+		"body.toml":      &handlers.Body,
+		"variables.toml": &handlers.Variables,
+	}
+
+	// Load each file that exists (lazy creation - missing files are ok)
+	for filename, handlerPtr := range files {
 		filePath := filepath.Join(presetPath, filename)
-		handler, err := toml.NewTomlHandler(filePath)
-		if err != nil {
-			// Skip files that don't exist or can't be loaded
-			continue
+		if handler, err := toml.NewTomlHandler(filePath); err == nil {
+			*handlerPtr = handler
 		}
-		handlers = append(handlers, handler)
+		// Skip files that don't exist or can't be loaded
 	}
 
-	if len(handlers) == 0 {
-		return nil, fmt.Errorf("no TOML files found in preset %s", preset)
-	}
-
-	// Start with first handler as base
-	base := handlers[0]
-
-	// Merge remaining handlers
-	if len(handlers) > 1 {
-		err := base.MergeMultiple(handlers[1:]...)
-		if err != nil {
-			return nil, fmt.Errorf("failed to merge TOML files: %v", err)
-		}
-	}
-
-	return base, nil
+	return handlers, nil
 }
 
-// BuildHTTPRequest converts merged TOML to HTTP request configuration
-func BuildHTTPRequest(handler *toml.TomlHandler) (*HTTPRequestConfig, error) {
+// SubstituteVariablesInHandlers replaces variables across all handlers
+func SubstituteVariablesInHandlers(handlers *PresetHandlers, substitutions map[string]string) error {
+	handlerList := []*toml.TomlHandler{
+		handlers.Request,
+		handlers.Headers,
+		handlers.Query,
+		handlers.Body,
+	}
+
+	for _, handler := range handlerList {
+		if handler != nil {
+			err := SubstituteVariables(handler, substitutions)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// BuildHTTPRequest converts separate TOML handlers to HTTP request configuration using file-based classification
+func BuildHTTPRequest(handlers *PresetHandlers) (*HTTPRequestConfig, error) {
 	config := &HTTPRequestConfig{
 		Headers: make(map[string]string),
 		Query:   make(map[string]string),
 	}
 
-	// Extract request settings
-	if method := handler.GetAsString("method"); method != "" {
-		config.Method = strings.ToUpper(method)
-	} else {
-		config.Method = "GET" // Default method
-	}
+	// Extract request settings from request.toml only
+	if handlers.Request != nil {
+		if method := handlers.Request.GetAsString("method"); method != "" {
+			config.Method = strings.ToUpper(method)
+		} else {
+			config.Method = "GET" // Default method
+		}
 
-	config.URL = handler.GetAsString("url")
-	if config.URL == "" {
+		config.URL = handlers.Request.GetAsString("url")
+		if config.URL == "" {
+			return nil, fmt.Errorf("URL is required")
+		}
+
+		// Parse timeout
+		if timeoutStr := handlers.Request.GetAsString("timeout"); timeoutStr != "" {
+			if timeout, err := strconv.Atoi(timeoutStr); err == nil {
+				config.Timeout = timeout
+			}
+		}
+	} else {
 		return nil, fmt.Errorf("URL is required")
 	}
 
-	// Parse timeout
-	if timeoutStr := handler.GetAsString("timeout"); timeoutStr != "" {
-		if timeout, err := strconv.Atoi(timeoutStr); err == nil {
-			config.Timeout = timeout
-		}
-	}
 	if config.Timeout == 0 {
 		config.Timeout = 30 // Default timeout
 	}
 
-	// Extract headers - look for flat key-value pairs that might be headers
-	for _, key := range handler.Keys() {
-		value := handler.Get(key)
-		if key != "method" && key != "url" && key != "timeout" {
-			// Check if this is a simple string value (likely a header)
-			if strValue, ok := value.(string); ok {
-				config.Headers[key] = strValue
-			}
+	// Extract headers from headers.toml only
+	if handlers.Headers != nil {
+		for _, key := range handlers.Headers.Keys() {
+			config.Headers[key] = handlers.Headers.GetAsString(key)
 		}
 	}
 
-	// Convert remaining data to JSON for body (excluding request metadata)
-	bodyData := make(map[string]interface{})
-	for _, key := range handler.Keys() {
-		if key != "method" && key != "url" && key != "timeout" {
-			value := handler.Get(key)
-			// Skip simple string values (headers) and include complex structures
-			if _, isString := value.(string); !isString {
-				bodyData[key] = value
-			}
+	// Extract query parameters from query.toml only
+	if handlers.Query != nil {
+		for _, key := range handlers.Query.Keys() {
+			config.Query[key] = handlers.Query.GetAsString(key)
 		}
 	}
 
-	// Convert body to JSON if we have data
-	if len(bodyData) > 0 {
-		jsonData, err := json.Marshal(bodyData)
+	// Convert body.toml to JSON (and only body.toml)
+	if handlers.Body != nil {
+		jsonData, err := handlers.Body.ToJSON()
 		if err != nil {
 			return nil, fmt.Errorf("failed to convert body to JSON: %v", err)
 		}
-		config.Body = jsonData
 
-		// Set Content-Type if not already set
-		if _, exists := config.Headers["Content-Type"]; !exists {
-			config.Headers["Content-Type"] = "application/json"
+		// Only set body if we have actual content
+		if string(jsonData) != "{}" {
+			config.Body = jsonData
+
+			// Set Content-Type if not already set
+			if _, exists := config.Headers["Content-Type"]; !exists {
+				config.Headers["Content-Type"] = "application/json"
+			}
 		}
 	}
 

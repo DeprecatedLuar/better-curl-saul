@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 
 	"main/src/project/presets"
@@ -24,30 +25,65 @@ type VariableInfo struct {
 	Name string // Custom variable name (empty if bare @ or ?)
 }
 
-// DetectVariableType checks if a value is a variable and returns its type
+// DetectVariableType checks if a value is a variable and returns its type (legacy function for backwards compatibility)
 func DetectVariableType(value string) (isVariable bool, varType string, varName string) {
-	if len(value) < 1 {
-		return false, "", ""
+	variables := FindVariablesInString(value)
+	if len(variables) == 1 && variables[0].FullMatch == value {
+		// Only return true if the entire string is a single variable (backwards compatibility)
+		return true, variables[0].Type, variables[0].Name
+	}
+	return false, "", ""
+}
+
+// VariableMatch represents a variable found within a string
+type VariableMatch struct {
+	FullMatch string // The complete variable syntax: {?name} or {@name}
+	Type      string // "soft" or "hard"
+	Name      string // Variable name (empty for bare variables)
+	Start     int    // Start position in the string
+	End       int    // End position in the string
+}
+
+// FindVariablesInString finds all variables embedded in a string
+func FindVariablesInString(value string) []VariableMatch {
+	var variables []VariableMatch
+
+	// Regex to match {?name} or {@name} patterns
+	re := regexp.MustCompile(`\{([@?])([^}]*)\}`)
+	matches := re.FindAllStringSubmatch(value, -1)
+	indices := re.FindAllStringIndex(value, -1)
+
+	for i, match := range matches {
+		if len(match) >= 3 {
+			prefix := match[1]
+			name := match[2]
+
+			var varType string
+			switch prefix {
+			case "?":
+				varType = "soft"
+			case "@":
+				varType = "hard"
+			default:
+				continue
+			}
+
+			variables = append(variables, VariableMatch{
+				FullMatch: match[0],
+				Type:      varType,
+				Name:      name,
+				Start:     indices[i][0],
+				End:       indices[i][1],
+			})
+		}
 	}
 
-	switch value[0] {
-	case '?':
-		if len(value) == 1 {
-			// Bare ? - no custom name, will use field path
-			return true, "soft", ""
-		}
-		// ?customname - has custom name
-		return true, "soft", value[1:]
-	case '@':
-		if len(value) == 1 {
-			// Bare @ - no custom name, will use field path
-			return true, "hard", ""
-		}
-		// @customname - has custom name
-		return true, "hard", value[1:]
-	default:
-		return false, "", ""
-	}
+	return variables
+}
+
+// HasVariables checks if a string contains any variables
+func HasVariables(value string) bool {
+	return len(FindVariablesInString(value)) > 0
 }
 
 // PromptForVariables prompts user for variable values and returns substitution map
@@ -62,7 +98,7 @@ func PromptForVariables(preset string, persist bool) (map[string]string, error) 
 	}
 
 	// Find all variables across all TOML files
-	variables, err := findAllVariables(preset)
+	variables, err := FindAllVariables(preset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find variables: %v", err)
 	}
@@ -70,6 +106,31 @@ func PromptForVariables(preset string, persist bool) (map[string]string, error) 
 	for _, variable := range variables {
 		var prompt string
 		var currentValue string
+
+		// Create storage key and substitution key
+		var storageKey string      // Key for storing in variables.toml
+		var substitutionKey string // Key for variable substitution
+
+		// Check if this is a request field variable (special handling)
+		if variable.Key == "url" || variable.Key == "method" || variable.Key == "timeout" {
+			// Request variables: use "request.field.varname" for storage
+			if variable.Name != "" {
+				storageKey = "request." + variable.Key + "." + variable.Name
+				substitutionKey = variable.Name
+			} else {
+				storageKey = "request." + variable.Key
+				substitutionKey = variable.Key
+			}
+		} else {
+			// Body/Header/Query variables: use variable name for storage
+			if variable.Name != "" {
+				storageKey = variable.Name
+				substitutionKey = variable.Name
+			} else {
+				storageKey = variable.Key
+				substitutionKey = variable.Key
+			}
+		}
 
 		if variable.Type == "soft" {
 			// Soft variables: always prompt with empty input
@@ -82,15 +143,15 @@ func PromptForVariables(preset string, persist bool) (map[string]string, error) 
 			// Hard variables: show current value, only prompt if --persist
 			if !persist {
 				// Use existing value without prompting
-				currentValue = variablesHandler.GetAsString(variable.Key)
+				currentValue = variablesHandler.GetAsString(storageKey)
 				if currentValue != "" {
-					substitutions[variable.Key] = currentValue
+					substitutions[substitutionKey] = currentValue
 				}
 				continue
 			}
 
 			// Prompting for hard variable with current value
-			currentValue = variablesHandler.GetAsString(variable.Key)
+			currentValue = variablesHandler.GetAsString(storageKey)
 			if variable.Name != "" {
 				prompt = variable.Name + ": " + currentValue + "_"
 			} else {
@@ -104,13 +165,13 @@ func PromptForVariables(preset string, persist bool) (map[string]string, error) 
 
 			if variable.Type == "hard" && userInput == "" && currentValue != "" {
 				// Keep existing value for hard variables if user presses Enter
-				substitutions[variable.Key] = currentValue
+				substitutions[substitutionKey] = currentValue
 			} else if userInput != "" {
-				substitutions[variable.Key] = userInput
+				substitutions[substitutionKey] = userInput
 
 				// Save hard variables to variables.toml
 				if variable.Type == "hard" {
-					variablesHandler.Set(variable.Key, userInput)
+					variablesHandler.Set(storageKey, userInput)
 					err := presets.SavePresetFile(preset, "variables", variablesHandler)
 					if err != nil {
 						return nil, fmt.Errorf("failed to save variable: %v", err)
@@ -127,8 +188,8 @@ func PromptForVariables(preset string, persist bool) (map[string]string, error) 
 	return substitutions, nil
 }
 
-// findAllVariables scans all TOML files in preset to find variables
-func findAllVariables(preset string) ([]VariableInfo, error) {
+// FindAllVariables scans all TOML files in preset to find variables
+func FindAllVariables(preset string) ([]VariableInfo, error) {
 	var variables []VariableInfo
 	targets := []string{"body", "headers", "query", "request"}
 
@@ -163,12 +224,13 @@ func scanHandlerForVariables(handler *toml.TomlHandler, prefix string) []Variabl
 
 		switch v := value.(type) {
 		case string:
-			// Check if this string is a variable
-			if isVar, varType, varName := DetectVariableType(v); isVar {
+			// Find all variables in this string (supports embedded variables)
+			varMatches := FindVariablesInString(v)
+			for _, varMatch := range varMatches {
 				variables = append(variables, VariableInfo{
 					Key:  fullKey,
-					Type: varType,
-					Name: varName,
+					Type: varMatch.Type,
+					Name: varMatch.Name,
 				})
 			}
 		default:
@@ -189,11 +251,34 @@ func SubstituteVariables(handler *toml.TomlHandler, substitutions map[string]str
 		}
 
 		if strValue, ok := value.(string); ok {
-			if isVar, _, _ := DetectVariableType(strValue); isVar {
-				if substitute, exists := substitutions[key]; exists {
-					// Infer type for the substituted value
-					typedValue := InferValueType(substitute)
-					handler.Set(key, typedValue)
+			// Check if this string has any variables
+			if HasVariables(strValue) {
+				// Replace all variables in the string
+				newValue := strValue
+				varMatches := FindVariablesInString(strValue)
+
+				// Replace variables from right to left to preserve indices
+				for i := len(varMatches) - 1; i >= 0; i-- {
+					varMatch := varMatches[i]
+
+					// Create substitution key: for URL variables, we use the field path + variable identifier
+					var substitutionKey string
+					if varMatch.Name != "" {
+						substitutionKey = varMatch.Name
+					} else {
+						substitutionKey = key
+					}
+
+					if substitute, exists := substitutions[substitutionKey]; exists {
+						// Replace this specific variable occurrence in the string
+						newValue = newValue[:varMatch.Start] + substitute + newValue[varMatch.End:]
+					}
+				}
+
+				// If we successfully replaced variables, update the value
+				if newValue != strValue {
+					// For strings with embedded variables, keep as string (don't infer type)
+					handler.Set(key, newValue)
 				}
 			}
 		}

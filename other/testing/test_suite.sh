@@ -194,7 +194,7 @@ fi
 
 echo "2.4 Testing variable detection and storage..."
 # Hard variable with name
-./saul_test testapi set body pokemon.level=@level >/dev/null
+./saul_test testapi set body pokemon.level={@level} >/dev/null
 if [ $? -eq 0 ] && [ -f ~/.config/saul/presets/testapi/variables.toml ]; then
     echo "✓ Hard variable (@level) works and creates variables.toml"
 else
@@ -203,7 +203,7 @@ else
 fi
 
 # Hard variable bare
-./saul_test testapi set body pokemon.hp=@ >/dev/null
+./saul_test testapi set body pokemon.hp={@} >/dev/null
 if [ $? -eq 0 ]; then
     echo "✓ Bare hard variable (@) works"
 else
@@ -212,7 +212,7 @@ else
 fi
 
 # Soft variable with name
-./saul_test testapi set body pokemon.name=?pokename >/dev/null
+./saul_test testapi set body pokemon.name={?pokename} >/dev/null
 if [ $? -eq 0 ]; then
     echo "✓ Soft variable (?pokename) works"
 else
@@ -221,7 +221,7 @@ else
 fi
 
 # Soft variable bare
-./saul_test testapi set body pokemon.type=? >/dev/null
+./saul_test testapi set body pokemon.type={?} >/dev/null
 if [ $? -eq 0 ]; then
     echo "✓ Bare soft variable (?) works"
 else
@@ -363,8 +363,8 @@ echo "3.3 Testing variable prompting system..."
 ./saul_test vartest >/dev/null
 ./saul_test vartest set url https://jsonplaceholder.typicode.com/posts/1 >/dev/null
 ./saul_test vartest set method GET >/dev/null
-./saul_test vartest set body title=? >/dev/null
-./saul_test vartest set body userId=@userId >/dev/null
+./saul_test vartest set body title={?} >/dev/null
+./saul_test vartest set body userId={@userId} >/dev/null
 
 # Test with input (using echo)
 if echo -e "testname\n25" | ./saul_test call vartest 2>/dev/null | grep -q "Status:"; then
