@@ -11,11 +11,12 @@ A workspace-based HTTP client that builds requests incrementally using separate 
 ### Presets (Workspaces)
 - Each preset is a folder containing TOML files that define an HTTP request
 - Stored in `~/.config/saul/presets/[preset-name]/`
-- Contains separate files for different request components:
+- Contains separate files for different request components (Unix philosophy - one purpose per file):
   - `headers.toml` - HTTP headers
   - `body.toml` - Request body/payload (converts to JSON)
-  - `query.toml` - Query parameters
-  - `config.toml` - URL, method, and persistent hard variables
+  - `query.toml` - Query/search payload data (NOT URL parameters)
+  - `request.toml` - HTTP method, URL, and request settings
+  - `variables.toml` - Hard variables only (soft variables never stored)
 
 ### TOML File Structure
 Uses proper TOML sections (not flat keys) for clean manual editing that auto-converts to JSON:
@@ -53,32 +54,40 @@ secondary = "lightning-rod"
 }
 ```
 
-**config.toml example:**
+**request.toml example:**
 ```toml
+method = "POST"
 url = "https://pokeapi.co/api/v2/pokemon"
-method = "GET"
+timeout = 30
+```
 
-[hard_variables]
-attack = 80
-trainer_id = "ash123"
+**variables.toml example:**
+```toml
+# Only hard variables stored (soft variables always prompt fresh)
+"pokemon.stats.attack" = "80"
+"trainer.id" = "ash123"
 ```
 
 ### Variable System
 
 **Soft Variables (Always Prompt):**
 - Syntax: `field=?` or `field=?customname`
-- Example: `set body pokemon.name=?` → prompts `name:` on fire
-- Example: `set body pokemon.name=?pokename` → prompts `pokename:` on fire
+- Example: `set body pokemon.name=?` → prompts `pokemon.name:` on fire (uses full field path)
+- Example: `set body pokemon.name=?pokename` → prompts `pokename:` on fire (uses custom name)
 
 **Hard Variables (Persistent):**
-- Syntax: `field=$` or `field=$customname`  
-- Example: `set body pokemon.age=$` → prompts `age:` when using persistence flag
-- Values stored in `config.toml` under `[hard_variables]` section
+- Syntax: `field=@` or `field=@customname`  
+- Example: `set body pokemon.age=@` → prompts `pokemon.age:` when using persistence flag
+- Example: `set body pokemon.age=@age` → prompts `age:` when using persistence flag
+- Values stored in `variables.toml` as flat key-value pairs
 - Prompting shows current value: `attack: 80_` (delete to change, Enter to keep)
+- **Storage design**: Only hard variables stored (soft variables never stored - always prompt fresh)
+- **Naming**: Bare `@` uses full field path for prompting (no conflicts), named `@customname` uses custom name
 
 **Variable Usage:**
 - Variables can be used anywhere: URL, headers, body, query parameters
-- Example URL with variables: `https://api.example.com/$version/users/?name`
+- Example URL with variables: `https://api.example.com/@version/users/?pokename` (@ and ? in URLs)
+- **Future Enhancement**: Variables in request commands: `saul testapi set url https://api.com/@endpoint` and `saul testapi set method @method`
 
 ### Variable Resolution System
 - **Timing**: Variables resolve at `fire` time (not pre-fire)
@@ -133,11 +142,16 @@ saul pokeapi          # Enter preset mode
 
 ### Core Commands
 
-**Configuration:**
-- `set url [METHOD] https://api.example.com` - Set endpoint and method
+**Special Request Configuration (No = Syntax):**
+- `set url https://api.example.com` - Set endpoint URL
+- `set method POST` - Set HTTP method (GET, POST, PUT, DELETE, etc.)
+- `set timeout 30` - Set request timeout in seconds
+
+**Regular TOML Configuration (With = Syntax):**
 - `set header key=value` - Add HTTP header
 - `set body object.field=value` - Set body parameters using dot notation
 - `set query param=value` - Add query parameters
+- `set variables varname=value` - Set hard variable values directly
 
 **Execution:**
 - `fire` - Execute HTTP request (prompts for soft variables only)
@@ -196,7 +210,7 @@ TOML files → Parse-merge-write → Variable resolution → JSON conversion →
 6. **Interactive mode** (secondary interface built on single-line)
 
 ### Libraries and Dependencies
-- `github.com/pelletier/go-toml/v2` - TOML parsing and manipulation
+- `github.com/pelletier/go-toml/v1` - TOML parsing and manipulation
 - `github.com/go-resty/resty/v2` - HTTP client library
 - `github.com/DeprecatedLuar/toml-vars-letsgooo` - Existing tomv integration
 - Standard library `os`, `filepath` - File operations

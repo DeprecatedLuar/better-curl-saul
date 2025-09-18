@@ -6,49 +6,34 @@ import (
 	"path/filepath"
 	"strings"
 
-	"main/src/modules/config"
 	"main/src/project/toml"
+	"github.com/DeprecatedLuar/toml-vars-letsgooo"
 )
 
-// Settings represents the structure of settings.toml
-type Settings struct {
-	Directories struct {
-		ConfigDirPath  string `toml:"config_dir_path"`
-		AppDirName     string `toml:"app_dir_name"`
-		PresetsDirName string `toml:"presets_dir_name"`
-	} `toml:"directories"`
-	Defaults struct {
-		TimeoutSeconds int    `toml:"timeout_seconds"`
-		MaxRetries     int    `toml:"max_retries"`
-		HTTPMethod     string `toml:"http_method"`
-	} `toml:"defaults"`
-}
+// getPresetsDir returns the presets directory path using TOMV
+func getPresetsDir() (string, error) {
+	// Use TOMV to read from settings.toml with defaults
+	configDirPath := tomv.GetOr("directories.config_dir_path", ".config")
+	appDirName := tomv.GetOr("directories.app_dir_name", "saul") 
+	presetsDirName := tomv.GetOr("directories.presets_dir_name", "presets")
 
-// LoadSettings loads the settings.toml file
-func LoadSettings() (*Settings, error) {
-	settingsPath := "src/settings/settings.toml"
-	handler, err := toml.NewTomlHandler(settingsPath)
+	// Build full path relative to home directory
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return nil, fmt.Errorf("failed to load settings: %w", err)
+		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	settings := &Settings{}
-	// Use the existing config approach for compatibility
-	settings.Directories.ConfigDirPath = handler.GetAsString("directories.config_dir_path")
-	settings.Directories.AppDirName = handler.GetAsString("directories.app_dir_name") 
-	settings.Directories.PresetsDirName = handler.GetAsString("directories.presets_dir_name")
-	
-	return settings, nil
+	return filepath.Join(homeDir, configDirPath, appDirName, presetsDirName), nil
 }
 
 // GetConfigDir returns the full configuration directory path
 func GetConfigDir() (string, error) {
-	return config.GetPresetsDir()
+	return getPresetsDir()
 }
 
 // GetPresetPath returns the full path to a specific preset directory
 func GetPresetPath(name string) (string, error) {
-	presetsDir, err := config.GetPresetsDir()
+	presetsDir, err := getPresetsDir()
 	if err != nil {
 		return "", err
 	}
@@ -68,25 +53,15 @@ func CreatePresetDirectory(name string) error {
 		return fmt.Errorf("failed to create preset directory %s: %w", presetPath, err)
 	}
 
-	// Create default TOML files (empty but valid TOML)
-	files := []string{"headers.toml", "body.toml", "query.toml", "config.toml"}
-	for _, file := range files {
-		filePath := filepath.Join(presetPath, file)
-		if _, err := os.Stat(filePath); os.IsNotExist(err) {
-			// Create empty TOML file
-			err := os.WriteFile(filePath, []byte(""), 0644)
-			if err != nil {
-				return fmt.Errorf("failed to create %s: %w", filePath, err)
-			}
-		}
-	}
+	// Don't create any TOML files initially
+	// Files will be created on-demand when data is actually added
 
 	return nil
 }
 
 // ListPresets returns a list of all preset names
 func ListPresets() ([]string, error) {
-	presetsDir, err := config.GetPresetsDir()
+	presetsDir, err := getPresetsDir()
 	if err != nil {
 		return nil, err
 	}
@@ -134,20 +109,26 @@ func DeletePreset(name string) error {
 }
 
 // LoadPresetFile loads a specific TOML file from a preset
-// fileType should be one of: "headers", "body", "query", "config"
+// Creates the file if it doesn't exist (lazy creation)
 func LoadPresetFile(preset, fileType string) (*toml.TomlHandler, error) {
 	presetPath, err := GetPresetPath(preset)
 	if err != nil {
 		return nil, err
 	}
 
+	// Ensure preset directory exists
+	err = os.MkdirAll(presetPath, 0755)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create preset directory %s: %w", presetPath, err)
+	}
+
 	filePath := filepath.Join(presetPath, fileType+".toml")
 	
-	// Create preset directory and file if they don't exist
+	// Create empty TOML file if it doesn't exist (lazy creation)
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		err := CreatePresetDirectory(preset)
+		err := os.WriteFile(filePath, []byte(""), 0644)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to create %s: %w", filePath, err)
 		}
 	}
 
@@ -168,7 +149,7 @@ func SavePresetFile(preset, fileType string, handler *toml.TomlHandler) error {
 
 // ValidateFileType checks if the file type is valid
 func ValidateFileType(fileType string) bool {
-	validTypes := []string{"headers", "body", "query", "config"}
+	validTypes := []string{"headers", "body", "query", "request", "variables"}
 	for _, valid := range validTypes {
 		if strings.ToLower(fileType) == valid {
 			return true
