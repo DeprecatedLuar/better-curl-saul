@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Vision and Approach
 
-This project is **Better-Curl (Saul)** - a workspace-based HTTP client designed to eliminate the pain of complex curl commands with JSON payloads. The complete project specification, command structure, and user experience goals are documented in `other/vision.md` - **always reference this file for implementation details and requirements validation**.
+This project is **Better-Curl (Saul)** - a workspace-based HTTP client designed to eliminate the pain of complex curl commands with JSON payloads. The complete project specification, command structure, and user experience goals are documented in `other/documentation/vision.md` - **always reference this file for implementation details and requirements validation**.
 
 **Collaborative Development Philosophy:**
 - This is a learning-focused project where the user wants to understand every piece of code generated
@@ -35,7 +35,8 @@ go run cmd/main.go pokeapi set body pokemon.name=pikachu
 ```
 better-curl-saul/
 ├── go.mod                        # Go module (module name: "main")
-├── other/vision.md              # Complete project specification
+├── other/documentation/vision.md # Complete project specification
+├── other/documentation/action-plan.md # Development action plan
 ├── cmd/
 │   └── main.go                  # Clean entry point - program flow only
 ├── src/project/
@@ -45,7 +46,7 @@ better-curl-saul/
 │       └── constants.go         # Constants and command aliases
 ```
 
-**Core Architecture Concepts (from vision.md):**
+**Core Architecture Concepts (from other/documentation/vision.md):**
 - **Presets**: Folders in `~/.config/saul/presets/[preset-name]/` containing TOML files
 - **5-File Structure**: headers.toml, body.toml, query.toml, request.toml, variables.toml (Unix philosophy)
 - **Variable System**: Soft variables (`{?name}`) always prompt, hard variables (`{@name}`) persist in variables.toml
@@ -154,7 +155,7 @@ better-curl-saul/
 - **Architecture Fixed**: Separate handlers eliminate field misclassification, braced variables prevent URL conflicts
 - Focus on incremental development with full understanding of each component
 - Prioritize clean, readable code over complex features
-- Always validate against the vision.md requirements during development
+- Always validate against the other/documentation/vision.md requirements during development
 - Use `other/testing/test_suite_fixed.sh` for reliable automated testing
 
 ## Phase 3 & 3.5 Implementation Summary
