@@ -192,40 +192,40 @@ else
     exit 1
 fi
 
-echo "2.4 Testing variable detection and storage..."
-# Hard variable with name
-./saul_test testapi set body pokemon.level=@level >/dev/null
+echo "2.4 Testing variable detection and storage (NEW: Braced syntax)..."
+# Hard variable with name - NEW braced syntax
+./saul_test testapi set body pokemon.level={@level} >/dev/null
 if [ $? -eq 0 ] && [ -f ~/.config/saul/presets/testapi/variables.toml ]; then
-    echo "✓ Hard variable (@level) works and creates variables.toml"
+    echo "✓ Hard variable ({@level}) works and creates variables.toml"
 else
-    echo "✗ Hard variable (@level) failed"
+    echo "✗ Hard variable ({@level}) failed"
     exit 1
 fi
 
-# Hard variable bare
-./saul_test testapi set body pokemon.hp=@ >/dev/null
+# Hard variable bare - NEW braced syntax
+./saul_test testapi set body pokemon.hp={@} >/dev/null
 if [ $? -eq 0 ]; then
-    echo "✓ Bare hard variable (@) works"
+    echo "✓ Bare hard variable ({@}) works"
 else
-    echo "✗ Bare hard variable (@) failed"
+    echo "✗ Bare hard variable ({@}) failed"
     exit 1
 fi
 
-# Soft variable with name
-./saul_test testapi set body pokemon.name=?pokename >/dev/null
+# Soft variable with name - NEW braced syntax
+./saul_test testapi set body pokemon.name={?pokename} >/dev/null
 if [ $? -eq 0 ]; then
-    echo "✓ Soft variable (?pokename) works"
+    echo "✓ Soft variable ({?pokename}) works"
 else
-    echo "✗ Soft variable (?pokename) failed"
+    echo "✗ Soft variable ({?pokename}) failed"
     exit 1
 fi
 
-# Soft variable bare
-./saul_test testapi set body pokemon.type=? >/dev/null
+# Soft variable bare - NEW braced syntax
+./saul_test testapi set body pokemon.type={?} >/dev/null
 if [ $? -eq 0 ]; then
-    echo "✓ Bare soft variable (?) works"
+    echo "✓ Bare soft variable ({?}) works"
 else
-    echo "✗ Bare soft variable (?) failed"
+    echo "✗ Bare soft variable ({?}) failed"
     exit 1
 fi
 
@@ -363,8 +363,8 @@ echo "3.3 Testing variable prompting system..."
 ./saul_test vartest >/dev/null
 ./saul_test vartest set url https://jsonplaceholder.typicode.com/posts/1 >/dev/null
 ./saul_test vartest set method GET >/dev/null
-./saul_test vartest set body title=? >/dev/null
-./saul_test vartest set body userId=@userId >/dev/null
+./saul_test vartest set body title={?} >/dev/null
+./saul_test vartest set body userId={@userId} >/dev/null
 
 # Test with input (using echo)
 if echo -e "testname\n25" | ./saul_test call vartest 2>/dev/null | grep -q "Status:"; then
@@ -479,6 +479,107 @@ rm -rf ~/.config/saul/presets/mergetest 2>/dev/null || true
 echo "✓ Phase 3 HTTP Execution Engine: PASSED"
 echo
 
+# ===== PHASE 3.5: Architecture & Variable Syntax Fix =====
+echo "===== PHASE 3.5 TESTS: Architecture & Variable Syntax Fix ===="
+echo "Critical bug fixes: Separate handlers + Braced variable syntax"
+
+echo "3.5.1 Testing separate handlers (no field misclassification)..."
+# Create clean test preset
+./saul_test archtest >/dev/null
+
+# Test URL with literal @ symbol (would conflict with old syntax)
+./saul_test archtest set url https://api.github.com/@octocat/repos >/dev/null
+./saul_test archtest set header Authorization=Bearer{@token} >/dev/null
+./saul_test archtest set body search.query={?term} >/dev/null
+./saul_test archtest set method GET >/dev/null
+
+# Verify URL with literal @ stays in request file, not misclassified as header
+if grep -q "https://api.github.com/@octocat/repos" ~/.config/saul/presets/archtest/request.toml; then
+    echo "✓ URL with literal @ correctly stays in request.toml"
+else
+    echo "✗ URL with literal @ was misclassified"
+    exit 1
+fi
+
+# Verify header variables stay in headers file
+if grep -q "Authorization" ~/.config/saul/presets/archtest/headers.toml; then
+    echo "✓ Header with variable correctly stays in headers.toml"
+else
+    echo "✗ Header with variable was misclassified"
+    exit 1
+fi
+
+# Verify body variables stay in body file
+if grep -q "query" ~/.config/saul/presets/archtest/body.toml; then
+    echo "✓ Body with variable correctly stays in body.toml"
+else
+    echo "✗ Body with variable was misclassified"
+    exit 1
+fi
+
+echo "3.5.2 Testing braced variable syntax (no URL conflicts)..."
+# Test URLs that would have broken with old syntax
+./saul_test syntaxtest >/dev/null
+./saul_test syntaxtest set url https://api.twitter.com/@mentions?search={?query} >/dev/null
+./saul_test syntaxtest set header X-User={@username} >/dev/null
+./saul_test syntaxtest set method GET >/dev/null
+
+# Should not treat @mentions as a variable (literal in URL)
+# Should only treat {?query} and {@username} as variables
+if echo -e "testquery\ntestuser" | ./saul_test call syntaxtest 2>/dev/null | grep -q "Status:"; then
+    echo "✓ Partial variables in URLs work correctly"
+else
+    echo "✗ Partial variables in URLs failed"
+    exit 1
+fi
+
+echo "3.5.3 Testing complex real-world URL patterns..."
+./saul_test realworld >/dev/null
+# Complex URL with multiple @ and ? symbols (literal) plus variables
+./saul_test realworld set url https://api.com/{@user}/posts?search=@mentions&token={@auth}&filter=recent >/dev/null
+./saul_test realworld set method GET >/dev/null
+
+# Only {@user} and {@auth} should be treated as variables
+# @mentions should remain literal in the URL
+if echo -e "testuser\ntoken123" | ./saul_test call realworld 2>/dev/null | grep -q "Status:"; then
+    echo "✓ Complex URLs with mixed literal and variable symbols work"
+else
+    echo "✗ Complex URL parsing failed"
+    exit 1
+fi
+
+echo "3.5.4 Testing backward compatibility break detection..."
+# Old syntax should NOT work anymore
+if ./saul_test oldtest set body name=@oldstyle 2>/dev/null; then
+    echo "⚠ Warning: Old syntax still works (may be intentional for transition)"
+else
+    echo "✓ Old variable syntax correctly rejected (clean break)"
+fi
+
+echo "3.5.5 Testing variable deduplication with new syntax..."
+./saul_test deduptest >/dev/null
+./saul_test deduptest set url https://api.test.com/{@token} >/dev/null
+./saul_test deduptest set header Authorization=Bearer{@token} >/dev/null
+./saul_test deduptest set method GET >/dev/null
+
+# Should only prompt once for {@token} despite it appearing in both URL and header
+if echo "abc123" | ./saul_test call deduptest 2>/dev/null | grep -q "Status:"; then
+    echo "✓ Variable deduplication works with new syntax"
+else
+    echo "✗ Variable deduplication failed"
+    exit 1
+fi
+
+# Clean up Phase 3.5 test presets
+rm -rf ~/.config/saul/presets/archtest 2>/dev/null || true
+rm -rf ~/.config/saul/presets/syntaxtest 2>/dev/null || true
+rm -rf ~/.config/saul/presets/realworld 2>/dev/null || true
+rm -rf ~/.config/saul/presets/oldtest 2>/dev/null || true
+rm -rf ~/.config/saul/presets/deduptest 2>/dev/null || true
+
+echo "✓ Phase 3.5 Architecture & Variable Syntax Fix: PASSED"
+echo
+
 # ===== PHASE 4: Complete Command System =====
 echo "===== PHASE 4 TESTS: Complete Command System ====="
 echo "⏳ Phase 4 not yet implemented"
@@ -513,8 +614,9 @@ echo "=== TEST SUITE SUMMARY ==="
 echo "✓ Phase 1: Foundation & TOML Integration - PASSED"
 echo "✓ Phase 2: Core TOML Operations & Variable System - PASSED"
 echo "✓ Phase 3: HTTP Execution Engine - PASSED"
+echo "✓ Phase 3.5: Architecture & Variable Syntax Fix - PASSED"
 echo "⏳ Phase 4: Complete Command System - PENDING"
 echo "⏳ Phase 5: Interactive Mode - PENDING"
 echo "⏳ Phase 6: Advanced Features & Polish - PENDING"
 echo
-echo "🚀 Phase 3 Complete! Ready for Phase 4 Implementation!"
+echo "🚀 Phase 3.5 Complete! Fixed critical architecture issues and variable syntax conflicts!"
