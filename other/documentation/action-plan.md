@@ -52,32 +52,179 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
 
 ---
 
-### **Phase 4: Variable Syntax Update & Response History System**
-*Goal: Resolve URL conflicts and add response history for debugging*
+### **Phase 3.5: HTTP Architecture & Variable Syntax Fix** 🔧 **CRITICAL BUG FIX**
+*Goal: Fix TOML merging logic AND variable syntax conflicts to enable real-world URL usage*
 
-#### 4.1 Variable Syntax Migration *(BREAKING CHANGE)*
-- [ ] Update variable detection in `src/project/executor/variables.go`:
+#### 3.5.1 Root Cause Analysis ✅ **IDENTIFIED**
+**Problem 1 - TOML Merging Bug:**
+- `MergePresetFiles()` loses file context, causing URL variables to be classified as headers
+- Lines 158-172 in `http.go` assume "strings = headers" which breaks with URL variables
+- Impact: Any string value in non-header files gets misclassified (URL vars, query params, string body fields)
+
+**Problem 2 - Variable Syntax Conflicts:**
+- Current `@name`/`?name` syntax conflicts with real URLs containing @ and ? characters
+- Examples that break: `https://api.github.com/@username`, `https://api.com/search?q=test`
+- Cannot distinguish between actual URL characters and variable placeholders
+
+**Combined Impact:**
+- Real-world APIs with @ and ? in URLs cannot be tested properly
+- Users must avoid common API patterns or get incorrect behavior
+
+#### 3.5.2 Combined Implementation Strategy
+
+**Fix 1: Separate Handler Implementation**
+- [ ] **Rewrite HTTP Execution Flow** in `src/project/executor/http.go`:
+  - Remove `MergePresetFiles()` function entirely (lines 85-123)
+  - Create `LoadPresetFile(preset, filename)` helper function
+  - Load each TOML file as separate handler: request, headers, body, query
+  - Apply variable substitution to each handler separately
+
+- [ ] **Update BuildHTTPRequest() Logic** (lines 125-192):
+  - Extract URL/method/timeout explicitly from request handler
+  - Extract headers explicitly from headers handler  
+  - Extract body explicitly from body handler
+  - Extract query parameters explicitly from query handler
+  - Eliminate all guessing/heuristic logic (lines 158-174)
+
+**Fix 2: Variable Syntax Update**
+- [ ] **Update Variable Detection** in `src/project/executor/variables.go`:
   - Change `DetectVariableType()` to recognize `{@name}` and `{?name}` instead of `@name`/`?name`
-  - Update regex/parsing to handle braced format
-  - Maintain backward compatibility during migration (optional)
-- [ ] Update variable substitution in all TOML operations:
-  - Modify `SubstituteVariables()` to handle braced format
-  - Update variable prompting to display braced syntax correctly
-- [ ] Update command examples and help text throughout codebase
-- [ ] **Test migration**: Ensure all existing functionality works with new syntax
+  - Update regex patterns to `{@\w+}` and `{?\w*}` for proper detection
+  - Update `SubstituteVariables()` to handle braced format in all handlers
 
-**Breaking Change Impact:**
-```bash
-# Old syntax (conflicts with URLs)
-saul api set body pokemon.name=?pokename
-saul api set url https://api.com/@username/posts
+- [ ] **Update Variable Processing**:
+  - Modify variable prompting to display braced syntax correctly
+  - Ensure URL parsing works correctly with braced variables
+  - Test complex URLs with multiple variables and URL-native @ and ?
 
-# New syntax (no conflicts)
-saul api set body pokemon.name={?pokename}
-saul api set url https://api.com/{@username}/posts
+#### 3.5.3 Implementation Architecture
+```go
+// NEW: Combined fix - separate handlers + braced variable syntax
+func ExecuteCallCommand(cmd parser.Command) error {
+    // Variable prompting now works with braced syntax {@ and {?
+    substitutions, err := PromptForVariables(cmd.Preset, persist)
+    if err != nil {
+        return fmt.Errorf("variable prompting failed: %v", err)
+    }
+    
+    // Load each file as separate handler - no merging
+    requestHandler := LoadPresetFile(cmd.Preset, "request")
+    headersHandler := LoadPresetFile(cmd.Preset, "headers")  
+    bodyHandler := LoadPresetFile(cmd.Preset, "body")
+    queryHandler := LoadPresetFile(cmd.Preset, "query")
+
+    // Apply variable substitutions to each separately (now handles {@ and {?)
+    SubstituteVariables(requestHandler, substitutions)
+    SubstituteVariables(headersHandler, substitutions)
+    SubstituteVariables(bodyHandler, substitutions)
+    SubstituteVariables(queryHandler, substitutions)
+
+    // Build HTTP request components explicitly - no guessing
+    request := &HTTPRequestConfig{
+        Method:  requestHandler.GetAsString("method"),
+        URL:     requestHandler.GetAsString("url"), // Can now handle URLs with native @ and ?
+        Timeout: parseTimeout(requestHandler.GetAsString("timeout")),
+        Headers: headersHandler.ToMap(),  // Only from headers.toml - never misclassified
+        Body:    bodyHandler.ToJSON(),    // Only from body.toml - preserves structure
+        Query:   queryHandler.ToMap(),    // Only from query.toml - no confusion
+    }
+    
+    // ... rest stays same ...
+}
+
+// Helper function for clean file loading
+func LoadPresetFile(preset, filename string) *toml.TomlHandler {
+    presetPath, _ := presets.GetPresetPath(preset)
+    filePath := filepath.Join(presetPath, filename+".toml")
+    handler, err := toml.NewTomlHandler(filePath)
+    if err != nil {
+        // Return empty handler if file doesn't exist
+        return createEmptyHandler()
+    }
+    return handler
+}
+
+// Updated variable detection (in variables.go)
+func DetectVariableType(value string) (VariableType, string) {
+    // OLD: @name and ?name (conflicts with URLs)
+    // NEW: {@ name} and {?name} (no conflicts)
+    if matched := regexp.MustCompile(`\{@(\w+)\}`).FindStringSubmatch(value); matched != nil {
+        return HardVariable, matched[1]
+    }
+    if matched := regexp.MustCompile(`\{\?(\w*)\}`).FindStringSubmatch(value); matched != nil {
+        return SoftVariable, matched[1]
+    }
+    return NoVariable, ""
+}
+
+// Example usage - now works with real URLs:
+// saul api set url https://api.github.com/{@username}/repos?type=public
+// saul api set url https://search.api.com/@mentions?q={?term}
 ```
 
-#### 4.2 Response History System
+#### 3.5.4 Test Coverage Enhancement
+- [ ] **Add Regression Tests**: Create tests that demonstrate both current bugs before fix
+  ```bash
+  # Test 1: TOML merging bug (URL variables misclassified as headers)
+  saul testapi set url https://api.com/@username/posts  
+  saul testapi set header Authorization=Bearer123
+  # BUG: @username from URL appears in headers
+  
+  # Test 2: Variable syntax conflicts with real URLs  
+  saul testapi set url https://api.github.com/@octocat/repos?type=public
+  # BUG: @octocat treated as variable instead of literal URL part
+  
+  # Test 3: Complex real-world scenario
+  saul testapi set url https://api.twitter.com/@user/posts?search=@mentions&filter=recent
+  # BUG: Multiple @ symbols cause variable detection chaos
+  ```
+
+- [ ] **Validate Combined Fix**: Test both fixes work together
+  ```bash
+  # After fix - should work correctly:
+  saul testapi set url https://api.github.com/{@username}/repos?type=public  
+  saul testapi set header Authorization=Bearer{@token}
+  saul testapi set body search.query={?searchterm}
+  # No misclassification, real URLs work, variables are braced
+  ```
+
+- [ ] **Integration Testing**: All existing functionality unchanged with new syntax
+- [ ] **Real-World URL Testing**: Comprehensive testing with actual API URLs
+- [ ] **Update Test Suite**: Add Phase 3.5 test section to `test_suite.sh`
+
+**Phase 3.5 Success Criteria:**
+**Fix 1 - TOML Merging:**
+- [ ] No more field misclassification (URL variables stay in request context)
+- [ ] Headers only come from `headers.toml` - never from other files
+- [ ] Body only comes from `body.toml` - complex structures preserved
+- [ ] Query only comes from `query.toml` - no string confusion
+- [ ] Architecture respects Unix philosophy (each file = one clear purpose)
+
+**Fix 2 - Variable Syntax:**
+- [ ] All variable syntax migrated to braced format `{@name}`/`{?name}`
+- [ ] No URL parsing conflicts with variable syntax
+- [ ] Real-world URLs work correctly: `https://api.github.com/@username` (literal @)
+- [ ] Complex URLs work: `https://api.com/{@user}/posts?search=@mentions&token={@auth}`
+- [ ] Variable detection is unambiguous and predictable
+
+**Combined Integration:**
+- [ ] All existing Phase 1-3 tests continue passing with new syntax
+- [ ] Real-world API URLs can be tested immediately
+- [ ] No workarounds needed for common URL patterns
+
+**Benefits:**
+- ✅ **Eliminates Two Bug Classes**: No guessing logic + no syntax conflicts
+- ✅ **Predictable Behavior**: File source + braced syntax = always clear
+- ✅ **Real-World Ready**: Works with actual API URLs immediately
+- ✅ **KISS Compliance**: Simpler, more explicit code flow
+- ✅ **Future-Proof**: Solid foundation for Phase 4+ features
+
+---
+
+### **Phase 4: Response History System**
+*Goal: Add response history for debugging API interactions*
+
+#### 4.1 History Storage Management
 - [ ] **History Storage Management**:
   - Implement `CreateHistoryDirectory(preset string)` in presets package
   - Add history rotation logic (keep last N, delete oldest)
@@ -96,7 +243,7 @@ saul api set url https://api.com/{@username}/posts
   - Include request metadata (method, URL, timestamp) with response
   - Handle response size limits and truncation for large responses
 
-#### 4.3 History Access Commands
+#### 4.2 History Access Commands
 - [ ] **Check History Command**:
   - Implement `ExecuteCheckHistoryCommand` for history access
   - Add interactive menu: list all stored responses with metadata
@@ -110,7 +257,7 @@ saul api set url https://api.com/{@username}/posts
   - Support selective deletion: `rm history N` (future enhancement)
   - Handle cases where history doesn't exist (silent success)
 
-#### 4.4 Enhanced Command Routing
+#### 4.3 Enhanced Command Routing
 - [ ] **Extended Check Command**:
   - Add history routing to existing `ExecuteCheckCommand`
   - Handle `check history` variations (no args = menu, N = direct, last = recent)
@@ -122,44 +269,37 @@ saul api set url https://api.com/{@username}/posts
   - Handle `set history 0` to disable without deleting existing history
 
 **Phase 4 Success Criteria:**
-- [ ] All variable syntax migrated to braced format `{@name}`/`{?name}`
-- [ ] No URL parsing conflicts with variable syntax
 - [ ] `saul api set history 5` enables history collection
 - [ ] `saul call api` automatically stores responses when history enabled
 - [ ] `saul api check history` shows interactive menu of stored responses
 - [ ] `saul api check history 1` displays most recent response
 - [ ] `saul api rm history` deletes all history with confirmation prompt
 - [ ] History rotation works correctly (keeps last N, deletes oldest)
-- [ ] All existing Phase 1-3 functionality unchanged except variable syntax
+- [ ] All existing Phase 1-3.5 functionality unchanged
 
 **Phase 4 Testing:**
 ```bash
 #!/bin/bash
 # Phase 4 test additions
 
-echo "4.1 Testing variable syntax migration..."
-saul testapi set body pokemon.name={?pokename}
-saul testapi set url https://jsonplaceholder.typicode.com/users/{@userId}
-echo "test" | saul call testapi  # Should prompt for pokename and userId
-
-echo "4.2 Testing history configuration..."
+echo "4.1 Testing history configuration..."
 saul testapi set history 3
 grep -q 'history_count = 3' ~/.config/saul/presets/testapi/request.toml
 
-echo "4.3 Testing history storage..."
+echo "4.2 Testing history storage..."
 saul call testapi >/dev/null  # Should store response
 [ -d ~/.config/saul/presets/testapi/history ]
 [ -f ~/.config/saul/presets/testapi/history/response-001.json ]
 
-echo "4.4 Testing history access..."
+echo "4.3 Testing history access..."
 saul testapi check history | grep -q "1." # Should show menu
 saul testapi check history 1 | grep -q "Status:" # Should show response
 
-echo "4.5 Testing history management..."
+echo "4.4 Testing history management..."
 echo "y" | saul testapi rm history
 [ ! -d ~/.config/saul/presets/testapi/history ]
 
-echo "✓ Phase 4 Variable Syntax & History System: PASSED"
+echo "✓ Phase 4 Response History System: PASSED"
 ```
 
 ---
@@ -299,16 +439,33 @@ The existing test suite will be expanded to include Phase 4+ functionality:
 
 # Existing Phase 1-3 tests continue to work...
 
-# NEW: Phase 4 tests
-echo "===== PHASE 4 TESTS: Variable Syntax & History System ====="
+# NEW: Phase 3.5 tests (Architecture & Syntax Fix)
+echo "===== PHASE 3.5 TESTS: Architecture & Variable Syntax Fix ====="
 
-echo "4.1 Testing braced variable syntax..."
-saul testapi set body name={?testname}
-saul testapi set url https://httpbin.org/get?id={@userid}
-# Verify no conflicts with URL parsing
+echo "3.5.1 Testing separate handlers (no field misclassification)..."
+saul testapi set url https://api.github.com/{@username}/repos?type=public
+saul testapi set header Authorization=Bearer{@token}
+saul testapi set body search.query={?term}
+# Verify URL variables don't appear in headers
 
-echo "4.2 Testing history system..."
+echo "3.5.2 Testing braced variable syntax..."
+echo -e "octocat\ntoken123\nrepos" | saul call testapi >/dev/null
+# Should work with real URLs containing literal @ and ?
+
+echo "3.5.3 Testing real-world URL patterns..."
+saul testapi set url https://api.twitter.com/@mentions?search={?query}
+# Only {?query} should prompt, @mentions should be literal
+
+echo "✓ Phase 3.5: Architecture & Variable Syntax Fix - PASSED"
+
+# NEW: Phase 4 tests (History System)
+echo "===== PHASE 4 TESTS: Response History System ====="
+
+echo "4.1 Testing history configuration..."
 saul testapi set history 3
+grep -q 'history_count = 3' ~/.config/saul/presets/testapi/request.toml
+
+echo "4.2 Testing history storage..."
 echo -e "testuser\n123" | saul call testapi >/dev/null
 [ -f ~/.config/saul/presets/testapi/history/response-001.json ]
 
@@ -316,15 +473,17 @@ echo "4.3 Testing history access..."
 saul testapi check history | grep -q "1\."
 saul testapi check history 1 | grep -q "Status:"
 
-echo "✓ Phase 4: Variable Syntax & History System - PASSED"
+echo "✓ Phase 4: Response History System - PASSED"
 
 # Future phases will add similar test sections...
 ```
 
 ### **Testing Philosophy**
-- **Backward Compatibility**: Phase 4 changes must not break existing functionality
-- **Migration Testing**: Verify smooth transition from old to new variable syntax
-- **Integration Testing**: History system integrates seamlessly with existing commands  
+- **Foundation First**: Phase 3.5 fixes core architecture before adding features
+- **Real-World Validation**: Test with actual API URLs containing @ and ? characters
+- **Backward Compatibility**: New phases must not break existing functionality
+- **Migration Testing**: Verify smooth transition from old to new variable syntax in Phase 3.5
+- **Integration Testing**: Each system integrates seamlessly with existing commands  
 - **Edge Case Coverage**: URL edge cases, large responses, network failures
 - **Cross-platform Testing**: Verify functionality on multiple operating systems
 
@@ -337,7 +496,8 @@ echo "✓ Phase 4: Variable Syntax & History System - PASSED"
 - **Resilient**: Graceful handling of edge cases and network issues
 
 ### **Breaking Change Management**
-- **Phase 4 Migration**: Variable syntax change is breaking but necessary
+- **Phase 3.5 Migration**: Variable syntax change is breaking but necessary for real-world usage
+- **Combined Fix Strategy**: Fix both architecture and syntax together for comprehensive solution
 - **User Communication**: Clear migration guide and examples in documentation
 - **Backward Compatibility**: Consider supporting both syntaxes briefly during transition
 - **Testing**: Comprehensive testing to ensure no regression in core functionality
@@ -351,11 +511,16 @@ echo "✓ Phase 4: Variable Syntax & History System - PASSED"
 
 ## Risk Mitigation
 
-### **Phase 4 Specific Risks**
+### **Phase 3.5 Specific Risks**
 - **Breaking Change Impact**: Variable syntax change affects all existing users
 - **URL Parsing Complexity**: Braced variables in URLs require careful parsing
+- **Dual Architecture Change**: Fixing both merging and syntax simultaneously increases complexity
+- **Real-World URL Edge Cases**: Many API patterns use @ and ? that must be handled correctly
+
+### **Phase 4 Specific Risks**
 - **History Storage Size**: Large API responses could consume significant disk space
 - **File System Edge Cases**: History directory creation and rotation edge cases
+- **Storage Performance**: History access could become slow with many stored responses
 
 ### **Mitigation Strategies**
 - **Migration Testing**: Comprehensive test coverage for syntax change
@@ -365,20 +530,29 @@ echo "✓ Phase 4: Variable Syntax & History System - PASSED"
 
 ## Success Metrics
 
-### **Phase 4 Completion Criteria**
+### **Phase 3.5 Completion Criteria**
 - All existing functionality works with new variable syntax
-- History system stores and retrieves responses correctly
-- No URL parsing conflicts with variable syntax
+- No field misclassification (separate handlers work correctly)
+- No URL parsing conflicts with variable syntax  
+- Real-world API URLs work without workarounds
 - Migration from old to new syntax is seamless
-- Test suite passes completely including new Phase 4 tests
+- Test suite passes completely including new Phase 3.5 tests
+
+### **Phase 4 Completion Criteria**
+- History system stores and retrieves responses correctly
+- History configuration and rotation work properly
+- History access commands provide useful debugging workflow
+- All existing Phase 1-3.5 functionality unchanged
 
 ### **Final Project Success**
 - All commands from vision.md work correctly
-- Variable syntax handles all URL edge cases without conflicts  
-- History system provides valuable debugging workflow
-- Ready for Phase 5 (Interactive Mode) implementation
-- Maintains KISS principles while adding powerful features
+- Variable syntax handles all URL edge cases without conflicts (Phase 3.5)
+- No field misclassification bugs in HTTP execution (Phase 3.5)
+- History system provides valuable debugging workflow (Phase 4)
+- Interactive mode enables efficient preset management (Phase 5)
+- Ready for production distribution with advanced features (Phase 6)
+- Maintains KISS principles while adding powerful features throughout
 
 ---
 
-*This action plan prioritizes resolving the variable syntax conflict and adding response history functionality, ensuring the project maintains its architectural integrity while expanding capabilities for real-world API development workflows.*
+*This action plan prioritizes fixing critical architecture issues (Phase 3.5) before adding new features, ensuring the project has a solid foundation for real-world API development workflows. The combined fix addresses both TOML merging bugs and variable syntax conflicts to enable immediate testing with actual API URLs.*
