@@ -122,6 +122,9 @@ func executePresetCommand(cmd parser.Command) error {
 	case "check":
 		return executor.ExecuteCheckCommand(cmd)
 
+	case "edit":
+		return executor.ExecuteEditCommand(cmd)
+
 	default:
 		return fmt.Errorf("unknown preset command: %s", cmd.Command)
 	}

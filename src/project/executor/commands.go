@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/chzyer/readline"
 	"main/src/project/parser"
 	"main/src/project/presets"
 	"main/src/project/toml"
@@ -189,6 +190,75 @@ func displayTOMLFile(handler *toml.TomlHandler, target string) error {
 	// Note: This is a simplified version - we might need to enhance formatting later
 	fmt.Println("(Full file display not yet implemented - use specific keys for now)")
 
+	return nil
+}
+
+// ExecuteEditCommand handles interactive field editing with pre-filled prompts
+func ExecuteEditCommand(cmd parser.Command) error {
+	if cmd.Preset == "" {
+		return fmt.Errorf("preset name required for edit command")
+	}
+	if cmd.Target == "" {
+		return fmt.Errorf("target required (body, headers, query, request, variables)")
+	}
+	if cmd.Key == "" {
+		return fmt.Errorf("key required for edit operation")
+	}
+
+	// Normalize target aliases
+	normalizedTarget := normalizeTarget(cmd.Target)
+	if normalizedTarget == "" {
+		return fmt.Errorf("invalid target '%s'. Use: body, headers/header, query, request, variables", cmd.Target)
+	}
+	cmd.Target = normalizedTarget
+
+	// Load current value using existing patterns
+	handler, err := presets.LoadPresetFile(cmd.Preset, cmd.Target)
+	if err != nil {
+		return fmt.Errorf("failed to load %s.toml: %v", cmd.Target, err)
+	}
+
+	// Get current value (empty string if doesn't exist)
+	currentValue := handler.GetAsString(cmd.Key)
+
+	// Pre-filled interactive editing with readline
+	rl, err := readline.New(fmt.Sprintf("%s: ", cmd.Key))
+	if err != nil {
+		return fmt.Errorf("failed to create readline interface: %v", err)
+	}
+	defer rl.Close()
+
+	// Pre-fill the prompt with current value
+	rl.WriteStdin([]byte(currentValue))
+
+	// Get new value from user
+	newValue, err := rl.Readline()
+	if err != nil {
+		return fmt.Errorf("failed to read input: %v", err)
+	}
+
+	// Special validation for request fields
+	if cmd.Target == "request" {
+		if err := validateRequestField(cmd.Key, newValue); err != nil {
+			return err
+		}
+	}
+
+	// Save using existing validation and patterns
+	valueToStore := newValue
+	if cmd.Target == "request" && strings.ToLower(cmd.Key) == "method" {
+		// Store HTTP methods in uppercase
+		valueToStore = strings.ToUpper(newValue)
+	}
+	inferredValue := InferValueType(valueToStore)
+	handler.Set(cmd.Key, inferredValue)
+
+	err = presets.SavePresetFile(cmd.Preset, cmd.Target, handler)
+	if err != nil {
+		return fmt.Errorf("failed to save %s.toml: %v", cmd.Target, err)
+	}
+
+	// Silent success - Unix philosophy
 	return nil
 }
 

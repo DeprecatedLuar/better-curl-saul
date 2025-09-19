@@ -66,6 +66,23 @@ func ParseCommand(args []string) (Command, error) {
 		return cmd, nil
 	}
 
+	// Handle edit command (same syntax as check: edit target [key])
+	if cmd.Command == "edit" {
+		if len(args) > 2 {
+			// Check if it's a special request field (auto-map to request target)
+			if isSpecialRequestCommand(args[2]) {
+				cmd.Target = "request"
+				cmd.Key = args[2]
+			} else {
+				cmd.Target = args[2]
+				if len(args) > 3 {
+					cmd.Key = args[3] // Optional key for specific field
+				}
+			}
+		}
+		return cmd, nil
+	}
+
 	// Handle regular commands with key=value syntax
 	if len(args) > 2 {
 		cmd.Target = args[2]
