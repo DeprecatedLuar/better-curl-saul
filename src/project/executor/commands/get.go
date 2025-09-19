@@ -3,8 +3,8 @@ package commands
 import (
 	"fmt"
 
-	"main/src/project/parser"
-	"main/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 )
 
 // Get retrieves values from TOML files for debugging

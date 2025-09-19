@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
-	"main/src/project/executor"
-	"main/src/project/parser"
-	"main/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 )
 
 // Edit handles both field-level and container-level editing
