@@ -79,6 +79,70 @@ better-curl-saul/
   - All existing functionality preserved with new syntax
 - ⏳ **Next**: Phase 4 - Response History System
 
+## Codebase Architecture Flow
+
+**Command Flow (Understanding the Complete Request Lifecycle):**
+
+```
+User Input → Command Parsing → Command Routing → Command Execution → TOML Operations
+```
+
+### 1. Entry Point: `cmd/main.go`
+- **Purpose**: Clean entry point following Go conventions
+- **Flow**: `os.Args[1:]` → `parser.ParseCommand()` → `executeCommand()` → Route to handlers
+- **Routing**: Global commands (`call`, `list`, `rm`) vs Preset commands (`set`, `check`, `get`)
+
+### 2. Command Parsing: `src/project/parser/command.go`
+- **Input**: Raw command line arguments
+- **Output**: `Command` struct with structured fields
+- **Special Logic**:
+  - Special request syntax: `saul api set url https://...` (no = sign)
+  - Regular TOML syntax: `saul api set body name=value` (with = sign)
+  - Check command routing: `saul api check url` → auto-maps to request target
+
+### 3. Command Execution: `src/project/executor/commands.go`
+- **Current Commands**: `ExecuteSetCommand()`, `ExecuteCheckCommand()`, `ExecuteGetCommand()`
+- **TOML Integration**: Uses `presets.LoadPresetFile()` → TOML handler operations → `presets.SavePresetFile()`
+- **Validation**: Target normalization, request field validation, variable detection
+- **Unix Philosophy**: Silent success on completion
+
+### 4. TOML Operations: `src/project/toml/handler.go`
+- **Core Methods**: `.Get()`, `.Set()`, `.Has()`, `.Delete()`, `.Write()`
+- **Conversion**: `.ToJSON()` for HTTP requests, `.ToJSONPretty()` for display
+- **Advanced**: `.Merge()`, `.Clone()`, dot notation for nested fields
+
+### 5. Preset Management: `src/project/presets/manager.go`
+- **File Structure**: `~/.config/saul/presets/[preset]/[file].toml`
+- **5-File System**: body.toml, headers.toml, query.toml, request.toml, variables.toml
+- **Operations**: `LoadPresetFile()`, `SavePresetFile()`, `CreatePresetDirectory()`
+
+### 6. HTTP Execution: `src/project/executor/http.go`
+- **Variable Resolution**: Load variables.toml → Prompt for missing → Substitute in all files
+- **Request Building**: Separate handlers per file → Extract components → Build HTTP request
+- **Execution**: go-resty HTTP client → Pretty-printed JSON response
+
+### 7. Variable System: `src/project/executor/variables.go`
+- **Detection**: `{@name}` (hard - stored) vs `{?name}` (soft - always prompt)
+- **Resolution**: Prompt user → Store hard variables → Substitute in TOML before HTTP
+- **Integration**: Works seamlessly with URL variables, no conflicts
+
+**Key Architecture Principles:**
+- **Clean Separation**: Each file/package has single responsibility
+- **TOML-First**: All configuration stored in human-readable TOML files
+- **Variable Flexibility**: Soft vs hard variables for different workflow needs
+- **Unix Philosophy**: Small, composable functions that do one thing well
+- **Zero Dependencies**: Edit commands use existing TOML manipulation, no new complexity
+
+**Edit Command Integration Points:**
+- **Parser**: Add "edit" recognition in `ParseCommand()`
+- **Router**: Add case in `executePresetCommand()` switch
+- **Executor**: Add `ExecuteEditCommand()` using existing patterns:
+  - Load preset file with `presets.LoadPresetFile()`
+  - Get current value with `handler.Get()`
+  - Prompt user for new value
+  - Set new value with `handler.Set()`
+  - Save with `presets.SavePresetFile()`
+
 ## TOML Manipulation System
 
 **Core Library**: Repurposed TomlHandler from toml-cli project
