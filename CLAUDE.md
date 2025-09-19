@@ -130,7 +130,8 @@ better-curl-saul/
 **Current Status**:
 - ✅ Phase 1 & 2: Fully tested and validated
 - ✅ Phase 3: HTTP execution engine complete with comprehensive testing
-- ⏳ Phase 4: Complete command system - pending implementation
+- ⏳ Phase 3.5: Critical architecture fix (TOML merging + variable syntax) - pending implementation
+- ⏳ Phase 4: Response history system - awaiting Phase 3.5 completion
 
 ## Important Notes
 
@@ -145,13 +146,18 @@ better-curl-saul/
 
 **✅ HTTP Execution Engine Complete:**
 - `saul call preset` command fully functional
-- Variable prompting system (`@` hard variables, `?` soft variables)
-- TOML file merging (request + headers + body + query + variables)
+- Variable prompting system (needs update to `{@}` hard variables, `{?}` soft variables)
+- TOML file merging (needs replacement with separate handler approach)
 - HTTP client integration using go-resty
 - Support for all major HTTP methods (GET, POST, PUT, DELETE, etc.)
 - JSON body conversion and pretty-printed responses
 - Comprehensive error handling and validation
 - Smart Variable Deduplication feature documented and working
+
+**⚠️ Known Issues (Phase 3.5 Fixes Needed):**
+- Variable syntax `@`/`?` conflicts with real URLs containing @ and ? characters
+- TOML merging causes URL variables to be misclassified as headers
+- Cannot test real-world APIs like GitHub (`https://api.github.com/@username`) properly
 
 **Architecture Improvements:**
 - Clean file separation: commands.go, variables.go, validation.go, http.go
