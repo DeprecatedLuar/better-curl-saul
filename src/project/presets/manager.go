@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"main/src/project/toml"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
 	"github.com/DeprecatedLuar/toml-vars-letsgooo"
 )
 

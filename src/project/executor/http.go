@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
-	"main/src/project/parser"
-	"main/src/project/presets"
-	"main/src/project/toml"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
 )
 
 // ExecuteCallCommand handles HTTP execution for call commands
