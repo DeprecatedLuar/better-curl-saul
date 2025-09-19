@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// validateRequestField validates special request field values
-func validateRequestField(key, value string) error {
+// ValidateRequestField validates special request field values
+func ValidateRequestField(key, value string) error {
 	switch strings.ToLower(key) {
 	case "method":
 		return validateHTTPMethod(value)
@@ -55,4 +55,28 @@ func validateTimeout(timeout string) error {
 		return fmt.Errorf("timeout must be a number (seconds)")
 	}
 	return nil
+}
+
+// InferValueType converts string values to appropriate Go types for TOML
+func InferValueType(value string) interface{} {
+	// For now, keep everything as strings to avoid TOML handler issues
+	// TODO: Implement proper type handling once TOML handler supports all types
+
+	// Try to parse as boolean (keep this as it's simple)
+	if boolVal, err := strconv.ParseBool(value); err == nil {
+		return boolVal
+	}
+
+	// Check for array notation (comma-separated values)
+	if strings.Contains(value, ",") {
+		parts := strings.Split(value, ",")
+		var result []string
+		for _, part := range parts {
+			result = append(result, strings.TrimSpace(part))
+		}
+		return result
+	}
+
+	// Default to string (including numbers for now)
+	return value
 }
