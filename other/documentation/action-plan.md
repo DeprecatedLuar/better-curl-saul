@@ -19,22 +19,26 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
   - Comprehensive test suite validation
 - **Phase 3 Complete**: HTTP Execution Engine
   - `saul call preset` command fully functional
-  - Variable prompting system (`@` hard variables, `?` soft variables) *(needs syntax update)*
-  - TOML file merging (request + headers + body + query + variables)
+  - Variable prompting system (`@` hard variables, `?` soft variables) *(updated to braced syntax)*
+  - TOML file merging *(replaced with separate handlers)*
   - HTTP client integration using go-resty
   - Support for all major HTTP methods
   - JSON body conversion and pretty-printed responses
   - Smart Variable Deduplication feature
+- **Phase 3.5 Complete**: Architecture & Variable Syntax Fix
+  - ✅ Separate handler implementation (no field misclassification)
+  - ✅ Braced variable syntax `{@name}` and `{?name}` (no URL conflicts)
+  - ✅ Real-world URL support: `https://api.github.com/@username` works correctly
+  - ✅ Complex URLs with mixed literal and variable symbols supported
+  - ✅ All existing functionality preserved with new syntax
 
 ### ❌ **Missing Core Components**
-- **Variable syntax update**: Change from bare `@`/`?` to braced `{@}`/`{?}` format
 - **Response history system**: Storage, management, and access commands
 - **Interactive mode**: Command shell for preset management
 - **Advanced command system**: Enhanced help, editing, and management
 - **Production readiness**: Cross-platform compatibility, error handling polish
 
 ### 🔧 **Technical Debt**
-- Variable syntax conflicts with URLs (@ and ? are valid URL characters)
 - No response history for debugging API interactions
 - Limited command system compared to vision
 - No interactive mode for workflow efficiency
@@ -52,10 +56,10 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
 
 ---
 
-### **Phase 3.5: HTTP Architecture & Variable Syntax Fix** 🔧 **CRITICAL BUG FIX**
+### **Phase 3.5: HTTP Architecture & Variable Syntax Fix** ✅ **COMPLETED**
 *Goal: Fix TOML merging logic AND variable syntax conflicts to enable real-world URL usage*
 
-#### 3.5.1 Root Cause Analysis ✅ **IDENTIFIED**
+#### 3.5.1 Root Cause Analysis ✅ **IDENTIFIED & RESOLVED**
 **Problem 1 - TOML Merging Bug:**
 - `MergePresetFiles()` loses file context, causing URL variables to be classified as headers
 - Lines 158-172 in `http.go` assume "strings = headers" which breaks with URL variables
@@ -72,30 +76,30 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
 
 #### 3.5.2 Combined Implementation Strategy
 
-**Fix 1: Separate Handler Implementation**
-- [ ] **Rewrite HTTP Execution Flow** in `src/project/executor/http.go`:
-  - Remove `MergePresetFiles()` function entirely (lines 85-123)
-  - Create `LoadPresetFile(preset, filename)` helper function
-  - Load each TOML file as separate handler: request, headers, body, query
-  - Apply variable substitution to each handler separately
+**Fix 1: Separate Handler Implementation** ✅ **IMPLEMENTED**
+- [x] **Rewrite HTTP Execution Flow** in `src/project/executor/http.go`:
+  - ✅ Removed `MergePresetFiles()` function entirely - no longer exists
+  - ✅ Created `LoadPresetFile(preset, filename)` helper function (lines 98-112)
+  - ✅ Load each TOML file as separate handler: request, headers, body, query (lines 46-49)
+  - ✅ Apply variable substitution to each handler separately (lines 52-67)
 
-- [ ] **Update BuildHTTPRequest() Logic** (lines 125-192):
-  - Extract URL/method/timeout explicitly from request handler
-  - Extract headers explicitly from headers handler  
-  - Extract body explicitly from body handler
-  - Extract query parameters explicitly from query handler
-  - Eliminate all guessing/heuristic logic (lines 158-174)
+- [x] **Update BuildHTTPRequest() Logic** in `BuildHTTPRequestFromHandlers()`:
+  - ✅ Extract URL/method/timeout explicitly from request handler (lines 136-155)
+  - ✅ Extract headers explicitly from headers handler (lines 158-163)
+  - ✅ Extract body explicitly from body handler (lines 174-187)
+  - ✅ Extract query parameters explicitly from query handler (lines 166-171)
+  - ✅ Eliminated all guessing/heuristic logic - clean separation
 
-**Fix 2: Variable Syntax Update**
-- [ ] **Update Variable Detection** in `src/project/executor/variables.go`:
-  - Change `DetectVariableType()` to recognize `{@name}` and `{?name}` instead of `@name`/`?name`
-  - Update regex patterns to `{@\w+}` and `{?\w*}` for proper detection
-  - Update `SubstituteVariables()` to handle braced format in all handlers
+**Fix 2: Variable Syntax Update** ✅ **IMPLEMENTED**
+- [x] **Update Variable Detection** in `src/project/executor/variables.go`:
+  - ✅ Changed `DetectVariableType()` to recognize `{@name}` and `{?name}` (lines 36-43)
+  - ✅ Updated regex patterns to `^\{@(\w*)\}$` and `^\{\?(\w*)\}$` for proper detection
+  - ✅ Updated `SubstituteVariables()` to handle braced format in all handlers (lines 233-261)
 
-- [ ] **Update Variable Processing**:
-  - Modify variable prompting to display braced syntax correctly
-  - Ensure URL parsing works correctly with braced variables
-  - Test complex URLs with multiple variables and URL-native @ and ?
+- [x] **Update Variable Processing**:
+  - ✅ Modified variable prompting to display braced syntax correctly (lines 69-116)
+  - ✅ URL parsing works correctly with braced variables (lines 184-229)
+  - ✅ Complex URLs with multiple variables and URL-native @ and ? work correctly
 
 #### 3.5.3 Implementation Architecture
 ```go
@@ -162,55 +166,55 @@ func DetectVariableType(value string) (VariableType, string) {
 // saul api set url https://search.api.com/@mentions?q={?term}
 ```
 
-#### 3.5.4 Test Coverage Enhancement
-- [ ] **Add Regression Tests**: Create tests that demonstrate both current bugs before fix
+#### 3.5.4 Test Coverage Enhancement ✅ **COMPLETED**
+- [x] **Add Regression Tests**: Created comprehensive tests for both bugs and fixes
   ```bash
-  # Test 1: TOML merging bug (URL variables misclassified as headers)
-  saul testapi set url https://api.com/@username/posts  
-  saul testapi set header Authorization=Bearer123
-  # BUG: @username from URL appears in headers
+  # Test 1: TOML merging fix - URL variables stay in request.toml
+  saul testapi set url https://api.github.com/@octocat/repos  
+  saul testapi set header Authorization=Bearer{@token}
+  # ✅ FIXED: @octocat stays literal in URL, {token} variable in header
   
-  # Test 2: Variable syntax conflicts with real URLs  
+  # Test 2: Variable syntax fix - real URLs work correctly
   saul testapi set url https://api.github.com/@octocat/repos?type=public
-  # BUG: @octocat treated as variable instead of literal URL part
+  # ✅ FIXED: @octocat treated as literal URL part, no variable detection
   
-  # Test 3: Complex real-world scenario
+  # Test 3: Complex real-world scenario works perfectly
   saul testapi set url https://api.twitter.com/@user/posts?search=@mentions&filter=recent
-  # BUG: Multiple @ symbols cause variable detection chaos
+  # ✅ FIXED: All @ symbols literal, no variable detection chaos
   ```
 
-- [ ] **Validate Combined Fix**: Test both fixes work together
+- [x] **Validate Combined Fix**: Both fixes work together seamlessly
   ```bash
-  # After fix - should work correctly:
+  # After fix - works correctly:
   saul testapi set url https://api.github.com/{@username}/repos?type=public  
   saul testapi set header Authorization=Bearer{@token}
   saul testapi set body search.query={?searchterm}
-  # No misclassification, real URLs work, variables are braced
+  # ✅ No misclassification, real URLs work, variables are braced
   ```
 
-- [ ] **Integration Testing**: All existing functionality unchanged with new syntax
-- [ ] **Real-World URL Testing**: Comprehensive testing with actual API URLs
-- [ ] **Update Test Suite**: Add Phase 3.5 test section to `test_suite.sh`
+- [x] **Integration Testing**: All existing functionality works with new syntax
+- [x] **Real-World URL Testing**: Comprehensive testing with actual API URLs completed
+- [x] **Update Test Suite**: Added Phase 3.5 test section to `test_suite_fixed.sh`
 
-**Phase 3.5 Success Criteria:**
+**Phase 3.5 Success Criteria:** ✅ **ALL ACHIEVED**
 **Fix 1 - TOML Merging:**
-- [ ] No more field misclassification (URL variables stay in request context)
-- [ ] Headers only come from `headers.toml` - never from other files
-- [ ] Body only comes from `body.toml` - complex structures preserved
-- [ ] Query only comes from `query.toml` - no string confusion
-- [ ] Architecture respects Unix philosophy (each file = one clear purpose)
+- [x] ✅ No more field misclassification (URL variables stay in request context)
+- [x] ✅ Headers only come from `headers.toml` - never from other files
+- [x] ✅ Body only comes from `body.toml` - complex structures preserved
+- [x] ✅ Query only comes from `query.toml` - no string confusion
+- [x] ✅ Architecture respects Unix philosophy (each file = one clear purpose)
 
 **Fix 2 - Variable Syntax:**
-- [ ] All variable syntax migrated to braced format `{@name}`/`{?name}`
-- [ ] No URL parsing conflicts with variable syntax
-- [ ] Real-world URLs work correctly: `https://api.github.com/@username` (literal @)
-- [ ] Complex URLs work: `https://api.com/{@user}/posts?search=@mentions&token={@auth}`
-- [ ] Variable detection is unambiguous and predictable
+- [x] ✅ All variable syntax migrated to braced format `{@name}`/`{?name}`
+- [x] ✅ No URL parsing conflicts with variable syntax
+- [x] ✅ Real-world URLs work correctly: `https://api.github.com/@username` (literal @)
+- [x] ✅ Complex URLs work: `https://api.com/{@user}/posts?search=@mentions&token={@auth}`
+- [x] ✅ Variable detection is unambiguous and predictable
 
 **Combined Integration:**
-- [ ] All existing Phase 1-3 tests continue passing with new syntax
-- [ ] Real-world API URLs can be tested immediately
-- [ ] No workarounds needed for common URL patterns
+- [x] ✅ All existing Phase 1-3 tests continue passing with new syntax
+- [x] ✅ Real-world API URLs can be tested immediately
+- [x] ✅ No workarounds needed for common URL patterns
 
 **Benefits:**
 - ✅ **Eliminates Two Bug Classes**: No guessing logic + no syntax conflicts
@@ -439,22 +443,22 @@ The existing test suite will be expanded to include Phase 4+ functionality:
 
 # Existing Phase 1-3 tests continue to work...
 
-# NEW: Phase 3.5 tests (Architecture & Syntax Fix)
+# ✅ IMPLEMENTED: Phase 3.5 tests (Architecture & Syntax Fix)
 echo "===== PHASE 3.5 TESTS: Architecture & Variable Syntax Fix ====="
 
 echo "3.5.1 Testing separate handlers (no field misclassification)..."
 saul testapi set url https://api.github.com/{@username}/repos?type=public
 saul testapi set header Authorization=Bearer{@token}
 saul testapi set body search.query={?term}
-# Verify URL variables don't appear in headers
+# ✅ VERIFIED: URL variables stay in request.toml, not misclassified
 
 echo "3.5.2 Testing braced variable syntax..."
 echo -e "octocat\ntoken123\nrepos" | saul call testapi >/dev/null
-# Should work with real URLs containing literal @ and ?
+# ✅ VERIFIED: Works with real URLs containing literal @ and ?
 
 echo "3.5.3 Testing real-world URL patterns..."
 saul testapi set url https://api.twitter.com/@mentions?search={?query}
-# Only {?query} should prompt, @mentions should be literal
+# ✅ VERIFIED: Only {?query} prompts, @mentions stays literal
 
 echo "✓ Phase 3.5: Architecture & Variable Syntax Fix - PASSED"
 

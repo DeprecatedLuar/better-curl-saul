@@ -48,7 +48,7 @@ better-curl-saul/
 **Core Architecture Concepts (from vision.md):**
 - **Presets**: Folders in `~/.config/saul/presets/[preset-name]/` containing TOML files
 - **5-File Structure**: headers.toml, body.toml, query.toml, request.toml, variables.toml (Unix philosophy)
-- **Variable System**: Soft variables (`?name`) always prompt, hard variables (`@name`) persist in variables.toml
+- **Variable System**: Soft variables (`{?name}`) always prompt, hard variables (`{@name}`) persist in variables.toml
 - **Special Syntax**: Request commands use no = syntax: `set url https://...`, `set method POST`
 - **Command Modes**: Both interactive mode and single-line commands
 - **Data Flow**: TOML → Variable resolution → JSON conversion → HTTP execution
@@ -62,10 +62,21 @@ better-curl-saul/
 - ✅ **Phase 2 Complete**: Core TOML Operations & Variable System
   - 5-file structure (Unix philosophy): body, headers, query, request, variables
   - Special request syntax: `set url/method/timeout` (no = sign)
-  - Variable system: `@` for hard variables, `?` for soft variables
+  - Variable system: `{@}` for hard variables, `{?}` for soft variables
   - Target normalization and validation
   - Comprehensive test suite validation
-- ⏳ **Next**: Phase 3 - HTTP Execution Engine with `fire` command
+- ✅ **Phase 3 Complete**: HTTP Execution Engine
+  - `saul call preset` command fully functional
+  - Variable prompting and substitution system
+  - HTTP client integration using go-resty
+  - Support for all major HTTP methods
+  - JSON body conversion and pretty-printed responses
+- ✅ **Phase 3.5 Complete**: Architecture & Variable Syntax Fix
+  - Separate handler implementation (no field misclassification)
+  - Braced variable syntax `{@name}` and `{?name}` (no URL conflicts)
+  - Real-world URL support: `https://api.github.com/@username` works correctly
+  - All existing functionality preserved with new syntax
+- ⏳ **Next**: Phase 4 - Response History System
 
 ## TOML Manipulation System
 
@@ -77,19 +88,19 @@ better-curl-saul/
 **Integration Pattern:**
 - Regular: `saul pokeapi set body pokemon.stats.hp=100`
 - Special: `saul pokeapi set url https://api.com` (no = sign)
-- Variables: `saul pokeapi set body name=@pokename` (hard) or `name=?` (soft)
+- Variables: `saul pokeapi set body name={@pokename}` (hard) or `name={?}` (soft)
 - Flow: Parse command → TomlHandler.Set("pokemon.stats.hp", 100) → Write to appropriate .toml file
 
-**Variable Substitution**: Variables stored in variables.toml (hard only), resolved during `fire` command
+**Variable Substitution**: Variables stored in variables.toml (hard only), resolved during `call` command
 
 ## Development Approach
 
 **Key Technical Components Remaining:**
 1. ✅ Command parsing and validation system
 2. ✅ TOML file operations and directory structure management  
-3. ⏳ HTTP request execution engine (`fire` command)
-4. ⏳ Variable substitution system during request execution
-5. ⏳ TOML-to-JSON conversion with variable resolution
+3. ✅ HTTP request execution engine (`call` command)
+4. ✅ Variable substitution system during request execution
+5. ✅ TOML-to-JSON conversion with variable resolution
 6. ⏳ Interactive command mode with state management
 
 **Architecture Principles:**
@@ -101,7 +112,7 @@ better-curl-saul/
 **Target User Experience:**
 - Intuitive commands with dual syntax:
   - Special: `saul pokeapi set url https://api.com` (no = sign)
-  - Regular: `saul pokeapi set body pokemon.name=?` (with = sign)
+  - Regular: `saul pokeapi set body pokemon.name={?}` (with = sign)
 - Clean configuration files that are manually editable
 - Smart prompting for variable values during execution
 - Both scriptable and interactive usage patterns
@@ -113,8 +124,8 @@ better-curl-saul/
   - `saul pokeapi set url https://api.com`
   - `saul pokeapi set method POST`
   - `saul pokeapi set header Authorization=Bearer123`
-  - `saul pokeapi set body pokemon.name=@pokename`
-  - `saul pokeapi fire`
+  - `saul pokeapi set body pokemon.name={@pokename}`
+  - `saul pokeapi call`
 
 ## Testing
 
@@ -130,37 +141,43 @@ better-curl-saul/
 **Current Status**:
 - ✅ Phase 1 & 2: Fully tested and validated
 - ✅ Phase 3: HTTP execution engine complete with comprehensive testing
-- ⏳ Phase 3.5: Critical architecture fix (TOML merging + variable syntax) - pending implementation
-- ⏳ Phase 4: Response history system - awaiting Phase 3.5 completion
+- ✅ Phase 3.5: Critical architecture fix (TOML merging + variable syntax) - **COMPLETED**
+  - Separate handler implementation eliminates field misclassification
+  - Braced variable syntax prevents URL conflicts
+  - Test suite refactored with reliable automation
+- ⏳ Phase 4: Response history system - ready for implementation
 
 ## Important Notes
 
-- **Phase 1, 2 & 3 Complete**: Solid foundation with HTTP execution engine and comprehensive testing
+- **Phase 1, 2, 3 & 3.5 Complete**: Solid foundation with HTTP execution engine and architecture fixes
 - **Core Functionality Ready**: Variable system, TOML operations, and HTTP execution fully implemented
+- **Architecture Fixed**: Separate handlers eliminate field misclassification, braced variables prevent URL conflicts
 - Focus on incremental development with full understanding of each component
 - Prioritize clean, readable code over complex features
 - Always validate against the vision.md requirements during development
-- Use `other/testing/test_suite.sh` to validate all functionality before proceeding
+- Use `other/testing/test_suite_fixed.sh` for reliable automated testing
 
-## Phase 3 Implementation Summary
+## Phase 3 & 3.5 Implementation Summary
 
-**✅ HTTP Execution Engine Complete:**
+**✅ HTTP Execution Engine Complete (Phase 3):**
 - `saul call preset` command fully functional
-- Variable prompting system (needs update to `{@}` hard variables, `{?}` soft variables)
-- TOML file merging (needs replacement with separate handler approach)
+- Variable prompting system with `{@}` hard variables, `{?}` soft variables
 - HTTP client integration using go-resty
 - Support for all major HTTP methods (GET, POST, PUT, DELETE, etc.)
 - JSON body conversion and pretty-printed responses
 - Comprehensive error handling and validation
 - Smart Variable Deduplication feature documented and working
 
-**⚠️ Known Issues (Phase 3.5 Fixes Needed):**
-- Variable syntax `@`/`?` conflicts with real URLs containing @ and ? characters
-- TOML merging causes URL variables to be misclassified as headers
-- Cannot test real-world APIs like GitHub (`https://api.github.com/@username`) properly
+**✅ Architecture & Variable Syntax Fixes Complete (Phase 3.5):**
+- ✅ Separate handler implementation eliminates field misclassification
+- ✅ Braced variable syntax `{@name}` and `{?name}` prevents URL conflicts
+- ✅ Real-world APIs work correctly: `https://api.github.com/@username`
+- ✅ Complex URLs supported: `https://api.com/{@user}/posts?search=@mentions&token={@auth}`
+- ✅ All existing functionality preserved with new syntax
 
 **Architecture Improvements:**
 - Clean file separation: commands.go, variables.go, validation.go, http.go
+- Separate TOML handlers for each file type (no merging conflicts)
 - Robust test isolation with backup/restore functionality
-- Reliable testing using JSONPlaceholder API
+- Reliable testing using JSONPlaceholder API and refactored test suite
 - All tests passing with comprehensive coverage
