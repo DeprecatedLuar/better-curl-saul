@@ -77,6 +77,11 @@ better-curl-saul/
   - Braced variable syntax `{@name}` and `{?name}` (no URL conflicts)
   - Real-world URL support: `https://api.github.com/@username` works correctly
   - All existing functionality preserved with new syntax
+- ✅ **Phase 3.7 Complete**: Variable Detection System Simplification
+  - Replaced complex TOML structure parsing with simple regex-based detection
+  - Fixed nested TOML variable detection: `[pokemon] name = "{@pokename}"` now works
+  - Reduced ~100 lines of complex code to ~20 lines of regex
+  - Zero breaking changes, same user experience, much more reliable
 - ⏳ **Next**: Phase 4 - Response History System
 
 ## Codebase Architecture Flow

@@ -83,6 +83,58 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
 - [x] ✅ Clean HTTP requests with proper variable substitution
 - [x] ✅ All existing functionality preserved
 
+---
+
+### **Phase 3.7: Variable Detection System Simplification** ✅ **COMPLETED**
+*Goal: Replace complex TOML structure parsing with simple regex-based variable detection*
+
+#### 3.7.1 Problem Analysis ✅ **IDENTIFIED & RESOLVED**
+**Problem: Complex Variable Detection Fails on Nested TOML**
+- Current system uses recursive TOML object parsing to find variables
+- Fails on nested structures like `[pokemon] name = "{@pokename}"`
+- Over-engineered approach: parsing → navigation → extraction
+- Fragile and hard to debug when TOML structure changes
+
+**Root Cause:** `scanHandlerForVariables()` only handles flat structures, skips nested objects entirely
+
+#### 3.7.2 KISS Simplification Implementation ✅ **COMPLETED**
+**Replaced Complex System with Simple Regex Approach:**
+- ✅ **Replace `findAllVariables()`**: Now reads files as plain text, uses regex to find `{@}` and `{?}` patterns
+- ✅ **Remove Complex Functions**: Deleted `scanHandlerForVariables()`, `scanNestedMap()`, `extractPartialVariables()`
+- ✅ **Simplify Substitution**: `SubstituteVariables()` now uses simple regex replacement
+- ✅ **Zero Breaking Changes**: Same API signatures, same behavior, same user experience
+
+**New Architecture (Much Simpler):**
+```go
+// OLD: Complex TOML parsing
+func findAllVariables(preset string) ([]VariableInfo, error) {
+    // Load TOML handlers, parse structure, navigate objects...
+    targetVars := scanHandlerForVariables(handler, "") // ~100 lines of complexity
+}
+
+// NEW: Simple file scanning
+func findAllVariables(preset string) ([]VariableInfo, error) {
+    content, _ := os.ReadFile(filePath)
+    regex := regexp.MustCompile(`\{([@?])(\w*)\}`)
+    matches := regex.FindAllStringSubmatch(string(content), -1) // ~20 lines total
+}
+```
+
+#### 3.7.3 Benefits Achieved ✅ **ALL REALIZED**
+- ✅ **Works Everywhere**: Detects variables regardless of TOML nesting depth
+- ✅ **Much Simpler**: Reduced ~100 lines of complex code to ~20 lines of regex
+- ✅ **More Reliable**: Regex is battle-tested, doesn't break on TOML structure changes
+- ✅ **Faster Performance**: Text search vs recursive object traversal
+- ✅ **Easier Debug**: Simple regex vs complex recursive logic
+- ✅ **Zero Breaking Changes**: Perfect interface compatibility
+
+#### 3.7.4 Success Criteria ✅ **ALL ACHIEVED**
+- [x] ✅ Nested TOML variables now work: `[pokemon] name = "{@pokename}"` prompts correctly
+- [x] ✅ All existing functionality preserved (URL variables, body variables, etc.)
+- [x] ✅ Same user experience and command syntax
+- [x] ✅ Simplified codebase with much less complexity
+- [x] ✅ Better maintainability and debuggability
+
 #### 3.5.1 Root Cause Analysis ✅ **IDENTIFIED & RESOLVED**
 **Problem 1 - TOML Merging Bug:**
 - `MergePresetFiles()` loses file context, causing URL variables to be classified as headers

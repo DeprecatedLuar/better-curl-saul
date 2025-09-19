@@ -123,104 +123,75 @@ func PromptForVariables(preset string, persist bool) (map[string]string, error) 
 	return substitutions, nil
 }
 
-// findAllVariables scans all TOML files in preset to find variables
+// findAllVariables scans all TOML files in preset to find variables using simple regex
 func findAllVariables(preset string) ([]VariableInfo, error) {
 	var variables []VariableInfo
 	targets := []string{"body", "headers", "query", "request"}
 
+	// Get preset path
+	presetPath, err := presets.GetPresetPath(preset)
+	if err != nil {
+		return variables, err
+	}
+
 	for _, target := range targets {
-		handler, err := presets.LoadPresetFile(preset, target)
+		filePath := presetPath + "/" + target + ".toml"
+
+		// Read file content as text
+		content, err := os.ReadFile(filePath)
 		if err != nil {
 			continue // Skip if file doesn't exist
 		}
 
-		// Scan all keys in the TOML file
-		targetVars := scanHandlerForVariables(handler, "")
-		variables = append(variables, targetVars...)
+		// Find all variables in this file using regex
+		fileVars := findVariablesInText(string(content), target)
+		variables = append(variables, fileVars...)
 	}
 
 	return variables, nil
 }
 
-// scanHandlerForVariables recursively scans a TOML handler for variable values
-// NEW: Handles partial variables within strings and nested structures
-func scanHandlerForVariables(handler *toml.TomlHandler, prefix string) []VariableInfo {
+// findVariablesInText uses regex to find all variables in text content
+func findVariablesInText(content, fileContext string) []VariableInfo {
 	var variables []VariableInfo
 
-	for _, key := range handler.Keys() {
-		fullKey := key
-		if prefix != "" {
-			fullKey = prefix + "." + key
+	// Regex to find {@ } and {?} patterns
+	regex := regexp.MustCompile(`\{([@?])(\w*)\}`)
+	matches := regex.FindAllStringSubmatch(content, -1)
+
+	// Track unique variables to avoid duplicates
+	seen := make(map[string]bool)
+
+	for _, match := range matches {
+		varSymbol := match[1] // @ or ?
+		varName := match[2]   // variable name (can be empty)
+
+		// Determine variable type
+		var varType string
+		if varSymbol == "@" {
+			varType = "hard"
+		} else {
+			varType = "soft"
 		}
 
-		value := handler.Get(key)
-		if value == nil {
+		// Create a unique key for this variable
+		var varKey string
+		if varName != "" {
+			varKey = fileContext + "." + varName
+		} else {
+			// For bare {@ } or {?}, use file context as key
+			varKey = fileContext + ".variable"
+		}
+
+		// Skip if we've already seen this variable
+		if seen[varKey] {
 			continue
 		}
+		seen[varKey] = true
 
-		switch v := value.(type) {
-		case string:
-			// Check for both full string variables and partial variables within strings
-			if isVar, varType, varName := DetectVariableType(v); isVar {
-				// Full string is a variable: {@username}
-				variables = append(variables, VariableInfo{
-					Key:  fullKey,
-					Type: varType,
-					Name: varName,
-				})
-			} else {
-				// Check for partial variables within the string: https://api.com/{@user}/posts
-				variables = append(variables, extractPartialVariables(v, fullKey)...)
-			}
-		default:
-			// For now, handle flat structures only
-			// TODO: Add recursive scanning for nested objects if needed
-		}
-	}
-
-	return variables
-}
-
-// extractPartialVariables finds variables within a string using regex
-func extractPartialVariables(str, keyPath string) []VariableInfo {
-	var variables []VariableInfo
-
-	// Find all hard variables: {@name}
-	hardRegex := regexp.MustCompile(`\{@(\w*)\}`)
-	hardMatches := hardRegex.FindAllStringSubmatch(str, -1)
-	for i, match := range hardMatches {
-		varName := match[1] // Captured variable name (empty if bare {@})
-		// Create unique key for each occurrence: keyPath.varName.occurrence
-		varKey := keyPath
-		if varName != "" {
-			varKey += "." + varName
-		} else {
-			// For bare {@}, use the keyPath with occurrence number
-			varKey += fmt.Sprintf(".var%d", i)
-		}
 		variables = append(variables, VariableInfo{
 			Key:  varKey,
-			Type: "hard",
-			Name: varName,
-		})
-	}
-
-	// Find all soft variables: {?name}
-	softRegex := regexp.MustCompile(`\{\?(\w*)\}`)
-	softMatches := softRegex.FindAllStringSubmatch(str, -1)
-	for i, match := range softMatches {
-		varName := match[1] // Captured variable name (empty if bare {?})
-		// Create unique key for each occurrence: keyPath.varName.occurrence
-		varKey := keyPath
-		if varName != "" {
-			varKey += "." + varName
-		} else {
-			// For bare {?}, use the keyPath with occurrence number
-			varKey += fmt.Sprintf(".var%d", i)
-		}
-		variables = append(variables, VariableInfo{
-			Key:  varKey,
-			Type: "soft",
+			Type: varType,
 			Name: varName,
 		})
 	}
@@ -228,8 +199,8 @@ func extractPartialVariables(str, keyPath string) []VariableInfo {
 	return variables
 }
 
-// SubstituteVariables replaces variables in TOML handler with actual values
-// NEW: Handles both full string variables and partial substitution within strings
+
+// SubstituteVariables replaces variables in TOML handler with actual values using simple regex
 func SubstituteVariables(handler *toml.TomlHandler, substitutions map[string]string) error {
 	for _, key := range handler.Keys() {
 		value := handler.Get(key)
@@ -238,30 +209,12 @@ func SubstituteVariables(handler *toml.TomlHandler, substitutions map[string]str
 		}
 
 		if strValue, ok := value.(string); ok {
-			if isVar, _, varName := DetectVariableType(strValue); isVar {
-				// Full string is a variable - replace entire value
-				// Construct proper variable key for lookup (same as extractPartialVariables logic)
-				varKey := key
-				if varName != "" {
-					varKey += "." + varName
-				} else {
-					// For bare {@} or {?}, use the keyPath
-					varKey += ".var0"
-				}
-
-				if substitute, exists := substitutions[varKey]; exists {
-					// Infer type for the substituted value
-					typedValue := InferValueType(substitute)
-					handler.Set(key, typedValue)
-				}
-			} else {
-				// Check for partial variables within the string and replace them
-				newValue := substitutePartialVariables(strValue, substitutions, key)
-				if newValue != strValue {
-					// String was modified, update it
-					typedValue := InferValueType(newValue)
-					handler.Set(key, typedValue)
-				}
+			// Use simple regex to replace all variables in the string
+			newValue := substituteVariablesInText(strValue, substitutions)
+			if newValue != strValue {
+				// String was modified, update it
+				typedValue := InferValueType(newValue)
+				handler.Set(key, typedValue)
 			}
 		}
 	}
@@ -269,56 +222,36 @@ func SubstituteVariables(handler *toml.TomlHandler, substitutions map[string]str
 	return nil
 }
 
-// substitutePartialVariables replaces variables within a string
-func substitutePartialVariables(str string, substitutions map[string]string, keyPath string) string {
-	result := str
+// substituteVariablesInText replaces all variables in text using regex
+// The function doesn't need to know which file the variable came from
+// because substitutions map already contains the full key (e.g., "body.pokename")
+func substituteVariablesInText(text string, substitutions map[string]string) string {
+	// Regex to find all {@ } and {?} patterns
+	regex := regexp.MustCompile(`\{([@?])(\w*)\}`)
 
-	// Replace all hard variables: {@name}
-	hardRegex := regexp.MustCompile(`\{@(\w*)\}`)
-	hardOccurrence := 0
-	result = hardRegex.ReplaceAllStringFunc(result, func(match string) string {
-		// Extract variable name from {@name}
-		varName := hardRegex.FindStringSubmatch(match)[1]
-		
-		// Create key to match what we stored during detection
-		varKey := keyPath
-		if varName != "" {
-			varKey += "." + varName
-		} else {
-			varKey += fmt.Sprintf(".var%d", hardOccurrence)
+	return regex.ReplaceAllStringFunc(text, func(match string) string {
+		// Parse the variable from the match
+		submatches := regex.FindStringSubmatch(match)
+		varName := submatches[2] // variable name (can be empty)
+
+		// Try to find this variable in our substitutions map
+		// The substitutions map contains keys like "body.pokename", "headers.auth", etc.
+		for key, substitute := range substitutions {
+			// Extract the variable name from the key (e.g., "pokename" from "body.pokename")
+			parts := strings.Split(key, ".")
+			if len(parts) >= 2 {
+				keyVarName := parts[1]
+				if (varName != "" && keyVarName == varName) || (varName == "" && keyVarName == "variable") {
+					return substitute
+				}
+			}
 		}
-		hardOccurrence++
-		
-		if substitute, exists := substitutions[varKey]; exists {
-			return substitute
-		}
-		return match // No substitution found, keep original
+
+		// If no substitution found, return original match unchanged
+		return match
 	})
-
-	// Replace all soft variables: {?name}
-	softRegex := regexp.MustCompile(`\{\?(\w*)\}`)
-	softOccurrence := 0
-	result = softRegex.ReplaceAllStringFunc(result, func(match string) string {
-		// Extract variable name from {?name}
-		varName := softRegex.FindStringSubmatch(match)[1]
-		
-		// Create key to match what we stored during detection
-		varKey := keyPath
-		if varName != "" {
-			varKey += "." + varName
-		} else {
-			varKey += fmt.Sprintf(".var%d", softOccurrence)
-		}
-		softOccurrence++
-		
-		if substitute, exists := substitutions[varKey]; exists {
-			return substitute
-		}
-		return match // No substitution found, keep original
-	})
-
-	return result
 }
+
 
 // storeVariableInfo stores hard variables in variables.toml (only hard variables, no soft variables)
 func storeVariableInfo(preset, key, varType, varName string) error {
