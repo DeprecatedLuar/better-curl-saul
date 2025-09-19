@@ -2,6 +2,9 @@ package executor
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -193,16 +196,13 @@ func displayTOMLFile(handler *toml.TomlHandler, target string) error {
 	return nil
 }
 
-// ExecuteEditCommand handles interactive field editing with pre-filled prompts
+// ExecuteEditCommand handles both field-level and container-level editing
 func ExecuteEditCommand(cmd parser.Command) error {
 	if cmd.Preset == "" {
 		return fmt.Errorf("preset name required for edit command")
 	}
 	if cmd.Target == "" {
 		return fmt.Errorf("target required (body, headers, query, request, variables)")
-	}
-	if cmd.Key == "" {
-		return fmt.Errorf("key required for edit operation")
 	}
 
 	// Normalize target aliases
@@ -212,6 +212,18 @@ func ExecuteEditCommand(cmd parser.Command) error {
 	}
 	cmd.Target = normalizedTarget
 
+	// Distinguish between field-level and container-level editing
+	if cmd.Key == "" {
+		// Container-level editing: edit the entire TOML file in editor
+		return executeContainerEdit(cmd)
+	} else {
+		// Field-level editing: edit a specific field with readline
+		return executeFieldEdit(cmd)
+	}
+}
+
+// executeFieldEdit handles field-level editing with pre-filled prompts (existing functionality)
+func executeFieldEdit(cmd parser.Command) error {
 	// Load current value using existing patterns
 	handler, err := presets.LoadPresetFile(cmd.Preset, cmd.Target)
 	if err != nil {
@@ -260,6 +272,65 @@ func ExecuteEditCommand(cmd parser.Command) error {
 
 	// Silent success - Unix philosophy
 	return nil
+}
+
+// executeContainerEdit handles container-level editing (open file in editor)
+func executeContainerEdit(cmd parser.Command) error {
+	// Get the file path for the target
+	presetPath, err := presets.GetPresetPath(cmd.Preset)
+	if err != nil {
+		return fmt.Errorf("failed to get preset path: %v", err)
+	}
+
+	filePath := filepath.Join(presetPath, cmd.Target+".toml")
+
+	// Ensure the file exists (create empty file if it doesn't)
+	if _, err := os.Stat(filePath); os.IsNotExist(err) {
+		// Create empty TOML file
+		file, err := os.Create(filePath)
+		if err != nil {
+			return fmt.Errorf("failed to create %s.toml: %v", cmd.Target, err)
+		}
+		file.Close()
+	}
+
+	// Detect and launch editor
+	editor := detectEditor()
+	if editor == "" {
+		return fmt.Errorf("no editor found. Please set $EDITOR environment variable or install nano/vim")
+	}
+
+	// Launch editor with the file
+	editorCmd := exec.Command(editor, filePath)
+	editorCmd.Stdin = os.Stdin
+	editorCmd.Stdout = os.Stdout
+	editorCmd.Stderr = os.Stderr
+
+	err = editorCmd.Run()
+	if err != nil {
+		return fmt.Errorf("editor failed: %v", err)
+	}
+
+	// Silent success - Unix philosophy
+	return nil
+}
+
+// detectEditor finds the best available editor
+func detectEditor() string {
+	// 1. Check $EDITOR environment variable first
+	if editor := os.Getenv("EDITOR"); editor != "" {
+		return editor
+	}
+
+	// 2. Fall back to common editors (in order of preference)
+	editors := []string{"nano", "vim", "vi", "emacs"}
+	for _, editor := range editors {
+		if _, err := exec.LookPath(editor); err == nil {
+			return editor
+		}
+	}
+
+	return ""
 }
 
 
