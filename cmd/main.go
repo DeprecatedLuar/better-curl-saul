@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"main/src/project/executor"
+	"main/src/project/executor/commands"
 	"main/src/project/parser"
 	"main/src/project/presets"
 )
@@ -109,10 +110,10 @@ func executePresetCommand(cmd parser.Command) error {
 	// Route preset commands
 	switch cmd.Command {
 	case "set":
-		return executor.ExecuteSetCommand(cmd)
+		return commands.Set(cmd)
 
 	case "get":
-		value, err := executor.ExecuteGetCommand(cmd)
+		value, err := commands.Get(cmd)
 		if err != nil {
 			return err
 		}
@@ -120,10 +121,10 @@ func executePresetCommand(cmd parser.Command) error {
 		return nil
 
 	case "check":
-		return executor.ExecuteCheckCommand(cmd)
+		return commands.Check(cmd)
 
 	case "edit":
-		return executor.ExecuteEditCommand(cmd)
+		return commands.Edit(cmd)
 
 	default:
 		return fmt.Errorf("unknown preset command: %s", cmd.Command)

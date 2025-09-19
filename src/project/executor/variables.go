@@ -253,8 +253,8 @@ func substituteVariablesInText(text string, substitutions map[string]string) str
 }
 
 
-// storeVariableInfo stores hard variables in variables.toml (only hard variables, no soft variables)
-func storeVariableInfo(preset, key, varType, varName string) error {
+// StoreVariableInfo stores hard variables in variables.toml (only hard variables, no soft variables)
+func StoreVariableInfo(preset, key, varType, varName string) error {
 	// Only store hard variables - soft variables are never stored
 	if varType != "hard" {
 		return nil // Don't store soft variables
