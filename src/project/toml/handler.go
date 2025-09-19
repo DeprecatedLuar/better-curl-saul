@@ -34,9 +34,32 @@ func NewTomlHandler(path string) (*TomlHandler, error) {
 // NewTomlHandlerFromBytes creates a TOML handler from raw bytes
 func NewTomlHandlerFromBytes(data []byte) (*TomlHandler, error) {
 	handler := &TomlHandler{raw: data}
-	
+
 	if err := handler.load(); err != nil {
 		return nil, err
+	}
+
+	return handler, nil
+}
+
+// NewTomlHandlerFromJSON creates a TOML handler from JSON bytes
+func NewTomlHandlerFromJSON(jsonData []byte) (*TomlHandler, error) {
+	// Unmarshal JSON to Go map
+	var goMap map[string]interface{}
+	if err := json.Unmarshal(jsonData, &goMap); err != nil {
+		return nil, fmt.Errorf("invalid JSON: %v", err)
+	}
+
+	// Convert Go map to TOML tree
+	tree, err := lib.TreeFromMap(goMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create TOML tree: %v", err)
+	}
+
+	// Create handler with the tree
+	handler := &TomlHandler{
+		tree: tree,
+		raw:  jsonData, // Keep original JSON as raw data
 	}
 
 	return handler, nil
