@@ -115,6 +115,42 @@ This eliminates redundancy and enforces consistency - perfect for REST APIs wher
 - **Configuration**: Per-preset history count in `request.toml` under `[settings]`
 - **Rotation**: Automatic cleanup when limit exceeded (delete oldest, keep newest N)
 
+#### Response Display & Formatting
+- **Storage Format**: Always preserve exact raw response with metadata (timestamp, request details, status, headers)
+- **Display Format**: Smart content-type based formatting for optimal readability
+  - **JSON responses** → Convert to TOML for clean, readable display (innovative approach)
+  - **HTML/XML/Text/Other** → Display raw content as-is (future: syntax highlighting)
+  - **Error fallback** → Always display raw content if conversion fails
+
+#### Display Options
+- **Default**: `saul api check history 1` - Smart formatting in terminal
+- **Raw mode**: `saul api check history 1 --raw` - Exact server response in terminal  
+- **Editor mode**: `saul api check history 1 -e` - Open formatted content in read-only editor
+- **Raw editor**: `saul api check history 1 -e --raw` - Open raw response in read-only editor
+
+#### Example: JSON Response Formatting
+**Original JSON Response:**
+```json
+{"name":"pikachu","id":25,"types":[{"slot":1,"type":{"name":"electric"}}]}
+```
+
+**Smart TOML Display:**
+```toml
+Status: 200 OK (324ms, 2.1KB)
+Content-Type: application/json
+
+name = "pikachu"
+id = 25
+
+[[types]]
+slot = 1
+
+[types.type]
+name = "electric"
+```
+
+This dual approach optimizes for both debugging fidelity (raw storage) and human readability (smart display).
+
 ### File Management Strategy
 - **Approach**: Parse-merge-write (not append-only)
 - **Process**: Read existing TOML → Parse → Modify → Write back
@@ -199,10 +235,27 @@ attack: 80_                   # Hard variable (shows current value)
 trainer_id: ash123_           # Hard variable (shows current value)
 ```
 
+**Editing Commands:**
+- `edit url` - Pre-filled prompt for quick URL edits (ideal for variable syntax changes)
+- `edit body pokemon.name` - Pre-filled prompt for specific field editing
+- `edit header Authorization` - Pre-filled prompt for specific header editing
+- `edit @pokename` - Pre-filled prompt for editing stored hard variable values
+- `edit body` - Opens entire body.toml in default editor (complex editing)
+- `edit header` - Opens entire headers.toml in default editor (complex editing)
+- `edit query` - Opens entire query.toml in default editor (complex editing)
+
+**Edit Command Behavior:**
+- **Field-level editing** (e.g., `edit url`, `edit body pokemon.name`) → Pre-filled interactive prompt for quick field content tweaks
+- **Variable editing** (e.g., `edit @pokename`) → Pre-filled prompt for editing stored hard variable values
+- **Container-level editing** (e.g., `edit body`, `edit header`) → Opens entire file in default editor
+- **Field creation safety**: Non-existent fields prompt "Field 'path' doesn't exist. Create? (y/N)"
+- **Variable editing safety**: Non-existent variables show error "Variable '@name' not found. Create variables by using them in fields first."
+- **Variable cleanup**: Orphaned variables (no longer used in fields) are kept in variables.toml - no automatic cleanup
+- **Primary use case**: Quick variable syntax changes (`{@var}` ↔ `{?var}`) and hard variable value updates without retyping
+
 **Management:**
 - `version` (alias: `v`) - Show version
 - `remove` (alias: `rm`) - Remove configurations
-- `edit` (alias: `ed`) - Edit configurations
 - `list` - Show all presets
 - `rm presetname` - Delete preset (with confirmation)
 
