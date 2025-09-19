@@ -238,9 +238,18 @@ func SubstituteVariables(handler *toml.TomlHandler, substitutions map[string]str
 		}
 
 		if strValue, ok := value.(string); ok {
-			if isVar, _, _ := DetectVariableType(strValue); isVar {
+			if isVar, _, varName := DetectVariableType(strValue); isVar {
 				// Full string is a variable - replace entire value
-				if substitute, exists := substitutions[key]; exists {
+				// Construct proper variable key for lookup (same as extractPartialVariables logic)
+				varKey := key
+				if varName != "" {
+					varKey += "." + varName
+				} else {
+					// For bare {@} or {?}, use the keyPath
+					varKey += ".var0"
+				}
+
+				if substitute, exists := substitutions[varKey]; exists {
 					// Infer type for the substituted value
 					typedValue := InferValueType(substitute)
 					handler.Set(key, typedValue)
