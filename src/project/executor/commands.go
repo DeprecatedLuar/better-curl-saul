@@ -179,20 +179,30 @@ func ExecuteCheckCommand(cmd parser.Command) error {
 	}
 
 	// Display entire file contents
-	return displayTOMLFile(handler, cmd.Target)
+	return displayTOMLFile(handler, cmd.Target, cmd.Preset)
 }
 
 // displayTOMLFile shows the entire TOML file in a clean format
-func displayTOMLFile(handler *toml.TomlHandler, target string) error {
-	// For now, use a simple approach - we'll enhance this as needed
-	// This is a basic implementation that can be improved
-
+func displayTOMLFile(handler *toml.TomlHandler, target string, preset string) error {
 	fmt.Printf("# %s.toml contents:\n", target)
 
-	// Get the raw TOML content and display it
-	// Note: This is a simplified version - we might need to enhance formatting later
-	fmt.Println("(Full file display not yet implemented - use specific keys for now)")
+	// Get the file path and read raw contents
+	presetPath, err := presets.GetPresetPath(preset)
+	if err != nil {
+		// Fall back to simple display if we can't get the preset path
+		fmt.Println("(Unable to display full file contents)")
+		return nil
+	}
 
+	filePath := filepath.Join(presetPath, target+".toml")
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		fmt.Println("(File is empty or doesn't exist)")
+		return nil
+	}
+
+	// Display raw TOML content
+	fmt.Print(string(content))
 	return nil
 }
 
