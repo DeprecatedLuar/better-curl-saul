@@ -35,13 +35,13 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
 ### ❌ **Missing Core Components**
 - **Response history system**: Storage, management, and access commands
 - **Interactive mode**: Command shell for preset management
-- **Advanced command system**: Enhanced help, editing, and management
+- **Advanced command system**: Enhanced help and management
 - **Production readiness**: Cross-platform compatibility, error handling polish
 
 ### 🔧 **Technical Debt**
 - No response history for debugging API interactions
-- Limited command system compared to vision
 - No interactive mode for workflow efficiency
+- Container-level editing (Phase 4A.2) not yet implemented
 
 ## Implementation Phases
 
@@ -58,6 +58,30 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
 
 ### **Phase 3.5: HTTP Architecture & Variable Syntax Fix** ✅ **COMPLETED**
 *Goal: Fix TOML merging logic AND variable syntax conflicts to enable real-world URL usage*
+
+### **Phase 3.6: Variable System Critical Fix** ✅ **COMPLETED**
+*Goal: Fix variable substitution lookup to enable proper prompting and eliminate URL corruption*
+
+#### 3.6.1 Critical Bug Analysis ✅ **IDENTIFIED & RESOLVED**
+**Problem: Variable Substitution Lookup Mismatch**
+- Variable `{@pokemon}` in URL → stored as `url.pokemon = "pikachu"`
+- Substitution tried to find: `substitutions["url"]` ← WRONG KEY
+- Should look for: `substitutions["url.pokemon"]` ← CORRECT KEY
+- Result: No substitution found → control characters `\x16\x18` in URL
+
+**Root Cause:** Line 243 in `variables.go` - incorrect key lookup for full string variables
+
+#### 3.6.2 Surgical Fix Implementation ✅ **COMPLETED**
+- **Single Line Fix**: Modified variable key construction in `SubstituteVariables()`
+- **Zero Collateral Damage**: No changes to storage format or detection logic
+- **Result**: Perfect variable prompting and clean URL substitution
+
+#### 3.6.3 Success Criteria ✅ **ALL ACHIEVED**
+- [x] ✅ Variable prompting works correctly (no more silence during `call`)
+- [x] ✅ Smart variable deduplication works as specified in vision.md
+- [x] ✅ No control characters in URLs (`\x16\x18` eliminated)
+- [x] ✅ Clean HTTP requests with proper variable substitution
+- [x] ✅ All existing functionality preserved
 
 #### 3.5.1 Root Cause Analysis ✅ **IDENTIFIED & RESOLVED**
 **Problem 1 - TOML Merging Bug:**

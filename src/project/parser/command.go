@@ -78,6 +78,7 @@ func ParseCommand(args []string) (Command, error) {
 				if len(args) > 3 {
 					cmd.Key = args[3] // Optional key for specific field
 				}
+				// Note: If no key provided (len(args) == 3), cmd.Key stays empty -> container editing
 			}
 		}
 		return cmd, nil
