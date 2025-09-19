@@ -225,15 +225,196 @@ func DetectVariableType(value string) (VariableType, string) {
 
 ---
 
-### **Phase 4: Response History System**
-*Goal: Add response history for debugging API interactions*
+### **Phase 4A: Edit Command System** ⏳ **PRIORITY**
+*Goal: Interactive field editing and quick variable syntax changes*
 
-#### 4.1 History Storage Management
-- [ ] **History Storage Management**:
+#### 4A.1 Field-Level Edit Implementation ✅ **IMPLEMENTATION READY**
+
+**Dependency Decision:** ✅ Use `github.com/chzyer/readline v1.5.1` for pre-filled terminal editing
+- Lightweight pure-Go library (~50KB compiled)
+- Standard choice for Go CLI tools (23k+ projects use it)
+- Provides true terminal editing experience with cursor movement, backspace, etc.
+
+**Exact Code Changes Required:**
+
+- [ ] **Add Dependency** (`go.mod`):
+  ```go
+  require github.com/chzyer/readline v1.5.1
+  ```
+
+- [ ] **Add Command Recognition** (`parser/command.go` line 27):
+  ```go
+  case "rm", "list", "version", "help", "call", "edit":
+  ```
+
+- [ ] **Add Command Routing** (`cmd/main.go` line 125):
+  ```go
+  case "edit":
+      return executor.ExecuteEditCommand(cmd)
+  ```
+
+- [ ] **Implement ExecuteEditCommand** (`executor/commands.go`):
+  ```go
+  func ExecuteEditCommand(cmd parser.Command) error {
+      // 1. Load current value using existing patterns
+      handler, _ := presets.LoadPresetFile(cmd.Preset, normalizeTarget(cmd.Target))
+      currentValue := handler.GetAsString(cmd.Key)
+
+      // 2. Pre-filled interactive editing with readline
+      rl, _ := readline.New(fmt.Sprintf("%s: ", cmd.Key))
+      rl.WriteStdin([]byte(currentValue))
+      newValue, err := rl.Readline()
+
+      // 3. Save using existing validation and patterns
+      handler.Set(cmd.Key, newValue)
+      return presets.SavePresetFile(cmd.Preset, cmd.Target, handler)
+  }
+  ```
+
+**Implementation Scope (KISS - Start Simple):**
+- ✅ Field-level editing only: `saul api edit url`, `saul api edit body pokemon.name`
+- ✅ String values only (handles 90% of use cases)
+- ✅ Uses existing validation, normalization, and TOML patterns
+- ✅ Same syntax as check command for consistency
+- ❌ Variable editing (`edit @name`) - defer to Phase 4A.2
+- ❌ Container-level editing (`edit body`) - defer to Phase 4A.2
+
+**Field Existence Handling:**
+- Non-existent fields → Show empty string for editing
+- Use existing `normalizeTarget()` validation
+- Reuse `validateRequestField()` for request fields
+
+#### 4A.2 Container-Level Edit Implementation
+- [ ] **Editor Integration**:
+  - Handle container-level editing: `edit body`, `edit header`, `edit query`
+  - Detect default editor from `$EDITOR` environment variable
+  - Implement cross-platform editor detection and launching
+  - Handle editor exit codes and provide user feedback
+
+- [ ] **Command Routing Integration**:
+  - Add edit command routing to main command parser
+  - Distinguish between field-level and container-level editing based on arguments
+  - Integrate with existing target normalization system
+  - Add edit command help and usage examples
+
+**Phase 4A.1 Success Criteria (Simple Start):**
+- [ ] `saul api edit url` shows pre-filled readline prompt: `url: https://old-value.com▌`
+- [ ] User can backspace, edit characters, move cursor in terminal
+- [ ] `saul api edit body pokemon.name` prompts for nested field with current value
+- [ ] Non-existent fields show empty string for editing (create new)
+- [ ] Uses existing validation (URL format, method validation, etc.)
+- [ ] All existing Phase 1-3.5 functionality unchanged
+- [ ] Zero regression - purely additive feature
+
+**Phase 4A.2 Success Criteria (Future):**
+- [ ] Variable editing: `saul api edit @pokename`
+- [ ] Container editing: `saul api edit body` (opens in $EDITOR)
+- [ ] Field creation safety prompts
+- [ ] Cross-platform editor integration
+
+**Phase 4A Testing:**
+```bash
+#!/bin/bash
+# Phase 4A Edit Command Tests
+
+echo "4A.1 Testing field-level editing..."
+saul testapi set url https://example.com
+echo "https://newurl.com" | saul testapi edit url
+saul testapi check url | grep -q "newurl.com"
+
+echo "4A.2 Testing variable editing..."
+saul testapi set body name={@pokename}
+echo "pikachu" | saul testapi edit @pokename
+grep -q 'pokename.*=.*pikachu' ~/.config/saul/presets/testapi/variables.toml
+
+echo "4A.3 Testing container-level editing (if EDITOR set)..."
+# This test requires manual verification with editor
+
+echo "4A.4 Testing field creation safety..."
+echo "n" | saul testapi edit body nonexistent.field | grep -q "doesn't exist"
+
+echo "✓ Phase 4A Edit Command System: PASSED"
+```
+
+---
+
+### **Phase 4B: Response Formatting System**
+*Goal: Smart JSON→TOML response display for optimal readability*
+
+#### 4B.1 JSON to TOML Conversion Engine
+- [ ] **Add FromJSON() Method to TomlHandler**:
+  - Implement `NewTomlHandlerFromJSON(jsonData []byte)` in `toml/handler.go`
+  - Create JSON → Go map → TOML tree conversion pipeline
+  - Handle nested objects, arrays, and primitive types correctly
+  - Add error handling for invalid JSON with graceful fallback
+
+- [ ] **Smart Response Formatting Logic**:
+  - Modify `DisplayResponse()` in `executor/http.go` to detect content types
+  - JSON responses → Convert to TOML for readable display
+  - Non-JSON responses → Display raw content as-is
+  - Add response metadata header (status, timing, size, content-type)
+  - Implement graceful fallback to raw display if conversion fails
+
+#### 4A.2 Content-Type Detection & Display
+- [ ] **Enhanced Response Display**:
+  - Format response header: `Status: 200 OK (324ms, 2.1KB)`
+  - Add content-type detection from response headers
+  - Smart TOML formatting for JSON responses with metadata
+  - Preserve raw display for HTML, XML, plain text, and other formats
+  - Handle edge cases: empty responses, malformed JSON, large responses
+
+- [ ] **Comprehensive API Testing**:
+  - **JSONPlaceholder** (`jsonplaceholder.typicode.com`) - Simple JSON testing
+  - **PokéAPI** (`pokeapi.co`) - Complex nested structures, arrays
+  - **HTTPBin** (`httpbin.org`) - Multiple content types, edge cases
+  - **GitHub API** (`api.github.com`) - Real-world complexity, large responses
+  - Validate formatting across all API types and response patterns
+
+**Phase 4A Success Criteria:**
+- [ ] `saul call pokeapi` displays JSON responses in readable TOML format
+- [ ] Response metadata shows clearly: status, timing, size, content-type
+- [ ] Non-JSON responses display raw content unchanged
+- [ ] Invalid JSON gracefully falls back to raw display
+- [ ] All 4 test APIs (JSONPlaceholder, Pokémon, HTTPBin, GitHub) format correctly
+- [ ] Existing Phase 1-3.5 functionality unchanged
+
+**Phase 4A Testing:**
+```bash
+#!/bin/bash
+# Phase 4A Edit Command Tests
+
+echo "4A.1 Testing field-level editing..."
+saul testapi set url https://example.com
+echo "https://newurl.com" | saul testapi edit url
+saul testapi check url | grep -q "newurl.com"
+
+echo "4A.2 Testing variable editing..."
+saul testapi set body name={@pokename}
+echo "pikachu" | saul testapi edit @pokename
+grep -q 'pokename.*=.*pikachu' ~/.config/saul/presets/testapi/variables.toml
+
+echo "4A.3 Testing container-level editing (if EDITOR set)..."
+# This test requires manual verification with editor
+
+echo "4A.4 Testing field creation safety..."
+echo "n" | saul testapi edit body nonexistent.field | grep -q "doesn't exist"
+
+echo "✓ Phase 4A Edit Command System: PASSED"
+```
+
+---
+
+### **Phase 4C: Response History Storage**
+*Goal: Add response storage and management for debugging*
+
+#### 4C.1 History Storage Management
+- [ ] **History Storage Integration**:
+  - Modify `ExecuteCallCommand` to store responses when history enabled
   - Implement `CreateHistoryDirectory(preset string)` in presets package
   - Add history rotation logic (keep last N, delete oldest)
   - Create response file naming: `response-001.json`, `response-002.json`, etc.
-  - Add history metadata (timestamp, status, method, URL, size)
+  - Include request metadata (method, URL, timestamp) with raw response
+  - Store raw JSON responses but display with Phase 4A formatting
 
 - [ ] **History Configuration**:
   - Extend `request.toml` structure to include `[settings]` section
@@ -241,19 +422,13 @@ func DetectVariableType(value string) (VariableType, string) {
   - Implement `set history N` command to configure per preset
   - Update `ExecuteSetCommand` to handle history configuration
 
-- [ ] **History Storage Integration**:
-  - Modify `ExecuteCallCommand` to store responses when history enabled
-  - Add response storage after successful HTTP execution
-  - Include request metadata (method, URL, timestamp) with response
-  - Handle response size limits and truncation for large responses
-
-#### 4.2 History Access Commands
+#### 4C.2 History Access Commands
 - [ ] **Check History Command**:
   - Implement `ExecuteCheckHistoryCommand` for history access
   - Add interactive menu: list all stored responses with metadata
   - Support direct access: `check history N` for specific response
   - Add `check history last` alias for most recent response
-  - Display response with same formatting as live responses
+  - Display stored responses using Phase 4A smart formatting
 
 - [ ] **History Management**:
   - Implement `rm history` command with confirmation prompt
@@ -261,49 +436,49 @@ func DetectVariableType(value string) (VariableType, string) {
   - Support selective deletion: `rm history N` (future enhancement)
   - Handle cases where history doesn't exist (silent success)
 
-#### 4.3 Enhanced Command Routing
+#### 4C.3 Enhanced Command Routing
 - [ ] **Extended Check Command**:
   - Add history routing to existing `ExecuteCheckCommand`
   - Handle `check history` variations (no args = menu, N = direct, last = recent)
   - Maintain existing check functionality for TOML inspection
-  
-- [ ] **Extended Set Command**:  
+
+- [ ] **Extended Set Command**:
   - Add history configuration to `ExecuteSetCommand`
   - Validate history count values (non-negative integers)
   - Handle `set history 0` to disable without deleting existing history
 
-**Phase 4 Success Criteria:**
+**Phase 4C Success Criteria:**
 - [ ] `saul api set history 5` enables history collection
 - [ ] `saul call api` automatically stores responses when history enabled
 - [ ] `saul api check history` shows interactive menu of stored responses
-- [ ] `saul api check history 1` displays most recent response
+- [ ] `saul api check history 1` displays most recent response with Phase 4A formatting
 - [ ] `saul api rm history` deletes all history with confirmation prompt
 - [ ] History rotation works correctly (keeps last N, deletes oldest)
-- [ ] All existing Phase 1-3.5 functionality unchanged
+- [ ] Stored responses use Phase 4A smart formatting when displayed
 
-**Phase 4 Testing:**
+**Phase 4C Testing:**
 ```bash
 #!/bin/bash
-# Phase 4 test additions
+# Phase 4C History Storage Tests
 
-echo "4.1 Testing history configuration..."
+echo "4C.1 Testing history configuration..."
 saul testapi set history 3
 grep -q 'history_count = 3' ~/.config/saul/presets/testapi/request.toml
 
-echo "4.2 Testing history storage..."
+echo "4C.2 Testing history storage..."
 saul call testapi >/dev/null  # Should store response
 [ -d ~/.config/saul/presets/testapi/history ]
 [ -f ~/.config/saul/presets/testapi/history/response-001.json ]
 
-echo "4.3 Testing history access..."
+echo "4C.3 Testing history access with formatting..."
 saul testapi check history | grep -q "1." # Should show menu
-saul testapi check history 1 | grep -q "Status:" # Should show response
+saul testapi check history 1 | grep -q "Status:" # Should show formatted response
 
-echo "4.4 Testing history management..."
+echo "4C.4 Testing history management..."
 echo "y" | saul testapi rm history
 [ ! -d ~/.config/saul/presets/testapi/history ]
 
-echo "✓ Phase 4 Response History System: PASSED"
+echo "✓ Phase 4C Response History Storage: PASSED"
 ```
 
 ---
@@ -462,22 +637,39 @@ saul testapi set url https://api.twitter.com/@mentions?search={?query}
 
 echo "✓ Phase 3.5: Architecture & Variable Syntax Fix - PASSED"
 
-# NEW: Phase 4 tests (History System)
-echo "===== PHASE 4 TESTS: Response History System ====="
+# NEW: Phase 4A tests (Response Formatting)
+echo "===== PHASE 4A TESTS: Response Formatting System ====="
 
-echo "4.1 Testing history configuration..."
+echo "4A.1 Testing JSON→TOML conversion..."
+saul pokeapi set url https://pokeapi.co/api/v2/pokemon/1
+saul call pokeapi | grep -q "name = " # Should show TOML format
+
+echo "4A.2 Testing complex nested JSON..."
+saul ghapi set url https://api.github.com/repos/octocat/Hello-World
+saul call ghapi | grep -q "\[" # Should show TOML sections
+
+echo "4A.3 Testing non-JSON responses..."
+saul httpbin set url https://httpbin.org/html
+saul call httpbin | grep -q "<html>" # Should show raw HTML
+
+echo "✓ Phase 4A: Response Formatting System - PASSED"
+
+# NEW: Phase 4B tests (History Storage)
+echo "===== PHASE 4B TESTS: Response History Storage ====="
+
+echo "4B.1 Testing history configuration..."
 saul testapi set history 3
 grep -q 'history_count = 3' ~/.config/saul/presets/testapi/request.toml
 
-echo "4.2 Testing history storage..."
+echo "4C.2 Testing history storage..."
 echo -e "testuser\n123" | saul call testapi >/dev/null
 [ -f ~/.config/saul/presets/testapi/history/response-001.json ]
 
-echo "4.3 Testing history access..."
+echo "4C.3 Testing history access with formatting..."
 saul testapi check history | grep -q "1\."
 saul testapi check history 1 | grep -q "Status:"
 
-echo "✓ Phase 4: Response History System - PASSED"
+echo "✓ Phase 4B: Response History Storage - PASSED"
 
 # Future phases will add similar test sections...
 ```
@@ -521,7 +713,17 @@ echo "✓ Phase 4: Response History System - PASSED"
 - **Dual Architecture Change**: Fixing both merging and syntax simultaneously increases complexity
 - **Real-World URL Edge Cases**: Many API patterns use @ and ? that must be handled correctly
 
-### **Phase 4 Specific Risks**
+### **Phase 4A Specific Risks**
+- **User Input Validation**: Handling malformed input in pre-filled prompts
+- **Editor Integration Complexity**: Cross-platform editor detection and launching
+- **Variable Reference Validation**: Ensuring variable editing safety and error handling
+
+### **Phase 4B Specific Risks**
+- **JSON Parsing Edge Cases**: Malformed JSON, extremely large responses, deeply nested structures
+- **TOML Conversion Complexity**: JSON arrays and complex objects may not translate cleanly to TOML
+- **Performance Impact**: JSON→TOML conversion could slow response display for large payloads
+
+### **Phase 4C Specific Risks**
 - **History Storage Size**: Large API responses could consume significant disk space
 - **File System Edge Cases**: History directory creation and rotation edge cases
 - **Storage Performance**: History access could become slow with many stored responses
@@ -542,21 +744,40 @@ echo "✓ Phase 4: Response History System - PASSED"
 - Migration from old to new syntax is seamless
 - Test suite passes completely including new Phase 3.5 tests
 
-### **Phase 4 Completion Criteria**
+### **Phase 4A Completion Criteria**
+- Field-level editing works with pre-filled prompts showing current values
+- Variable editing works with stored hard variable values
+- Container-level editing opens files in default editor correctly
+- Field creation safety prompts work for non-existent fields
+- Variable editing safety prevents editing non-existent variables
+- Cross-platform editor integration works on major platforms
+- All existing Phase 1-3.5 functionality unchanged
+
+### **Phase 4B Completion Criteria**
+- JSON responses display in readable TOML format with metadata header
+- Content-type detection works correctly (JSON vs non-JSON)
+- Graceful fallback to raw display for invalid JSON or non-JSON content
+- All 4 test APIs (JSONPlaceholder, Pokémon, HTTPBin, GitHub) format correctly
+- No performance degradation for typical API response sizes
+- All existing Phase 1-3.5 and Phase 4A functionality unchanged
+
+### **Phase 4C Completion Criteria**
 - History system stores and retrieves responses correctly
 - History configuration and rotation work properly
-- History access commands provide useful debugging workflow
-- All existing Phase 1-3.5 functionality unchanged
+- History access commands provide useful debugging workflow using Phase 4B formatting
+- All existing Phase 1-3.5, Phase 4A, and Phase 4B functionality unchanged
 
 ### **Final Project Success**
 - All commands from vision.md work correctly
 - Variable syntax handles all URL edge cases without conflicts (Phase 3.5)
 - No field misclassification bugs in HTTP execution (Phase 3.5)
-- History system provides valuable debugging workflow (Phase 4)
+- Edit command system provides quick field and variable editing workflow (Phase 4A)
+- Smart response formatting provides readable output for API development (Phase 4B)
+- History system provides valuable debugging workflow (Phase 4C)
 - Interactive mode enables efficient preset management (Phase 5)
 - Ready for production distribution with advanced features (Phase 6)
 - Maintains KISS principles while adding powerful features throughout
 
 ---
 
-*This action plan prioritizes fixing critical architecture issues (Phase 3.5) before adding new features, ensuring the project has a solid foundation for real-world API development workflows. The combined fix addresses both TOML merging bugs and variable syntax conflicts to enable immediate testing with actual API URLs.*
+*This action plan prioritizes edit command implementation (Phase 4A) as the immediate next step after fixing critical architecture issues (Phase 3.5). This approach provides immediate workflow improvements with zero dependencies, followed by response formatting (Phase 4B) for readable API output, and finally history storage (Phase 4C). The strategic sequence allows for incremental implementation with minimal risk while maximizing user value at each step.*
