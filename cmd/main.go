@@ -66,14 +66,31 @@ func executeGlobalCommand(cmd parser.Command) error {
 		return nil
 
 	case "rm":
-		if cmd.Preset == "" {
+		if len(cmd.Targets) == 0 {
 			return fmt.Errorf("preset name required for rm command")
 		}
-		err := presets.DeletePreset(cmd.Preset)
-		if err != nil {
-			return fmt.Errorf("failed to delete preset '%s': %v", cmd.Preset, err)
+		
+		// Handle multiple targets: saul rm preset1 preset2 preset3
+		// Continue processing, warn about non-existent presets
+		var warnings []string
+		deletedCount := 0
+		
+		for _, presetName := range cmd.Targets {
+			err := presets.DeletePreset(presetName)
+			if err != nil {
+				// Collect warnings for non-existent presets, continue processing
+				warnings = append(warnings, fmt.Sprintf("Warning: preset '%s' does not exist", presetName))
+			} else {
+				deletedCount++
+			}
 		}
-		// Silent success
+		
+		// Print warnings if any
+		for _, warning := range warnings {
+			fmt.Fprintln(os.Stderr, warning)
+		}
+		
+		// Silent success if at least one was deleted, or no warnings
 		return nil
 
 	case "help":
@@ -141,7 +158,7 @@ func showHelp() {
 	fmt.Println("GLOBAL COMMANDS:")
 	fmt.Println("  saul version              Show version information")
 	fmt.Println("  saul list                 List all presets")
-	fmt.Println("  saul rm [preset]          Delete a preset")
+	fmt.Println("  saul rm [preset...]       Delete one or more presets")
 	fmt.Println("  saul call [preset]        Execute HTTP request")
 	fmt.Println("  saul help                 Show this help")
 	fmt.Println()

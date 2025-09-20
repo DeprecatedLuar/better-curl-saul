@@ -105,7 +105,19 @@ better-curl-saul/
   - Intelligent content-type detection with graceful fallback
   - HTTP subfolder refactoring for clean architecture
   - Real-world tested with JSONPlaceholder, PokéAPI, HTTPBin, GitHub APIs
-- ⏳ **Next**: Phase 4C - Response History System
+- ✅ **Phase 4B-Post Complete**: Comma-Separated Syntax Enhancement
+  - Unix-like parsing approach with unified KeyValuePairs array architecture
+  - Multiple key=value support: `Auth=token,Accept=json` (50%+ fewer commands)
+  - Quoted values with commas: `Type="application/json,charset=utf-8"`
+  - Explicit array syntax: `Tags=[red,blue,green]` with intelligent bracket detection
+  - Perfect backward compatibility, zero regression, no shell escaping needed
+- ✅ **Bulk Operations System Complete**: Universal Space-Separated Pattern
+  - Bulk removal: `saul rm preset1 preset2 preset3` (space-separated arguments)
+  - Continue + warn approach: delete existing presets, warn about non-existent
+  - Parser enhancement: `Targets []string` field for multiple targets
+  - Command execution: graceful error handling with warnings to stderr
+  - Foundation for universal space-separated bulk operations across all commands
+- ⏳ **Next**: Phase 4B-Post-2 - Space-Separated Key-Value Migration for consistency
 
 ## Codebase Architecture Flow
 
@@ -127,6 +139,8 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
   - Special request syntax: `saul api set url https://...` (no = sign)
   - Regular TOML syntax: `saul api set body name=value` (with = sign)
   - Check command routing: `saul api check url` → auto-maps to request target
+  - **Bulk operations**: `Targets []string` field for space-separated arguments
+  - **Universal pattern**: `saul rm preset1 preset2 preset3` (spaces for all bulk operations)
 
 ### 3. Command Execution: `src/project/executor/commands.go`
 - **Current Commands**: `ExecuteSetCommand()`, `ExecuteCheckCommand()`, `ExecuteGetCommand()`
@@ -206,22 +220,42 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
 - Intelligent type detection without verbose declarations
 
 **Target User Experience:**
-- Intuitive commands with dual syntax:
-  - Special: `saul pokeapi set url https://api.com` (no = sign)
-  - Regular: `saul pokeapi set body pokemon.name={?}` (with = sign)
+- Intuitive commands with universal space-separated bulk operations:
+  - **Bulk removal**: `saul rm preset1 preset2 preset3` (space-separated)
+  - **Special syntax**: `saul pokeapi set url https://api.com` (no = sign)
+  - **Single key-value**: `saul pokeapi set body pokemon.name={?}` (single field)
+  - **⏳ Planned migration**: `saul pokeapi set header Auth=token Accept=json` (space-separated)
+  - **Current**: `saul pokeapi set header Auth=token,Accept=json` (comma-separated)
 - Clean configuration files that are manually editable
 - Smart prompting for variable values during execution
 - Both scriptable and interactive usage patterns
+- Universal space-separated pattern for all bulk operations (Unix consistency)
 
-**Command Structure:** 
-- Special: `saul [preset] set url/method/timeout [value]`
-- Regular: `saul [preset] set [target] [field=value]`
-- Examples:
-  - `saul pokeapi set url https://api.com`
-  - `saul pokeapi set method POST`
-  - `saul pokeapi set header Authorization=Bearer123`
-  - `saul pokeapi set body pokemon.name={@pokename}`
-  - `saul pokeapi call`
+**Command Structure (Current & Planned):** 
+- **Bulk removal**: `saul rm [preset1] [preset2] [preset3]` ✅ **IMPLEMENTED**
+- **Special syntax**: `saul [preset] set url/method/timeout [value]` ✅ **IMPLEMENTED** 
+- **Single field**: `saul [preset] set [target] [field=value]` ✅ **IMPLEMENTED**
+- **⏳ Planned**: `saul [preset] set [target] [field1=value1] [field2=value2]` (space-separated)
+- **Current**: `saul [preset] set [target] [field1=value1,field2=value2]` (comma-separated)
+
+**Examples (Current & Planned):**
+```bash
+# ✅ IMPLEMENTED: Bulk removal with spaces
+saul rm preset1 preset2 preset3
+
+# ✅ IMPLEMENTED: Special syntax and single fields  
+saul pokeapi set url https://api.com
+saul pokeapi set method POST
+saul pokeapi set header Authorization=Bearer123
+
+# ⏳ PLANNED: Universal space-separated pattern
+saul pokeapi set header Auth=token Accept=json
+saul pokeapi set body pokemon.name={@pokename} pokemon.level=25
+
+# 📝 CURRENT: Comma-separated (to be migrated)
+saul pokeapi set header Auth=token,Accept=json,Type="app/json,utf-8"
+saul pokeapi set body pokemon.name={@pokename},pokemon.level=25
+```
 
 ## Testing
 
