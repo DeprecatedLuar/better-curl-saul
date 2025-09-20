@@ -9,17 +9,9 @@ import (
 	"github.com/tidwall/gjson"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/display"
 )
 
-// formatSectionHeader creates a visual header for sections
-func formatSectionHeader(title string) string {
-	return fmt.Sprintf("┌─ %s ─┐", title)
-}
-
-// formatSectionFooter creates a separator line to close sections
-func formatSectionFooter() string {
-	return "──────────────────────"
-}
 
 // DisplayResponse formats and displays the HTTP response with optional filtering
 func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
@@ -31,8 +23,8 @@ func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
 	fmt.Printf("Content-Type: %s\n", contentType)
 
 	// Display body with visual formatting
-	fmt.Printf("\n%s\n", formatSectionHeader("Response"))
-	fmt.Println(formatSectionFooter())
+	fmt.Printf("\n%s\n", display.SectionHeader("Response"))
+	fmt.Println(display.SectionFooter())
 	body := response.String()
 	if body != "" {
 		// Check if content appears to be JSON
@@ -45,7 +37,7 @@ func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
 				if err := json.Unmarshal(filteredBody, &jsonObj); err == nil {
 					if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
 						fmt.Println(string(prettyJSON))
-						fmt.Println(formatSectionFooter())
+						fmt.Println(display.SectionFooter())
 						return
 					}
 				}
@@ -57,7 +49,7 @@ func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
 					if err := json.Unmarshal(filteredBody, &jsonObj); err == nil {
 						if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
 							fmt.Println(string(prettyJSON))
-							fmt.Println(formatSectionFooter())
+							fmt.Println(display.SectionFooter())
 							return
 						}
 					}
@@ -66,7 +58,7 @@ func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
 					// Default: Try TOML formatting for JSON responses
 					if tomlFormatted := formatAsToml(filteredBody); tomlFormatted != "" {
 						fmt.Println(tomlFormatted)
-						fmt.Println(formatSectionFooter())
+						fmt.Println(display.SectionFooter())
 						return
 					}
 				}
@@ -75,7 +67,7 @@ func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
 				if err := json.Unmarshal(filteredBody, &jsonObj); err == nil {
 					if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
 						fmt.Println(string(prettyJSON))
-						fmt.Println(formatSectionFooter())
+						fmt.Println(display.SectionFooter())
 						return
 					}
 				}
@@ -86,7 +78,7 @@ func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
 	} else {
 		fmt.Println("(empty response)")
 	}
-	fmt.Println(formatSectionFooter())
+	fmt.Println(display.SectionFooter())
 }
 
 // isJSONContent determines if the response content is JSON based on Content-Type and content

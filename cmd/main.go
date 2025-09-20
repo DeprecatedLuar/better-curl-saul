@@ -8,6 +8,7 @@ import (
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor/commands"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/display"
 )
 
 func main() {
@@ -56,13 +57,18 @@ func executeGlobalCommand(cmd parser.Command) error {
 			return fmt.Errorf("failed to list presets: %v", err)
 		}
 		if len(presets) == 0 {
-			fmt.Println("No presets found. Create one with: saul [preset-name]")
+			fmt.Println(display.SectionHeader("No Presets Found"))
+			fmt.Println(display.SectionFooter())
+			fmt.Println("Create one with: saul [preset-name]")
+			fmt.Println(display.SectionFooter())
 			return nil
 		}
-		fmt.Println("Available presets:")
+		fmt.Println(display.SectionHeader("Available Presets"))
+		fmt.Println(display.SectionFooter())
 		for _, preset := range presets {
 			fmt.Printf("  %s\n", preset)
 		}
+		fmt.Println(display.SectionFooter())
 		return nil
 
 	case "rm":
@@ -152,17 +158,23 @@ func executePresetCommand(cmd parser.Command) error {
 func showHelp() {
 	fmt.Println("Better-Curl (Saul) - Workspace-based HTTP Client")
 	fmt.Println()
-	fmt.Println("USAGE:")
+
+	fmt.Println(display.SectionHeader("Usage"))
+	fmt.Println(display.SectionFooter())
 	fmt.Println("  saul [preset] [command] [target] [key=value]")
 	fmt.Println()
-	fmt.Println("GLOBAL COMMANDS:")
+
+	fmt.Println(display.SectionHeader("Global Commands"))
+	fmt.Println(display.SectionFooter())
 	fmt.Println("  saul version              Show version information")
 	fmt.Println("  saul list                 List all presets")
 	fmt.Println("  saul rm [preset...]       Delete one or more presets")
 	fmt.Println("  saul call [preset]        Execute HTTP request")
 	fmt.Println("  saul help                 Show this help")
 	fmt.Println()
-	fmt.Println("PRESET COMMANDS:")
+
+	fmt.Println(display.SectionHeader("Preset Commands"))
+	fmt.Println(display.SectionFooter())
 	fmt.Println("  saul [preset]             Create or switch to preset")
 	fmt.Println("  saul [preset] set [target] [key=value]")
 	fmt.Println("                            Set value in target file")
@@ -171,14 +183,18 @@ func showHelp() {
 	fmt.Println("  saul [preset] get [target] [key]")
 	fmt.Println("                            Get value from target file")
 	fmt.Println()
-	fmt.Println("TARGETS:")
+
+	fmt.Println(display.SectionHeader("Targets"))
+	fmt.Println(display.SectionFooter())
 	fmt.Println("  body      HTTP request body (JSON)")
 	fmt.Println("  headers   HTTP headers")
 	fmt.Println("  query     Query/search payload data")
 	fmt.Println("  request   HTTP method, URL, and settings")
 	fmt.Println("  variables Hard variables only (soft variables never stored)")
 	fmt.Println()
-	fmt.Println("EXAMPLES:")
+
+	fmt.Println(display.SectionHeader("Examples"))
+	fmt.Println(display.SectionFooter())
 	fmt.Println("  # Special request syntax (no = sign)")
 	fmt.Println("  saul pokeapi set url https://api.example.com")
 	fmt.Println("  saul pokeapi set method POST")
@@ -192,4 +208,5 @@ func showHelp() {
 	fmt.Println("  # Check what's configured")
 	fmt.Println("  saul pokeapi check url")
 	fmt.Println("  saul pokeapi check body pokemon.name")
+	fmt.Println(display.SectionFooter())
 }
