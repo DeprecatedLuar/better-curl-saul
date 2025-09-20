@@ -2,7 +2,6 @@ package parser
 
 import (
 	"fmt"
-	"regexp"
 	"strings"
 )
 
@@ -108,19 +107,19 @@ func ParseCommand(args []string) (Command, error) {
 		return cmd, nil
 	}
 
-	// Handle regular commands with key=value syntax (supports comma-separated)
+	// Handle regular commands with key=value syntax (supports space-separated)
 	if len(args) > 2 {
 		cmd.Target = args[2]
 	}
 	if len(args) > 3 {
-		keyValueInput := args[3]
-		
-		// Parse comma-separated key=value pairs with quote support
-		pairs, err := parseCommaSeparatedKeyValues(keyValueInput)
+		keyValueArgs := args[3:]
+
+		// Parse space-separated key=value pairs
+		pairs, err := parseSpaceSeparatedKeyValues(keyValueArgs)
 		if err != nil {
 			return cmd, fmt.Errorf("invalid key=value format: %v", err)
 		}
-		
+
 		cmd.KeyValuePairs = pairs
 	}
 
@@ -140,78 +139,27 @@ func isSpecialRequestCommand(command string) bool {
 	return false
 }
 
-// parseCommaSeparatedKeyValues uses simple Unix approach - right tool for each job
-func parseCommaSeparatedKeyValues(input string) ([]KeyValuePair, error) {
-	// Step 1: Array syntax (key=[...]) - simple string handling
-	if isArraySyntax(input) {
-		return parseSinglePair(input)
-	}
-	
-	// Step 2: Check if multiple pairs exist (comma outside any quotes)
-	if hasMultiplePairs(input) {
-		// Multiple pairs: key1=val1,key2=val2 - use regex
-		return parseMultiplePairs(input) 
-	}
-	
-	// Step 3: Single pair - simple string split (most common case)
-	return parseSinglePair(input)
-}
-
-// isArraySyntax detects array format: key=[...]
-func isArraySyntax(input string) bool {
-	return strings.Contains(input, "=[") && strings.HasSuffix(input, "]")
-}
-
-// hasMultiplePairs detects if input has multiple key=value pairs
-func hasMultiplePairs(input string) bool {
-	// Simple heuristic: count = signs
-	// Multiple pairs will have multiple = signs
-	return strings.Count(input, "=") > 1
-}
-
-// parseSinglePair handles single key=value (most common case)
-// Works for: key=simple, key="quoted value", key=[array], key="value,with,commas"
-func parseSinglePair(input string) ([]KeyValuePair, error) {
-	parts := strings.SplitN(input, "=", 2)
-	if len(parts) != 2 {
-		return nil, fmt.Errorf("invalid key=value format: %s", input)
-	}
-	
-	key := strings.TrimSpace(parts[0])
-	value := strings.TrimSpace(parts[1])
-	
-	// Remove surrounding quotes if present
-	if len(value) >= 2 && value[0] == '"' && value[len(value)-1] == '"' {
-		value = value[1 : len(value)-1]
-	}
-	
-	return []KeyValuePair{{Key: key, Value: value}}, nil
-}
-
-// parseMultiplePairs handles comma-separated key=value pairs using regex
-// Only used when multiple = signs detected: key1=val1,key2=val2
-func parseMultiplePairs(input string) ([]KeyValuePair, error) {
-	// Simple regex for multiple pairs
-	pattern := `(\w+)=([^,=]+)`
-	regex := regexp.MustCompile(pattern)
-	
-	matches := regex.FindAllStringSubmatch(input, -1)
-	if len(matches) == 0 {
-		return nil, fmt.Errorf("no valid key=value pairs found")
-	}
-	
+// parseSpaceSeparatedKeyValues handles space-separated key=value arguments
+func parseSpaceSeparatedKeyValues(args []string) ([]KeyValuePair, error) {
 	var pairs []KeyValuePair
-	for _, match := range matches {
-		key := match[1]
-		value := strings.TrimSpace(match[2])
-		
-		// Remove quotes if present
+
+	for _, arg := range args {
+		parts := strings.SplitN(arg, "=", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid key=value format: %s", arg)
+		}
+
+		key := strings.TrimSpace(parts[0])
+		value := strings.TrimSpace(parts[1])
+
+		// Remove surrounding quotes if present
 		if len(value) >= 2 && value[0] == '"' && value[len(value)-1] == '"' {
 			value = value[1 : len(value)-1]
 		}
-		
+
 		pairs = append(pairs, KeyValuePair{Key: key, Value: value})
 	}
-	
+
 	return pairs, nil
 }
+
