@@ -33,27 +33,29 @@ func Check(cmd parser.Command) error {
 	}
 
 	// Special handling for request fields (single values)
-	if cmd.Target == "request" && cmd.Key != "" {
-		value := handler.Get(cmd.Key)
+	if cmd.Target == "request" && len(cmd.KeyValuePairs) > 0 && cmd.KeyValuePairs[0].Key != "" {
+		key := cmd.KeyValuePairs[0].Key
+		value := handler.Get(key)
 		if value == nil {
-			return fmt.Errorf("'%s' not set in request", cmd.Key)
+			return fmt.Errorf("'%s' not set in request", key)
 		}
 		fmt.Println(value)
 		return nil
 	}
 
 	// Get specific key if provided
-	if cmd.Key != "" {
-		value := handler.Get(cmd.Key)
+	if len(cmd.KeyValuePairs) > 0 && cmd.KeyValuePairs[0].Key != "" {
+		key := cmd.KeyValuePairs[0].Key
+		value := handler.Get(key)
 		if value == nil {
-			return fmt.Errorf("key '%s' not found in %s", cmd.Key, cmd.Target)
+			return fmt.Errorf("key '%s' not found in %s", key, cmd.Target)
 		}
 
 		// Format based on type
 		switch v := value.(type) {
 		case []interface{}:
 			// Array format
-			fmt.Printf("%s = [", cmd.Key)
+			fmt.Printf("%s = [", key)
 			for i, item := range v {
 				if i > 0 {
 					fmt.Print(", ")
@@ -63,7 +65,7 @@ func Check(cmd parser.Command) error {
 			fmt.Println("]")
 		default:
 			// Simple value
-			fmt.Printf("%s = \"%v\"\n", cmd.Key, value)
+			fmt.Printf("%s = \"%v\"\n", key, value)
 		}
 		return nil
 	}

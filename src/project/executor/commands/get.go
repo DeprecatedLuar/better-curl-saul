@@ -29,15 +29,16 @@ func Get(cmd parser.Command) (interface{}, error) {
 		return nil, fmt.Errorf("failed to load %s.toml: %v", cmd.Target, err)
 	}
 
-	if cmd.Key == "" {
+	if len(cmd.KeyValuePairs) == 0 || cmd.KeyValuePairs[0].Key == "" {
 		// Return entire TOML structure as a simple message
 		return "TOML structure display not implemented yet", nil
 	}
 
 	// Get specific key
-	value := handler.Get(cmd.Key)
+	key := cmd.KeyValuePairs[0].Key
+	value := handler.Get(key)
 	if value == nil {
-		return nil, fmt.Errorf("key '%s' not found", cmd.Key)
+		return nil, fmt.Errorf("key '%s' not found", key)
 	}
 
 	return value, nil
