@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Vision and Approach
 
-This project is **Better-Curl (Saul)** - a workspace-based HTTP client designed to eliminate the pain of complex curl commands with JSON payloads. The complete project specification, command structure, and user experience goals are documented in `other/documentation/vision.md` - **always reference this file for implementation details and requirements validation**.
+This project is **Better-Curl (Saul)** - a workspace-based HTTP client designed to eliminate the pain of complex curl commands with JSON payloads. 
+
+**README.md is the source of truth for AI-assisted development** - it documents all core ideas, concepts, and foundational vision that guide development decisions. Always reference this file for project scope, feature requirements, and architectural direction. The action-plan.md handles specific technical implementation details.
 
 **Collaborative Development Philosophy:**
 - This is a learning-focused project where the user wants to understand every piece of code generated
@@ -35,18 +37,29 @@ go run cmd/main.go pokeapi set body pokemon.name=pikachu
 ```
 better-curl-saul/
 ├── go.mod                        # Go module (module name: "main")
-├── other/documentation/vision.md # Complete project specification
+├── README.md                     # Complete project specification (moved from other/documentation/vision.md)
 ├── other/documentation/action-plan.md # Development action plan
 ├── cmd/
 │   └── main.go                  # Clean entry point - program flow only
 ├── src/project/
 │   ├── parser/
 │   │   └── command.go           # Command struct + ParseCommand function
+│   ├── executor/
+│   │   ├── commands.go          # Core command execution logic
+│   │   ├── variables.go         # Variable prompting and substitution
+│   │   └── http/                # HTTP execution subfolder (Phase 4B)
+│   │       ├── client.go        # HTTP client setup and execution
+│   │       ├── display.go       # Response formatting and display
+│   │       └── request.go       # HTTP request building logic
+│   ├── presets/
+│   │   └── manager.go           # Preset directory and file management
+│   ├── toml/
+│   │   └── handler.go           # TOML manipulation with JSON conversion
 │   └── config/
 │       └── constants.go         # Constants and command aliases
 ```
 
-**Core Architecture Concepts (from other/documentation/vision.md):**
+**Core Architecture Concepts (from README.md):**
 - **Presets**: Folders in `~/.config/saul/presets/[preset-name]/` containing TOML files
 - **5-File Structure**: headers.toml, body.toml, query.toml, request.toml, variables.toml (Unix philosophy)
 - **Variable System**: Soft variables (`{?name}`) always prompt, hard variables (`{@name}`) persist in variables.toml
@@ -82,7 +95,17 @@ better-curl-saul/
   - Fixed nested TOML variable detection: `[pokemon] name = "{@pokename}"` now works
   - Reduced ~100 lines of complex code to ~20 lines of regex
   - Zero breaking changes, same user experience, much more reliable
-- ⏳ **Next**: Phase 4 - Response History System
+- ✅ **Phase 4A Complete**: Edit Command System
+  - Field-level editing with pre-filled readline prompts
+  - Interactive terminal editing experience with cursor movement
+  - Uses existing validation and TOML patterns
+  - Zero regression - purely additive feature
+- ✅ **Phase 4B Complete**: Response Formatting System
+  - Smart JSON→TOML conversion for optimal readability
+  - Intelligent content-type detection with graceful fallback
+  - HTTP subfolder refactoring for clean architecture
+  - Real-world tested with JSONPlaceholder, PokéAPI, HTTPBin, GitHub APIs
+- ⏳ **Next**: Phase 4C - Response History System
 
 ## Codebase Architecture Flow
 
@@ -121,10 +144,13 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
 - **5-File System**: body.toml, headers.toml, query.toml, request.toml, variables.toml
 - **Operations**: `LoadPresetFile()`, `SavePresetFile()`, `CreatePresetDirectory()`
 
-### 6. HTTP Execution: `src/project/executor/http.go`
+### 6. HTTP Execution: `src/project/executor/http/` (Phase 4B Refactored)
+- **client.go**: HTTP client setup, request execution, error handling
+- **display.go**: Smart response formatting (JSON→TOML conversion, content-type detection)
+- **request.go**: HTTP request building from TOML handlers
 - **Variable Resolution**: Load variables.toml → Prompt for missing → Substitute in all files
 - **Request Building**: Separate handlers per file → Extract components → Build HTTP request
-- **Execution**: go-resty HTTP client → Pretty-printed JSON response
+- **Execution**: go-resty HTTP client → Smart-formatted response display
 
 ### 7. Variable System: `src/project/executor/variables.go`
 - **Detection**: `{@name}` (hard - stored) vs `{?name}` (soft - always prompt)
@@ -224,10 +250,10 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
 - **Architecture Fixed**: Separate handlers eliminate field misclassification, braced variables prevent URL conflicts
 - Focus on incremental development with full understanding of each component
 - Prioritize clean, readable code over complex features
-- Always validate against the other/documentation/vision.md requirements during development
+- Always validate against the README.md requirements during development
 - Use `other/testing/test_suite_fixed.sh` for reliable automated testing
 
-## Phase 3 & 3.5 Implementation Summary
+## Phase 3, 3.5, 4A & 4B Implementation Summary
 
 **✅ HTTP Execution Engine Complete (Phase 3):**
 - `saul call preset` command fully functional
@@ -244,6 +270,21 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
 - ✅ Real-world APIs work correctly: `https://api.github.com/@username`
 - ✅ Complex URLs supported: `https://api.com/{@user}/posts?search=@mentions&token={@auth}`
 - ✅ All existing functionality preserved with new syntax
+
+**✅ Edit Command System Complete (Phase 4A):**
+- ✅ Field-level editing with pre-filled readline prompts
+- ✅ Interactive terminal editing experience with cursor movement and backspace
+- ✅ Uses existing validation and TOML patterns - zero new complexity
+- ✅ Commands: `saul api edit url`, `saul api edit body pokemon.name`
+- ✅ Zero regression - purely additive feature
+
+**✅ Response Formatting System Complete (Phase 4B):**
+- ✅ Smart JSON→TOML conversion for dramatically improved readability
+- ✅ Intelligent content-type detection with graceful fallback to raw display
+- ✅ HTTP subfolder refactoring: `client.go`, `display.go`, `request.go`
+- ✅ Real-world tested with JSONPlaceholder, PokéAPI, HTTPBin, GitHub APIs
+- ✅ Response metadata headers show status, timing, size, content-type
+- ✅ All existing functionality preserved with enhanced output formatting
 
 **Architecture Improvements:**
 - Clean file separation: commands.go, variables.go, validation.go, http.go

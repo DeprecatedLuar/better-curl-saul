@@ -17,6 +17,7 @@ A workspace-based HTTP client that builds requests incrementally using separate 
   - `query.toml` - Query/search payload data (NOT URL parameters)
   - `request.toml` - HTTP method, URL, and request settings
   - `variables.toml` - Hard variables only (soft variables never stored)
+  - `filters.toml` - Response filtering configuration (optional)
   - `history/` - Response history storage (optional, per-preset)
 
 ### TOML File Structure
@@ -109,6 +110,58 @@ This eliminates redundancy and enforces consistency - perfect for REST APIs wher
 - **Timing**: Variables resolve at `call` time (not pre-call)
 - **Storage**: Keep resolved data in memory during execution
 - **Process**: TOML files → variable resolution → JSON conversion → HTTP execution
+
+### Response Filtering System
+Keep API responses readable and terminal-friendly by filtering large JSON responses to only essential fields.
+
+**Core Concept:**
+- **Problem**: APIs like PokéAPI return 100+ fields that flood terminal displays
+- **Solution**: Whitelist filtering shows only specified fields
+- **Philosophy**: Terminal-friendly responses without losing raw data storage
+
+**Command Syntax:**
+```bash
+# Set response filter (comma-separated field paths)
+saul pokeapi set filter name,stats[0],stats[1],types[0].type.name
+
+# Edit filters interactively  
+saul pokeapi edit filter
+
+# Check current filter settings
+saul pokeapi check filter
+
+# Clear filters (show all fields)
+saul pokeapi set filter ""
+
+# Filters apply automatically during calls
+saul pokeapi call
+```
+
+**Field Path Syntax (Industry Standard):**
+- **Basic**: `name`, `id`, `stats` (top-level fields or entire objects)
+- **Nested**: `types[0].type.name`, `pokemon.stats.hp` (dot notation)
+- **Arrays**: `stats[0]`, `moves[5].move.name` (bracket notation)
+
+**filters.toml Storage:**
+```toml
+fields = [
+    "name",
+    "stats[0]", 
+    "stats[1]",
+    "types[0].type.name"
+]
+```
+
+**Execution Flow:**
+```
+HTTP Response → Filter Extraction → Smart TOML Conversion → Display
+```
+
+**Key Features:**
+- **Silent Error Handling**: Missing fields are ignored, no execution breakage
+- **Real-world Tested**: Validated against PokéAPI, GitHub API, JSONPlaceholder
+- **Terminal Optimized**: Large responses become readable and manageable
+- **Integration**: Works seamlessly with existing smart JSON→TOML response formatting
 
 ### Response History System
 - **Storage**: `~/.config/saul/presets/[preset]/history/response-001.json` (numbered, latest first)
@@ -204,6 +257,7 @@ saul pokeapi          # Enter preset mode
 - `set method POST` - Set HTTP method (GET, POST, PUT, DELETE, etc.)
 - `set timeout 30` - Set request timeout in seconds
 - `set history N` - Set response history count (0 = disabled)
+- `set filter field1,field2,field3` - Set response filtering (comma-separated field paths)
 
 **Regular TOML Configuration (With = Syntax):**
 - `set header key=value` - Add HTTP header
@@ -214,6 +268,7 @@ saul pokeapi          # Enter preset mode
 **Inspection Commands:**
 - `check url` - Display current URL (smart routing to request.toml)
 - `check method` - Display current HTTP method  
+- `check filter` - Display current response filter settings
 - `check body pokemon.name` - Display specific field with formatting
 - `check headers` - Display all headers (full file view)
 - `check history` - Interactive history menu or show available responses
@@ -237,6 +292,7 @@ trainer_id: ash123_           # Hard variable (shows current value)
 
 **Editing Commands:**
 - `edit url` - Pre-filled prompt for quick URL edits (ideal for variable syntax changes)
+- `edit filter` - Pre-filled prompt for response filter editing
 - `edit body pokemon.name` - Pre-filled prompt for specific field editing
 - `edit header Authorization` - Pre-filled prompt for specific header editing
 - `edit @pokename` - Pre-filled prompt for editing stored hard variable values
@@ -266,7 +322,9 @@ saul [global] [preset] [command] [target] [field=value]
 Examples:
 saul pokeapi set header Authorization=Bearer123
 saul pokeapi set body pokemon.name={?}
+saul pokeapi set filter name,stats[0],types[0].type.name
 saul call pokeapi
+saul pokeapi check filter
 saul pokeapi check history
 saul pokeapi rm history
 ```
@@ -287,7 +345,7 @@ saul pokeapi rm history
 
 ### Data Pipeline
 ```
-TOML files → Parse-merge-write → Variable resolution → JSON conversion → HTTP execution → Response history storage
+TOML files → Parse-merge-write → Variable resolution → JSON conversion → HTTP execution → Response filtering → Response history storage
 ```
 
 ### Implementation Priority Order
@@ -296,12 +354,14 @@ TOML files → Parse-merge-write → Variable resolution → JSON conversion →
 3. **JSON conversion** (TOML → Go structs → JSON) ✅ **COMPLETED**
 4. **HTTP execution engine** (using go-resty) ✅ **COMPLETED**
 5. **Single-line commands** (primary interface) ✅ **COMPLETED**
-6. **Response history system** ⏳ **Phase 4 - PENDING**
-7. **Interactive mode** (secondary interface built on single-line) ⏳ **Phase 5 - PENDING**
+6. **Response filtering system** (whitelist field extraction) ⏳ **Phase 4C - PENDING**
+7. **Response history system** ⏳ **Phase 4D - PENDING**
+8. **Interactive mode** (secondary interface built on single-line) ⏳ **Phase 5 - PENDING**
 
 ### Libraries and Dependencies
 - `github.com/pelletier/go-toml/v1` - TOML parsing and manipulation
 - `github.com/go-resty/resty/v2` - HTTP client library
+- `github.com/tidwall/gjson` - JSON path extraction for response filtering
 - `github.com/DeprecatedLuar/toml-vars-letsgooo` - Existing tomv integration
 - Standard library `os`, `filepath` - File operations
 
@@ -312,7 +372,9 @@ TOML files → Parse-merge-write → Variable resolution → JSON conversion →
 - **Reusable:** Save and reuse complex request configurations
 - **Interactive:** Smart prompting for variable values
 - **Readable:** Pretty-formatted response display for easy analysis
+- **Terminal-Friendly:** Response filtering keeps complex APIs manageable
 - **Debuggable:** Response history for API development and troubleshooting
+- **Productive:** Comma-separated syntax for batch operations (future enhancement)
 
 ## Target Users
 - Developers testing APIs

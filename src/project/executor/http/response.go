@@ -44,10 +44,23 @@ func DisplayResponse(response *resty.Response, rawMode bool) {
 					}
 				}
 			} else {
-				// Default: Try TOML formatting for JSON responses
-				if tomlFormatted := formatAsToml(response.Body()); tomlFormatted != "" {
-					fmt.Println(tomlFormatted)
-					return
+				// Check if response is too large for TOML conversion
+				if len(response.Body()) > 10000 {
+					fmt.Printf("Response too large for TOML (%d bytes) - showing JSON:\n", len(response.Body()))
+					var jsonObj interface{}
+					if err := json.Unmarshal(response.Body(), &jsonObj); err == nil {
+						if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
+							fmt.Println(string(prettyJSON))
+							return
+						}
+					}
+					// If JSON parsing fails, fall through to raw display
+				} else {
+					// Default: Try TOML formatting for JSON responses
+					if tomlFormatted := formatAsToml(response.Body()); tomlFormatted != "" {
+						fmt.Println(tomlFormatted)
+						return
+					}
 				}
 				// Fallback to pretty JSON if TOML conversion fails
 				var jsonObj interface{}
