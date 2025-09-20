@@ -30,7 +30,7 @@ func Edit(cmd parser.Command) error {
 	cmd.Target = normalizedTarget
 
 	// Distinguish between field-level and container-level editing
-	if cmd.Key == "" {
+	if len(cmd.KeyValuePairs) == 0 || cmd.KeyValuePairs[0].Key == "" {
 		// Container-level editing: edit the entire TOML file in editor
 		return executeContainerEdit(cmd)
 	} else {
@@ -41,6 +41,9 @@ func Edit(cmd parser.Command) error {
 
 // executeFieldEdit handles field-level editing with pre-filled prompts (existing functionality)
 func executeFieldEdit(cmd parser.Command) error {
+	// Use first key-value pair for field editing
+	key := cmd.KeyValuePairs[0].Key
+	
 	// Load current value using existing patterns
 	handler, err := presets.LoadPresetFile(cmd.Preset, cmd.Target)
 	if err != nil {
@@ -48,10 +51,10 @@ func executeFieldEdit(cmd parser.Command) error {
 	}
 
 	// Get current value (empty string if doesn't exist)
-	currentValue := handler.GetAsString(cmd.Key)
+	currentValue := handler.GetAsString(key)
 
 	// Pre-filled interactive editing with readline
-	rl, err := readline.New(fmt.Sprintf("%s: ", cmd.Key))
+	rl, err := readline.New(fmt.Sprintf("%s: ", key))
 	if err != nil {
 		return fmt.Errorf("failed to create readline interface: %v", err)
 	}
@@ -68,19 +71,19 @@ func executeFieldEdit(cmd parser.Command) error {
 
 	// Special validation for request fields
 	if cmd.Target == "request" {
-		if err := executor.ValidateRequestField(cmd.Key, newValue); err != nil {
+		if err := executor.ValidateRequestField(key, newValue); err != nil {
 			return err
 		}
 	}
 
 	// Save using existing validation and patterns
 	valueToStore := newValue
-	if cmd.Target == "request" && strings.ToLower(cmd.Key) == "method" {
+	if cmd.Target == "request" && strings.ToLower(key) == "method" {
 		// Store HTTP methods in uppercase
 		valueToStore = strings.ToUpper(newValue)
 	}
 	inferredValue := executor.InferValueType(valueToStore)
-	handler.Set(cmd.Key, inferredValue)
+	handler.Set(key, inferredValue)
 
 	err = presets.SavePresetFile(cmd.Preset, cmd.Target, handler)
 	if err != nil {

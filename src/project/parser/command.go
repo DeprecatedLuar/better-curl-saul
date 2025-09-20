@@ -6,14 +6,18 @@ import (
 )
 
 type Command struct {
-	Global    string
-	Preset    string
-	Command   string
-	Target    string
-	ValueType string
-	Key       string
-	Value     string
-	Mode      string
+	Global        string
+	Preset        string
+	Command       string
+	Target        string
+	ValueType     string
+	Mode          string
+	KeyValuePairs []KeyValuePair
+}
+
+type KeyValuePair struct {
+	Key   string
+	Value string
 }
 
 func ParseCommand(args []string) (Command, error) {
@@ -43,8 +47,9 @@ func ParseCommand(args []string) (Command, error) {
 		if isSpecialRequestCommand(args[2]) {
 			// Special syntax: "saul preset set url https://..." 
 			cmd.Target = "request"
-			cmd.Key = args[2]
-			cmd.Value = args[3]
+			cmd.KeyValuePairs = []KeyValuePair{
+				{Key: args[2], Value: args[3]},
+			}
 			return cmd, nil
 		}
 	}
@@ -55,11 +60,15 @@ func ParseCommand(args []string) (Command, error) {
 			// Check if it's a special request field (auto-map to request target)
 			if isSpecialRequestCommand(args[2]) {
 				cmd.Target = "request"
-				cmd.Key = args[2]
+				if len(args) > 3 {
+					cmd.KeyValuePairs = []KeyValuePair{{Key: args[2], Value: args[3]}}
+				} else {
+					cmd.KeyValuePairs = []KeyValuePair{{Key: args[2], Value: ""}}
+				}
 			} else {
 				cmd.Target = args[2]
 				if len(args) > 3 {
-					cmd.Key = args[3] // Optional key for specific field
+					cmd.KeyValuePairs = []KeyValuePair{{Key: args[3], Value: ""}}
 				}
 			}
 		}
@@ -72,31 +81,36 @@ func ParseCommand(args []string) (Command, error) {
 			// Check if it's a special request field (auto-map to request target)
 			if isSpecialRequestCommand(args[2]) {
 				cmd.Target = "request"
-				cmd.Key = args[2]
+				if len(args) > 3 {
+					cmd.KeyValuePairs = []KeyValuePair{{Key: args[2], Value: args[3]}}
+				} else {
+					cmd.KeyValuePairs = []KeyValuePair{{Key: args[2], Value: ""}}
+				}
 			} else {
 				cmd.Target = args[2]
 				if len(args) > 3 {
-					cmd.Key = args[3] // Optional key for specific field
+					cmd.KeyValuePairs = []KeyValuePair{{Key: args[3], Value: ""}}
 				}
-				// Note: If no key provided (len(args) == 3), cmd.Key stays empty -> container editing
+				// Note: If no key provided (len(args) == 3), KeyValuePairs stays empty -> container editing
 			}
 		}
 		return cmd, nil
 	}
 
-	// Handle regular commands with key=value syntax
+	// Handle regular commands with key=value syntax (supports comma-separated)
 	if len(args) > 2 {
 		cmd.Target = args[2]
 	}
 	if len(args) > 3 {
-		keyValue := args[3]
-		parts := strings.SplitN(keyValue, "=", 2)
-		if len(parts) != 2 {
-			return cmd, fmt.Errorf("what am I even supposed to do with: %s? Value=Key c'mon not that hard buddy", keyValue)
+		keyValueInput := args[3]
+		
+		// Parse comma-separated key=value pairs with quote support
+		pairs, err := parseCommaSeparatedKeyValues(keyValueInput)
+		if err != nil {
+			return cmd, fmt.Errorf("invalid key=value format: %v", err)
 		}
-
-		cmd.Key = parts[0]
-		cmd.Value = parts[1]
+		
+		cmd.KeyValuePairs = pairs
 	}
 
 	return cmd, nil
@@ -113,4 +127,71 @@ func isSpecialRequestCommand(command string) bool {
 		}
 	}
 	return false
+}
+
+// parseCommaSeparatedKeyValues parses comma-separated key=value pairs with quote support
+// Examples: "key1=value1,key2=value2" or "auth=Bearer123,type=\"application/json, charset=utf-8\""
+func parseCommaSeparatedKeyValues(input string) ([]KeyValuePair, error) {
+	var pairs []KeyValuePair
+	var currentPair strings.Builder
+	inQuotes := false
+	
+	for _, char := range input {
+		switch char {
+		case '"':
+			inQuotes = !inQuotes
+			currentPair.WriteRune(char)
+		case ',':
+			if inQuotes {
+				currentPair.WriteRune(char)
+			} else {
+				// End of current pair
+				pairStr := strings.TrimSpace(currentPair.String())
+				if pairStr != "" {
+					kvp, err := parseKeyValuePair(pairStr)
+					if err != nil {
+						return nil, err
+					}
+					pairs = append(pairs, kvp)
+				}
+				currentPair.Reset()
+			}
+		default:
+			currentPair.WriteRune(char)
+		}
+	}
+	
+	// Handle the last pair
+	pairStr := strings.TrimSpace(currentPair.String())
+	if pairStr != "" {
+		kvp, err := parseKeyValuePair(pairStr)
+		if err != nil {
+			return nil, err
+		}
+		pairs = append(pairs, kvp)
+	}
+	
+	if len(pairs) == 0 {
+		return nil, fmt.Errorf("no valid key=value pairs found")
+	}
+	
+	return pairs, nil
+}
+
+// parseKeyValuePair parses a single key=value pair and handles quotes
+func parseKeyValuePair(input string) (KeyValuePair, error) {
+	parts := strings.SplitN(input, "=", 2)
+	if len(parts) != 2 {
+		return KeyValuePair{}, fmt.Errorf("invalid key=value format: %s", input)
+	}
+	
+	key := strings.TrimSpace(parts[0])
+	value := strings.TrimSpace(parts[1])
+	
+	// Remove surrounding quotes if present
+	if len(value) >= 2 && value[0] == '"' && value[len(value)-1] == '"' {
+		value = value[1 : len(value)-1]
+	}
+	
+	return KeyValuePair{Key: key, Value: value}, nil
 }
