@@ -11,6 +11,7 @@ type Command struct {
 	Preset        string
 	Command       string
 	Target        string
+	Targets       []string      // For bulk operations (space-separated args)
 	ValueType     string
 	Mode          string
 	KeyValuePairs []KeyValuePair
@@ -29,7 +30,16 @@ func ParseCommand(args []string) (Command, error) {
 	}
 
 	switch args[0] {
-	case "rm", "list", "version", "help", "call":
+	case "rm":
+		cmd.Global = args[0]
+		if len(args) >= 2 {
+			// Handle multiple targets for rm: saul rm preset1 preset2 preset3
+			cmd.Targets = args[1:]
+			// Keep single target for backward compatibility
+			cmd.Preset = args[1]
+		}
+		return cmd, nil
+	case "list", "version", "help", "call":
 		cmd.Global = args[0]
 		if len(args) >= 2 {
 			cmd.Preset = args[1]
