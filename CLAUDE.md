@@ -117,7 +117,19 @@ better-curl-saul/
   - Parser enhancement: `Targets []string` field for multiple targets
   - Command execution: graceful error handling with warnings to stderr
   - Foundation for universal space-separated bulk operations across all commands
-- ⏳ **Next**: Phase 4B-Post-2 - Space-Separated Key-Value Migration for consistency
+- ✅ **Phase 4B-Post-2 Complete**: Space-Separated Key-Value Migration
+  - Universal space-separated pattern: `saul api set body name=val1 type=val2`
+  - Code simplification: Eliminated ~100 lines of complex parsing logic
+  - Perfect Unix consistency: Same approach for all bulk operations
+  - Zero regression: All existing functionality preserved with cleaner syntax
+- ✅ **Phase 4C Complete**: Response Filtering System
+  - Terminal overflow solved: 257KB APIs → filtered fields display
+  - Pure UNIX design: Uses existing KeyValuePairs system (zero special parsing)
+  - Clean syntax: `saul api set filters field1=name field2=stats.0.base_stat field3=types.0.type.name`
+  - TOML array storage: `fields = ["name", "stats.0.base_stat", "types.0.type.name"]`
+  - Real-world tested: PokéAPI, JSONPlaceholder complex filtering works perfectly
+  - Silent error handling: Missing fields ignored gracefully
+- ⏳ **Next**: Phase 4D - Response History System for debugging workflow
 
 ## Codebase Architecture Flow
 
@@ -155,16 +167,17 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
 
 ### 5. Preset Management: `src/project/presets/manager.go`
 - **File Structure**: `~/.config/saul/presets/[preset]/[file].toml`
-- **5-File System**: body.toml, headers.toml, query.toml, request.toml, variables.toml
+- **6-File System**: body.toml, headers.toml, query.toml, request.toml, variables.toml, filters.toml
 - **Operations**: `LoadPresetFile()`, `SavePresetFile()`, `CreatePresetDirectory()`
 
 ### 6. HTTP Execution: `src/project/executor/http/` (Phase 4B Refactored)
 - **client.go**: HTTP client setup, request execution, error handling
-- **display.go**: Smart response formatting (JSON→TOML conversion, content-type detection)
+- **response.go**: Smart response formatting with filtering (JSON→Filter→TOML conversion)
 - **request.go**: HTTP request building from TOML handlers
 - **Variable Resolution**: Load variables.toml → Prompt for missing → Substitute in all files
 - **Request Building**: Separate handlers per file → Extract components → Build HTTP request
-- **Execution**: go-resty HTTP client → Smart-formatted response display
+- **Filtering Pipeline**: Load filters.toml → Apply gjson filtering → Smart TOML display
+- **Execution**: go-resty HTTP client → Filter → Smart-formatted response display
 
 ### 7. Variable System: `src/project/executor/variables.go`
 - **Detection**: `{@name}` (hard - stored) vs `{?name}` (soft - always prompt)

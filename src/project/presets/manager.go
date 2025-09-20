@@ -157,7 +157,7 @@ func SavePresetFile(preset, fileType string, handler *toml.TomlHandler) error {
 
 // ValidateFileType checks if the file type is valid
 func ValidateFileType(fileType string) bool {
-	validTypes := []string{"headers", "body", "query", "request", "variables"}
+	validTypes := []string{"headers", "body", "query", "request", "variables", "filters"}
 	for _, valid := range validTypes {
 		if strings.ToLower(fileType) == valid {
 			return true

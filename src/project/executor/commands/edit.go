@@ -19,13 +19,13 @@ func Edit(cmd parser.Command) error {
 		return fmt.Errorf("preset name required for edit command")
 	}
 	if cmd.Target == "" {
-		return fmt.Errorf("target required (body, headers, query, request, variables)")
+		return fmt.Errorf("target required (body, headers, query, request, variables, filters)")
 	}
 
 	// Normalize target aliases
 	normalizedTarget := NormalizeTarget(cmd.Target)
 	if normalizedTarget == "" {
-		return fmt.Errorf("invalid target '%s'. Use: body, headers/header, query, request, variables", cmd.Target)
+		return fmt.Errorf("invalid target '%s'. Use: body, headers/header, query, request, variables, filters", cmd.Target)
 	}
 	cmd.Target = normalizedTarget
 

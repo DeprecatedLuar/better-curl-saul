@@ -73,8 +73,8 @@ func ExecuteCallCommand(cmd parser.Command) error {
 		return fmt.Errorf("HTTP request failed: %v", err)
 	}
 
-	// Display response
-	http.DisplayResponse(response, rawMode)
+	// Display response with filtering support
+	http.DisplayResponse(response, rawMode, cmd.Preset)
 
 	return nil
 }

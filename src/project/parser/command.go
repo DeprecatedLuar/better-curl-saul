@@ -55,7 +55,7 @@ func ParseCommand(args []string) (Command, error) {
 	// Handle special request commands with no-equals syntax
 	if len(args) >= 4 && cmd.Command == "set" {
 		if isSpecialRequestCommand(args[2]) {
-			// Special syntax: "saul preset set url https://..." 
+			// Special syntax: "saul preset set url https://..."
 			cmd.Target = "request"
 			cmd.KeyValuePairs = []KeyValuePair{
 				{Key: args[2], Value: args[3]},
