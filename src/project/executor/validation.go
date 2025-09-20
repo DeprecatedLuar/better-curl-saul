@@ -59,24 +59,34 @@ func validateTimeout(timeout string) error {
 
 // InferValueType converts string values to appropriate Go types for TOML
 func InferValueType(value string) interface{} {
-	// For now, keep everything as strings to avoid TOML handler issues
-	// TODO: Implement proper type handling once TOML handler supports all types
-
-	// Try to parse as boolean (keep this as it's simple)
-	if boolVal, err := strconv.ParseBool(value); err == nil {
-		return boolVal
-	}
-
-	// Check for array notation (comma-separated values)
-	if strings.Contains(value, ",") {
-		parts := strings.Split(value, ",")
+	// Check for explicit array notation with brackets: [item1,item2,item3]
+	if strings.HasPrefix(value, "[") && strings.HasSuffix(value, "]") {
+		// Remove brackets and parse as array
+		content := strings.TrimSpace(value[1 : len(value)-1])
+		if content == "" {
+			// Empty array
+			return []string{}
+		}
+		
+		// Split by comma and clean up each item
+		parts := strings.Split(content, ",")
 		var result []string
 		for _, part := range parts {
-			result = append(result, strings.TrimSpace(part))
+			trimmed := strings.TrimSpace(part)
+			// Remove quotes if present
+			if len(trimmed) >= 2 && trimmed[0] == '"' && trimmed[len(trimmed)-1] == '"' {
+				trimmed = trimmed[1 : len(trimmed)-1]
+			}
+			result = append(result, trimmed)
 		}
 		return result
 	}
 
-	// Default to string (including numbers for now)
+	// Try to parse as boolean
+	if boolVal, err := strconv.ParseBool(value); err == nil {
+		return boolVal
+	}
+
+	// Default to string (no automatic comma-to-array conversion)
 	return value
 }
