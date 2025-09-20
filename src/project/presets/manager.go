@@ -7,15 +7,15 @@ import (
 	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
-	"github.com/DeprecatedLuar/toml-vars-letsgooo"
+	// "github.com/DeprecatedLuar/toml-vars-letsgooo"
 )
 
-// getPresetsDir returns the presets directory path using TOMV
+// getPresetsDir returns the presets directory path using environment variables with defaults
 func getPresetsDir() (string, error) {
-	// Use TOMV to read from settings.toml with defaults
-	configDirPath := tomv.GetOr("directories.config_dir_path", ".config")
-	appDirName := tomv.GetOr("directories.app_dir_name", "saul") 
-	presetsDirName := tomv.GetOr("directories.presets_dir_name", "presets")
+	// Use environment variables with defaults (replaces TOMV)
+	configDirPath := getEnvOrDefault("SAUL_CONFIG_DIR_PATH", ".config")
+	appDirName := getEnvOrDefault("SAUL_APP_DIR_NAME", "saul")
+	presetsDirName := getEnvOrDefault("SAUL_PRESETS_DIR_NAME", "presets")
 
 	// Build full path relative to home directory
 	homeDir, err := os.UserHomeDir()
@@ -24,6 +24,14 @@ func getPresetsDir() (string, error) {
 	}
 
 	return filepath.Join(homeDir, configDirPath, appDirName, presetsDirName), nil
+}
+
+// getEnvOrDefault returns environment variable value or default if not set
+func getEnvOrDefault(envVar, defaultValue string) string {
+	if value := os.Getenv(envVar); value != "" {
+		return value
+	}
+	return defaultValue
 }
 
 // GetConfigDir returns the full configuration directory path

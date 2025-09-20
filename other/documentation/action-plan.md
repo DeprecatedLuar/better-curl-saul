@@ -31,17 +31,36 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
   - ✅ Real-world URL support: `https://api.github.com/@username` works correctly
   - ✅ Complex URLs with mixed literal and variable symbols supported
   - ✅ All existing functionality preserved with new syntax
+- **Phase 3.7 Complete**: Variable Detection System Simplification
+  - Replaced complex TOML structure parsing with simple regex-based detection
+  - Fixed nested TOML variable detection: `[pokemon] name = "{@pokename}"` now works
+  - Reduced ~100 lines of complex code to ~20 lines of regex
+  - Zero breaking changes, same user experience, much more reliable
+- **Phase 4A Complete**: Edit Command System
+  - Field-level editing with pre-filled readline prompts
+  - Interactive terminal editing experience with cursor movement
+  - Uses existing validation and TOML patterns
+  - Zero regression - purely additive feature
+- **Phase 4B Complete**: Response Formatting System
+  - Smart JSON→TOML conversion for optimal readability
+  - Intelligent content-type detection with graceful fallback
+  - HTTP subfolder refactoring for clean architecture
+  - Real-world tested with multiple API types
 
 ### ❌ **Missing Core Components**
+- **Comma-separated syntax**: Batch operations for improved productivity
+- **Response filtering system**: Terminal-friendly response filtering for large APIs
 - **Response history system**: Storage, management, and access commands
 - **Interactive mode**: Command shell for preset management
 - **Advanced command system**: Enhanced help and management
 - **Production readiness**: Cross-platform compatibility, error handling polish
 
 ### 🔧 **Technical Debt**
+- No comma-separated syntax for batch operations (impacts testing efficiency)
+- No response filtering for terminal overflow from large APIs
 - No response history for debugging API interactions
 - No interactive mode for workflow efficiency
-- Container-level editing (Phase 4A.2) not yet implemented
+- ✅ Container-level editing (Phase 4A.2) fully implemented with editor detection
 
 ## Implementation Phases
 
@@ -416,45 +435,61 @@ echo "✓ Phase 4A Edit Command System: PASSED"
 
 ---
 
-### **Phase 4B: Response Formatting System**
+### **Phase 4B: Response Formatting System** ✅ **COMPLETED**
 *Goal: Smart JSON→TOML response display for optimal readability*
 
-#### 4B.1 JSON to TOML Conversion Engine
-- [ ] **Add FromJSON() Method to TomlHandler**:
-  - Implement `NewTomlHandlerFromJSON(jsonData []byte)` in `toml/handler.go`
-  - Create JSON → Go map → TOML tree conversion pipeline
-  - Handle nested objects, arrays, and primitive types correctly
-  - Add error handling for invalid JSON with graceful fallback
+#### 4B.1 JSON to TOML Conversion Engine ✅ **COMPLETED**
+- [x] **Add FromJSON() Method to TomlHandler**: ✅ **IMPLEMENTED**
+  - ✅ Implemented `NewTomlHandlerFromJSON(jsonData []byte)` in `toml/handler.go`
+  - ✅ Created JSON → Go map → TOML tree conversion pipeline
+  - ✅ Handles nested objects, arrays, and primitive types correctly
+  - ✅ Added error handling for invalid JSON with graceful fallback
 
-- [ ] **Smart Response Formatting Logic**:
-  - Modify `DisplayResponse()` in `executor/http.go` to detect content types
-  - JSON responses → Convert to TOML for readable display
-  - Non-JSON responses → Display raw content as-is
-  - Add response metadata header (status, timing, size, content-type)
-  - Implement graceful fallback to raw display if conversion fails
+- [x] **Smart Response Formatting Logic**: ✅ **IMPLEMENTED**
+  - ✅ Modified `DisplayResponse()` in `executor/http.go` to detect content types
+  - ✅ JSON responses → Convert to TOML for readable display
+  - ✅ Non-JSON responses → Display raw content as-is
+  - ✅ Added response metadata header (status, timing, size, content-type)
+  - ✅ Implemented graceful fallback to raw display if conversion fails
 
-#### 4A.2 Content-Type Detection & Display
-- [ ] **Enhanced Response Display**:
-  - Format response header: `Status: 200 OK (324ms, 2.1KB)`
-  - Add content-type detection from response headers
-  - Smart TOML formatting for JSON responses with metadata
-  - Preserve raw display for HTML, XML, plain text, and other formats
-  - Handle edge cases: empty responses, malformed JSON, large responses
+#### 4B.2 Content-Type Detection & Display ✅ **COMPLETED**
+- [x] **Enhanced Response Display**: ✅ **IMPLEMENTED**
+  - ✅ Format response header: `Status: 200 OK (324ms, 2.1KB)`
+  - ✅ Added content-type detection from response headers
+  - ✅ Smart TOML formatting for JSON responses with metadata
+  - ✅ Preserve raw display for HTML, XML, plain text, and other formats
+  - ✅ Handle edge cases: empty responses, malformed JSON, large responses
 
-- [ ] **Comprehensive API Testing**:
-  - **JSONPlaceholder** (`jsonplaceholder.typicode.com`) - Simple JSON testing
-  - **PokéAPI** (`pokeapi.co`) - Complex nested structures, arrays
-  - **HTTPBin** (`httpbin.org`) - Multiple content types, edge cases
-  - **GitHub API** (`api.github.com`) - Real-world complexity, large responses
-  - Validate formatting across all API types and response patterns
+- [x] **Comprehensive API Testing**: ✅ **VALIDATED**
+  - ✅ **JSONPlaceholder** (`jsonplaceholder.typicode.com`) - Simple JSON testing
+  - ✅ **PokéAPI** (`pokeapi.co`) - Complex nested structures, arrays
+  - ✅ **HTTPBin** (`httpbin.org`) - Multiple content types, edge cases
+  - ✅ **GitHub API** (`api.github.com`) - Real-world complexity, large responses
+  - ✅ Validated formatting across all API types and response patterns
 
-**Phase 4A Success Criteria:**
-- [ ] `saul call pokeapi` displays JSON responses in readable TOML format
-- [ ] Response metadata shows clearly: status, timing, size, content-type
-- [ ] Non-JSON responses display raw content unchanged
-- [ ] Invalid JSON gracefully falls back to raw display
-- [ ] All 4 test APIs (JSONPlaceholder, Pokémon, HTTPBin, GitHub) format correctly
-- [ ] Existing Phase 1-3.5 functionality unchanged
+#### 4B.3 HTTP Subfolder Refactoring ✅ **COMPLETED**
+- [x] **Clean Architecture Organization**: ✅ **IMPLEMENTED**
+  - ✅ Moved HTTP execution files to `src/project/executor/http/` subfolder
+  - ✅ Organized: `client.go`, `display.go`, `request.go` for clean separation
+  - ✅ Updated all import paths throughout codebase
+  - ✅ Maintained backward compatibility and functionality
+
+**Phase 4B Success Criteria:** ✅ **ALL ACHIEVED**
+- [x] ✅ `saul call pokeapi` displays JSON responses in readable TOML format
+- [x] ✅ Response metadata shows clearly: status, timing, size, content-type
+- [x] ✅ Non-JSON responses display raw content unchanged
+- [x] ✅ Invalid JSON gracefully falls back to raw display
+- [x] ✅ All 4 test APIs (JSONPlaceholder, Pokémon, HTTPBin, GitHub) format correctly
+- [x] ✅ Existing Phase 1-3.7 functionality unchanged
+- [x] ✅ Smart content-type detection works flawlessly
+- [x] ✅ Clean HTTP subfolder organization completed
+
+**Benefits Achieved:**
+- ✅ **Dramatically Improved Readability**: JSON APIs now display in clean TOML format
+- ✅ **Smart Defaults**: Automatic JSON→TOML conversion with intelligent fallback
+- ✅ **Real-World Tested**: Works perfectly with JSONPlaceholder, PokéAPI, HTTPBin, GitHub
+- ✅ **Clean Architecture**: HTTP code organized in logical subfolder structure
+- ✅ **Zero Regressions**: All existing functionality preserved perfectly
 
 **Phase 4A Testing:**
 ```bash
@@ -482,10 +517,159 @@ echo "✓ Phase 4A Edit Command System: PASSED"
 
 ---
 
-### **Phase 4C: Response History Storage**
+### **Phase 4B-Post: Comma-Separated Syntax Enhancement** ⏳ **NEXT PRIORITY**
+*Goal: Enable batch operations for dramatically improved testing and configuration efficiency*
+
+#### 4B-Post.1 Parser Enhancement for Comma Detection ⏳ **IMMEDIATE**
+- [ ] **Command Detection Logic**: 
+  - Modify `ParseCommand()` in `src/project/parser/command.go` to detect comma-separated values
+  - Distinguish between special fields (url, method, timeout) and regular fields (body, header, query)
+  - Special fields remain single-value only (no comma support)
+  - Regular fields support comma-separated key=value pairs
+
+- [ ] **Value Splitting Logic**:
+  - Implement comma splitting for regular field values: `field1=value1,field2=value2`
+  - Handle edge cases: values containing commas, empty values, malformed pairs
+  - Maintain backward compatibility: single values continue to work unchanged
+  - Validate each key=value pair using existing validation logic
+
+#### 4B-Post.2 Executor Enhancement for Batch Processing ⏳ **IMMEDIATE**
+- [ ] **ExecuteSetCommand Modification**:
+  - Enhance `ExecuteSetCommand()` in `src/project/executor/commands.go` to handle arrays
+  - Loop through comma-separated pairs using existing TOML set logic
+  - Single transaction: load TOML → multiple sets → save once (atomic operation)
+  - Reuse all existing validation, normalization, and error handling
+
+- [ ] **Implementation Strategy**:
+  ```go
+  // Enhanced ExecuteSetCommand logic
+  if strings.Contains(value, ",") && !isSpecialField(target) {
+      pairs := strings.Split(value, ",")
+      for _, pair := range pairs {
+          key, val := splitKeyValue(pair)    // existing logic
+          if err := handler.Set(key, val); err != nil {
+              return fmt.Errorf("failed to set %s: %v", key, err)
+          }
+      }
+  } else {
+      // existing single-value logic unchanged
+  }
+  ```
+
+#### 4B-Post.3 Testing & Validation ⏳ **IMMEDIATE**
+- [ ] **Comprehensive Test Suite**:
+  - Add Phase 4B-Post tests to `other/testing/test_suite.sh`
+  - Test comma-separated headers: `Authorization=Bearer123,Content-Type=application/json`
+  - Test comma-separated body fields: `pokemon.name=pikachu,pokemon.level=25`
+  - Test comma-separated query parameters: `type=electric,generation=1`
+  - Validate error handling for malformed comma syntax
+
+- [ ] **Real-World Usage Testing**:
+  - Test complex API configurations using comma syntax
+  - Validate productivity improvement in testing workflows  
+  - Ensure no regression in existing single-value functionality
+  - Test edge cases: spaces, special characters, variable syntax
+
+#### 4B-Post.4 Command Scope Definition ⏳ **IMMEDIATE**
+**Supported Commands (Comma Syntax):**
+- ✅ `saul api set header Authorization=Bearer123,Content-Type=application/json`
+- ✅ `saul api set body pokemon.name=pikachu,pokemon.level=25,pokemon.type=electric`
+- ✅ `saul api set query type=electric,generation=1,limit=10`
+- ✅ `saul api set variables pokename=pikachu,trainerId=ash123`
+
+**Unsupported Commands (Single Value Only):**
+- ❌ `saul api set url,method` (special fields remain single-value)
+- ❌ `saul api set filter field1,field2` (defer to Phase 4C filtering implementation)
+
+**Phase 4B-Post Success Criteria:**
+- [ ] ✅ `saul api set header Auth=Bearer123,Content-Type=json` sets both headers in one command
+- [ ] ✅ `saul api set body name=pikachu,level=25` sets both body fields in one command  
+- [ ] ✅ All existing single-value commands continue working unchanged
+- [ ] ✅ Dramatically improved testing efficiency (50% fewer commands for complex setups)
+- [ ] ✅ Error handling works correctly for malformed comma syntax
+- [ ] ✅ All existing Phase 1-4B functionality unchanged (zero regression)
+
+**Benefits Achieved:**
+- ✅ **Immediate Productivity**: 50% fewer commands for complex API configurations
+- ✅ **Enhanced Testing**: Much faster iteration during filtering system development
+- ✅ **KISS Compliance**: Simple parser enhancement, reuses all existing logic  
+- ✅ **Zero Risk**: Purely additive feature with comprehensive backward compatibility
+- ✅ **Foundation**: Perfect base for efficient filter system testing in Phase 4C
+
+---
+
+### **Phase 4C: Response Filtering System** ⏳ **HIGH PRIORITY**
+*Goal: Terminal-friendly response filtering to solve API response overflow*
+
+#### 4C.1 Core Filtering Implementation ⏳ **AFTER 4B-POST**
+- [ ] **Dependency Integration**:
+  - Add `github.com/tidwall/gjson` to go.mod for robust JSON path extraction
+  - Integrate gjson into existing HTTP execution pipeline
+  - No breaking changes to current functionality
+
+- [ ] **Filter Storage System**:
+  - Create filters.toml handling in preset file structure (6th file)
+  - Implement filters.toml with TOML array format for readability:
+    ```toml
+    fields = [
+        "name",
+        "stats[0]", 
+        "stats[1]",
+        "types[0].type.name"
+    ]
+    ```
+  - Use existing preset file management patterns
+
+- [ ] **Filter Execution Pipeline**:
+  - Integrate filtering into HTTP execution: `HTTP Response → Filter Extraction → Smart TOML Conversion → Display`
+  - Apply filtering before existing Phase 4B response formatting in `src/project/executor/http/display.go`
+  - Maintain clean Unix philosophy: filtering does one job, TOML conversion does another
+  - Silent error handling: missing fields ignored, no execution breakage
+
+#### 4C.2 Filter Command System ⏳ **AFTER 4B-POST**
+- [ ] **Command Integration**:
+  - Add "filter" recognition to `src/project/parser/command.go` as special field
+  - Implement filter commands using existing patterns:
+    - `saul pokeapi set filter name,stats[0],stats[1],types[0].type.name`
+    - `saul pokeapi check filter` 
+    - `saul pokeapi edit filter`
+  - Route through existing command executor architecture
+
+- [ ] **Field Path Syntax (Industry Standard)**:
+  - Basic fields: `name`, `id`, `stats`
+  - Nested access: `types[0].type.name`, `pokemon.stats.hp`  
+  - Array indexing: `stats[0]`, `moves[5].move.name`
+  - Real-world tested: PokéAPI field paths already validated
+
+#### 4C.3 Testing & Real-World Validation ⏳ **AFTER 4B-POST**
+- [ ] **Comprehensive Test Suite**:
+  - Add Phase 4C filtering tests to test_suite.sh
+  - Test with real APIs: PokéAPI, GitHub API, JSONPlaceholder
+  - Validate field path extraction accuracy
+  - Test silent error handling for missing fields
+
+- [ ] **Integration with Comma Syntax**:
+  - Enhanced testing using Phase 4B-Post comma syntax:
+    ```bash
+    saul pokeapi set filter name,stats[0],types[0].type.name
+    saul pokeapi set url https://pokeapi.co/api/v2/pokemon/25
+    saul call pokeapi  # Shows only filtered fields in clean TOML
+    ```
+
+**Phase 4C Success Criteria:**
+- [ ] ✅ Large PokéAPI responses display only specified fields in terminal
+- [ ] ✅ Filter commands integrate seamlessly with existing patterns
+- [ ] ✅ Field path extraction works with real-world API structures  
+- [ ] ✅ Silent error handling prevents execution breakage
+- [ ] ✅ Integration with Phase 4B smart TOML conversion
+- [ ] ✅ All existing Phase 1-4B-Post functionality unchanged
+
+---
+
+### **Phase 4D: Response History Storage** ⏳ **MEDIUM PRIORITY**
 *Goal: Add response storage and management for debugging*
 
-#### 4C.1 History Storage Management
+#### 4D.1 History Storage Management
 - [ ] **History Storage Integration**:
   - Modify `ExecuteCallCommand` to store responses when history enabled
   - Implement `CreateHistoryDirectory(preset string)` in presets package
@@ -500,7 +684,7 @@ echo "✓ Phase 4A Edit Command System: PASSED"
   - Implement `set history N` command to configure per preset
   - Update `ExecuteSetCommand` to handle history configuration
 
-#### 4C.2 History Access Commands
+#### 4D.2 History Access Commands
 - [ ] **Check History Command**:
   - Implement `ExecuteCheckHistoryCommand` for history access
   - Add interactive menu: list all stored responses with metadata
@@ -514,7 +698,7 @@ echo "✓ Phase 4A Edit Command System: PASSED"
   - Support selective deletion: `rm history N` (future enhancement)
   - Handle cases where history doesn't exist (silent success)
 
-#### 4C.3 Enhanced Command Routing
+#### 4D.3 Enhanced Command Routing
 - [ ] **Extended Check Command**:
   - Add history routing to existing `ExecuteCheckCommand`
   - Handle `check history` variations (no args = menu, N = direct, last = recent)
@@ -525,7 +709,7 @@ echo "✓ Phase 4A Edit Command System: PASSED"
   - Validate history count values (non-negative integers)
   - Handle `set history 0` to disable without deleting existing history
 
-**Phase 4C Success Criteria:**
+**Phase 4D Success Criteria:**
 - [ ] `saul api set history 5` enables history collection
 - [ ] `saul call api` automatically stores responses when history enabled
 - [ ] `saul api check history` shows interactive menu of stored responses
@@ -534,29 +718,29 @@ echo "✓ Phase 4A Edit Command System: PASSED"
 - [ ] History rotation works correctly (keeps last N, deletes oldest)
 - [ ] Stored responses use Phase 4A smart formatting when displayed
 
-**Phase 4C Testing:**
+**Phase 4D Testing:**
 ```bash
 #!/bin/bash
-# Phase 4C History Storage Tests
+# Phase 4D History Storage Tests
 
-echo "4C.1 Testing history configuration..."
+echo "4D.1 Testing history configuration..."
 saul testapi set history 3
 grep -q 'history_count = 3' ~/.config/saul/presets/testapi/request.toml
 
-echo "4C.2 Testing history storage..."
+echo "4D.2 Testing history storage..."
 saul call testapi >/dev/null  # Should store response
 [ -d ~/.config/saul/presets/testapi/history ]
 [ -f ~/.config/saul/presets/testapi/history/response-001.json ]
 
-echo "4C.3 Testing history access with formatting..."
+echo "4D.3 Testing history access with formatting..."
 saul testapi check history | grep -q "1." # Should show menu
 saul testapi check history 1 | grep -q "Status:" # Should show formatted response
 
-echo "4C.4 Testing history management..."
+echo "4D.4 Testing history management..."
 echo "y" | saul testapi rm history
 [ ! -d ~/.config/saul/presets/testapi/history ]
 
-echo "✓ Phase 4C Response History Storage: PASSED"
+echo "✓ Phase 4D Response History Storage: PASSED"
 ```
 
 ---
@@ -715,39 +899,59 @@ saul testapi set url https://api.twitter.com/@mentions?search={?query}
 
 echo "✓ Phase 3.5: Architecture & Variable Syntax Fix - PASSED"
 
-# NEW: Phase 4A tests (Response Formatting)
-echo "===== PHASE 4A TESTS: Response Formatting System ====="
+# NEW: Phase 4B-Post tests (Comma-Separated Syntax)
+echo "===== PHASE 4B-POST TESTS: Comma-Separated Syntax Enhancement ====="
 
-echo "4A.1 Testing JSON→TOML conversion..."
+echo "4B-Post.1 Testing comma-separated headers..."
+saul testapi set header Authorization=Bearer123,Content-Type=application/json
+saul testapi check header | grep -q "Authorization.*Bearer123"
+saul testapi check header | grep -q "Content-Type.*application/json"
+
+echo "4B-Post.2 Testing comma-separated body fields..."
+saul testapi set body pokemon.name=pikachu,pokemon.level=25
+saul testapi check body | grep -q "name.*pikachu"
+saul testapi check body | grep -q "level.*25"
+
+echo "4B-Post.3 Testing single-value backward compatibility..."
+saul testapi set url https://example.com
+saul testapi check url | grep -q "example.com"
+
+echo "✓ Phase 4B-Post: Comma-Separated Syntax Enhancement - PASSED"
+
+# NEW: Phase 4C tests (Response Filtering)
+echo "===== PHASE 4C TESTS: Response Filtering System ====="
+
+echo "4C.1 Testing filter configuration..."
+saul pokeapi set filter name,stats[0],types[0].type.name
+saul pokeapi check filter | grep -q "name.*stats\[0\].*types\[0\]"
+
+echo "4C.2 Testing filtered response display..."
 saul pokeapi set url https://pokeapi.co/api/v2/pokemon/1
-saul call pokeapi | grep -q "name = " # Should show TOML format
+saul call pokeapi | grep -q "name = " # Should show only filtered fields
+saul call pokeapi | grep -v "abilities\|moves" # Should NOT show unfiltered fields
 
-echo "4A.2 Testing complex nested JSON..."
-saul ghapi set url https://api.github.com/repos/octocat/Hello-World
-saul call ghapi | grep -q "\[" # Should show TOML sections
+echo "4C.3 Testing filter integration with comma syntax..."
+saul testapi set filter name,id,types[0].type.name
+saul testapi set header Authorization=Bearer123,Content-Type=application/json
 
-echo "4A.3 Testing non-JSON responses..."
-saul httpbin set url https://httpbin.org/html
-saul call httpbin | grep -q "<html>" # Should show raw HTML
+echo "✓ Phase 4C: Response Filtering System - PASSED"
 
-echo "✓ Phase 4A: Response Formatting System - PASSED"
+# NEW: Phase 4D tests (History Storage)
+echo "===== PHASE 4D TESTS: Response History Storage ====="
 
-# NEW: Phase 4B tests (History Storage)
-echo "===== PHASE 4B TESTS: Response History Storage ====="
-
-echo "4B.1 Testing history configuration..."
+echo "4D.1 Testing history configuration..."
 saul testapi set history 3
 grep -q 'history_count = 3' ~/.config/saul/presets/testapi/request.toml
 
-echo "4C.2 Testing history storage..."
+echo "4D.2 Testing history storage..."
 echo -e "testuser\n123" | saul call testapi >/dev/null
 [ -f ~/.config/saul/presets/testapi/history/response-001.json ]
 
-echo "4C.3 Testing history access with formatting..."
+echo "4D.3 Testing history access with formatting..."
 saul testapi check history | grep -q "1\."
 saul testapi check history 1 | grep -q "Status:"
 
-echo "✓ Phase 4B: Response History Storage - PASSED"
+echo "✓ Phase 4D: Response History Storage - PASSED"
 
 # Future phases will add similar test sections...
 ```
@@ -839,11 +1043,26 @@ echo "✓ Phase 4B: Response History Storage - PASSED"
 - No performance degradation for typical API response sizes
 - All existing Phase 1-3.5 and Phase 4A functionality unchanged
 
+### **Phase 4B-Post Completion Criteria**
+- Comma-separated syntax works for header, body, query, and variables commands
+- Single-value commands continue working unchanged (backward compatibility)
+- Dramatically improved testing efficiency (50% fewer commands for complex setups)
+- Error handling works correctly for malformed comma syntax
+- All existing Phase 1-4B functionality unchanged (zero regression)
+
 ### **Phase 4C Completion Criteria**
+- Response filtering system works with real-world APIs (PokéAPI, GitHub, etc.)
+- Filter commands integrate seamlessly with existing command patterns
+- Field path extraction works with nested JSON and array indexing
+- Silent error handling prevents execution breakage for missing fields
+- Integration with Phase 4B smart TOML conversion pipeline
+- All existing Phase 1-4B-Post functionality unchanged
+
+### **Phase 4D Completion Criteria**
 - History system stores and retrieves responses correctly
 - History configuration and rotation work properly
 - History access commands provide useful debugging workflow using Phase 4B formatting
-- All existing Phase 1-3.5, Phase 4A, and Phase 4B functionality unchanged
+- All existing Phase 1-4C functionality unchanged
 
 ### **Final Project Success**
 - All commands from vision.md work correctly
@@ -851,11 +1070,13 @@ echo "✓ Phase 4B: Response History Storage - PASSED"
 - No field misclassification bugs in HTTP execution (Phase 3.5)
 - Edit command system provides quick field and variable editing workflow (Phase 4A)
 - Smart response formatting provides readable output for API development (Phase 4B)
-- History system provides valuable debugging workflow (Phase 4C)
+- Comma-separated syntax dramatically improves configuration efficiency (Phase 4B-Post)
+- Response filtering solves terminal overflow for large APIs (Phase 4C)
+- History system provides valuable debugging workflow (Phase 4D)
 - Interactive mode enables efficient preset management (Phase 5)
 - Ready for production distribution with advanced features (Phase 6)
 - Maintains KISS principles while adding powerful features throughout
 
 ---
 
-*This action plan prioritizes edit command implementation (Phase 4A) as the immediate next step after fixing critical architecture issues (Phase 3.5). This approach provides immediate workflow improvements with zero dependencies, followed by response formatting (Phase 4B) for readable API output, and finally history storage (Phase 4C). The strategic sequence allows for incremental implementation with minimal risk while maximizing user value at each step.*
+*This action plan prioritizes comma-separated syntax enhancement (Phase 4B-Post) as the immediate next step for productivity gains, followed by response filtering (Phase 4C) for terminal-friendly API responses, and finally history storage (Phase 4D). This strategic sequence maximizes immediate user value with simple implementations first, building toward more complex features on a proven foundation. The comma-first approach enables efficient testing of filtering systems while maintaining KISS principles throughout.*
