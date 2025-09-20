@@ -514,6 +514,43 @@ echo "✓ Phase 4A Edit Command System: PASSED"
 - ✅ **Clean Architecture**: HTTP code organized in logical subfolder structure
 - ✅ **Zero Regressions**: All existing functionality preserved perfectly
 
+---
+
+### **Phase 4B-Visual: Visual Formatting Enhancement** ✅ **COMPLETED**
+*Goal: Professional visual organization for terminal-friendly response display*
+
+#### 4B-Visual.1 ASCII Art Sandwich Formatting ✅ **COMPLETED**
+- [x] ✅ **Visual Headers**: Implemented `┌─ Response ─┐` style headers for section identification
+- [x] ✅ **Visual Footers**: Added matching `──────────────────────` separator lines for clean closure
+- [x] ✅ **Sandwich Format**: Perfect visual containment with matching top and bottom separators
+- [x] ✅ **Consistent Styling**: Same visual approach for both API responses and check commands
+
+#### 4B-Visual.2 Minimal Headers Approach ✅ **COMPLETED**
+- [x] ✅ **Essential Headers Only**: Display only status line + content-type (eliminates header noise)
+- [x] ✅ **Removed Header Dump**: No more overwhelming 15+ line header displays from CDN/cache systems
+- [x] ✅ **Clean Focus**: Emphasizes actual response content over infrastructure metadata
+- [x] ✅ **Planned Raw Mode**: Documented support for `--raw` flag to show full headers when needed
+
+#### 4B-Visual.3 Universal Visual Consistency ✅ **COMPLETED**
+- [x] ✅ **Check Commands**: All check commands use same sandwich formatting with appropriate headers
+- [x] ✅ **API Responses**: HTTP responses use consistent visual structure
+- [x] ✅ **Dynamic Headers**: Section headers adapt to content type ("Response", "Body", "Headers", etc.)
+- [x] ✅ **Professional Appearance**: Clean, organized terminal output that scales from simple to complex content
+
+**Phase 4B-Visual Success Criteria:** ✅ **ALL ACHIEVED**
+- [x] ✅ Visual sandwich formatting provides clear content separation
+- [x] ✅ Minimal headers eliminate noise while preserving essential information
+- [x] ✅ Consistent visual approach across all command types
+- [x] ✅ Professional terminal appearance suitable for development workflows
+- [x] ✅ Foundation ready for future raw flag implementation
+
+**Benefits Achieved:**
+- ✅ **Professional Visual Design**: Clean ASCII art formatting creates organized, scannable output
+- ✅ **Noise Reduction**: Minimal headers approach eliminates CDN/cache header clutter
+- ✅ **Consistent UX**: Same visual patterns across all commands reduce cognitive load
+- ✅ **Terminal Optimized**: Formatting scales well from simple checks to complex API responses
+- ✅ **Future Ready**: Architecture supports planned raw mode for verbose output when needed
+
 **Phase 4A Testing:**
 ```bash
 #!/bin/bash

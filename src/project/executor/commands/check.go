@@ -4,11 +4,22 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
 )
+
+// formatSectionHeader creates a visual header for sections
+func formatSectionHeader(title string) string {
+	return fmt.Sprintf("┌─ %s ─┐", title)
+}
+
+// formatSectionFooter creates a separator line to close sections
+func formatSectionFooter() string {
+	return "──────────────────────"
+}
 
 // Check displays TOML file contents in a clean, readable format
 func Check(cmd parser.Command) error {
@@ -76,13 +87,17 @@ func Check(cmd parser.Command) error {
 
 // displayTOMLFile shows the entire TOML file in a clean format
 func displayTOMLFile(handler *toml.TomlHandler, target string, preset string) error {
-	fmt.Printf("# %s.toml contents:\n", target)
+	// Capitalize target for display
+	displayTarget := strings.ToUpper(target[:1]) + target[1:]
+	fmt.Println(formatSectionHeader(displayTarget))
+	fmt.Println(formatSectionFooter())
 
 	// Get the file path and read raw contents
 	presetPath, err := presets.GetPresetPath(preset)
 	if err != nil {
 		// Fall back to simple display if we can't get the preset path
 		fmt.Println("(Unable to display full file contents)")
+		fmt.Println(formatSectionFooter())
 		return nil
 	}
 
@@ -90,10 +105,12 @@ func displayTOMLFile(handler *toml.TomlHandler, target string, preset string) er
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		fmt.Println("(File is empty or doesn't exist)")
+		fmt.Println(formatSectionFooter())
 		return nil
 	}
 
 	// Display raw TOML content
 	fmt.Print(string(content))
+	fmt.Println(formatSectionFooter())
 	return nil
 }
