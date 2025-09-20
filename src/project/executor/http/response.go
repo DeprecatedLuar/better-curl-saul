@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/tidwall/gjson"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 )
 
-// DisplayResponse formats and displays the HTTP response
-func DisplayResponse(response *resty.Response, rawMode bool) {
+// DisplayResponse formats and displays the HTTP response with optional filtering
+func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
 	// Display response metadata
 	fmt.Printf("Status: %s (%v, %d bytes)\n", response.Status(), response.Time(), len(response.Body()))
 
@@ -34,10 +36,12 @@ func DisplayResponse(response *resty.Response, rawMode bool) {
 	if body != "" {
 		// Check if content appears to be JSON
 		if isJSONContent(contentType, response.Body()) {
+			// Apply filtering if filters are configured
+			filteredBody := applyFiltering(response.Body(), preset)
 			// If raw mode requested, show pretty JSON
 			if rawMode {
 				var jsonObj interface{}
-				if err := json.Unmarshal(response.Body(), &jsonObj); err == nil {
+				if err := json.Unmarshal(filteredBody, &jsonObj); err == nil {
 					if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
 						fmt.Println(string(prettyJSON))
 						return
@@ -45,10 +49,10 @@ func DisplayResponse(response *resty.Response, rawMode bool) {
 				}
 			} else {
 				// Check if response is too large for TOML conversion
-				if len(response.Body()) > 10000 {
-					fmt.Printf("Response too large for TOML (%d bytes) - showing JSON:\n", len(response.Body()))
+				if len(filteredBody) > 10000 {
+					fmt.Printf("Response too large for TOML (%d bytes) - showing JSON:\n", len(filteredBody))
 					var jsonObj interface{}
-					if err := json.Unmarshal(response.Body(), &jsonObj); err == nil {
+					if err := json.Unmarshal(filteredBody, &jsonObj); err == nil {
 						if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
 							fmt.Println(string(prettyJSON))
 							return
@@ -57,14 +61,14 @@ func DisplayResponse(response *resty.Response, rawMode bool) {
 					// If JSON parsing fails, fall through to raw display
 				} else {
 					// Default: Try TOML formatting for JSON responses
-					if tomlFormatted := formatAsToml(response.Body()); tomlFormatted != "" {
+					if tomlFormatted := formatAsToml(filteredBody); tomlFormatted != "" {
 						fmt.Println(tomlFormatted)
 						return
 					}
 				}
 				// Fallback to pretty JSON if TOML conversion fails
 				var jsonObj interface{}
-				if err := json.Unmarshal(response.Body(), &jsonObj); err == nil {
+				if err := json.Unmarshal(filteredBody, &jsonObj); err == nil {
 					if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
 						fmt.Println(string(prettyJSON))
 						return
@@ -107,4 +111,70 @@ func formatAsToml(jsonData []byte) string {
 	}
 
 	return string(tomlBytes)
+}
+
+// applyFiltering applies JSON filtering if filters are configured for the preset
+func applyFiltering(jsonData []byte, preset string) []byte {
+	// Load filters configuration
+	filtersHandler, err := presets.LoadPresetFile(preset, "filters")
+	if err != nil {
+		// No filters configured, return original data
+		return jsonData
+	}
+
+	// Get fields array from filters.toml
+	fieldsValue := filtersHandler.Get("fields")
+	if fieldsValue == nil {
+		// No fields configured, return original data
+		return jsonData
+	}
+
+	// Convert to string slice (TOML array becomes []interface{})
+	var fields []string
+	switch v := fieldsValue.(type) {
+	case []interface{}:
+		for _, item := range v {
+			if str, ok := item.(string); ok {
+				fields = append(fields, str)
+			}
+		}
+	case []string:
+		fields = v
+	default:
+		// Fallback: try as string for backward compatibility
+		if str, ok := fieldsValue.(string); ok && str != "" {
+			fields = strings.Split(str, ",")
+		}
+	}
+
+	if len(fields) == 0 {
+		return jsonData
+	}
+
+	// Apply filtering using gjson
+	filtered := make(map[string]interface{})
+	jsonStr := string(jsonData)
+
+	for _, field := range fields {
+		if field == "" {
+			continue
+		}
+
+		// Use gjson to extract the field value
+		result := gjson.Get(jsonStr, field)
+		if result.Exists() {
+			// Store the value in our filtered map
+			// Use the original field path as the key for clarity
+			filtered[field] = result.Value()
+		}
+	}
+
+	// Convert filtered map back to JSON
+	filteredJSON, err := json.Marshal(filtered)
+	if err != nil {
+		// If filtering fails, return original data
+		return jsonData
+	}
+
+	return filteredJSON
 }

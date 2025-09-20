@@ -13,13 +13,13 @@ func Get(cmd parser.Command) (interface{}, error) {
 		return nil, fmt.Errorf("preset name required for get command")
 	}
 	if cmd.Target == "" {
-		return nil, fmt.Errorf("target required (body, headers, query, request, variables)")
+		return nil, fmt.Errorf("target required (body, headers, query, request, variables, filters)")
 	}
 
 	// Normalize target aliases
 	normalizedTarget := NormalizeTarget(cmd.Target)
 	if normalizedTarget == "" {
-		return nil, fmt.Errorf("invalid target '%s'. Use: body, headers/header, query, request, variables", cmd.Target)
+		return nil, fmt.Errorf("invalid target '%s'. Use: body, headers/header, query, request, variables, filters", cmd.Target)
 	}
 	cmd.Target = normalizedTarget
 

@@ -18,6 +18,8 @@ func NormalizeTarget(target string) string {
 		return "request"
 	case "variables", "vars", "var":
 		return "variables"
+	case "filters", "filter":
+		return "filters"
 	default:
 		return ""
 	}

@@ -121,17 +121,17 @@ Keep API responses readable and terminal-friendly by filtering large JSON respon
 
 **Command Syntax:**
 ```bash
-# Set response filter (comma-separated field paths)
-saul pokeapi set filter name,stats[0],stats[1],types[0].type.name
+# Set response filter (space-separated field paths)
+saul pokeapi set filters field1=name field2=stats.0.base_stat field3=types.0.type.name
 
-# Edit filters interactively  
-saul pokeapi edit filter
+# Edit filters interactively
+saul pokeapi edit filters
 
 # Check current filter settings
-saul pokeapi check filter
+saul pokeapi check filterss
 
 # Clear filters (show all fields)
-saul pokeapi set filter ""
+saul pokeapi set filters field1=""
 
 # Filters apply automatically during calls
 saul pokeapi call
@@ -257,7 +257,7 @@ saul pokeapi          # Enter preset mode
 - `set method POST` - Set HTTP method (GET, POST, PUT, DELETE, etc.)
 - `set timeout 30` - Set request timeout in seconds
 - `set history N` - Set response history count (0 = disabled)
-- `set filter field1,field2,field3` - Set response filtering (comma-separated field paths)
+- `set filters field1=path1 field2=path2 field3=path3` - Set response filtering (space-separated field paths)
 
 **Regular TOML Configuration (With = Syntax):**
 - `set header key=value` - Add HTTP header
@@ -268,7 +268,7 @@ saul pokeapi          # Enter preset mode
 **Inspection Commands:**
 - `check url` - Display current URL (smart routing to request.toml)
 - `check method` - Display current HTTP method  
-- `check filter` - Display current response filter settings
+- `check filters` - Display current response filter settings
 - `check body pokemon.name` - Display specific field with formatting
 - `check headers` - Display all headers (full file view)
 - `check history` - Interactive history menu or show available responses
@@ -292,7 +292,7 @@ trainer_id: ash123_           # Hard variable (shows current value)
 
 **Editing Commands:**
 - `edit url` - Pre-filled prompt for quick URL edits (ideal for variable syntax changes)
-- `edit filter` - Pre-filled prompt for response filter editing
+- `edit filters` - Pre-filled prompt for response filter editing
 - `edit body pokemon.name` - Pre-filled prompt for specific field editing
 - `edit header Authorization` - Pre-filled prompt for specific header editing
 - `edit @pokename` - Pre-filled prompt for editing stored hard variable values
@@ -322,9 +322,9 @@ saul [global] [preset] [command] [target] [field=value]
 Examples:
 saul pokeapi set header Authorization=Bearer123
 saul pokeapi set body pokemon.name={?}
-saul pokeapi set filter name,stats[0],types[0].type.name
+saul pokeapi set filters field1=name field2=stats.0.base_stat field3=types.0.type.name
 saul call pokeapi
-saul pokeapi check filter
+saul pokeapi check filters
 saul pokeapi check history
 saul pokeapi rm history
 ```
@@ -354,7 +354,7 @@ TOML files → Parse-merge-write → Variable resolution → JSON conversion →
 3. **JSON conversion** (TOML → Go structs → JSON) ✅ **COMPLETED**
 4. **HTTP execution engine** (using go-resty) ✅ **COMPLETED**
 5. **Single-line commands** (primary interface) ✅ **COMPLETED**
-6. **Response filtering system** (whitelist field extraction) ⏳ **Phase 4C - PENDING**
+6. **Response filtering system** (whitelist field extraction) ✅ **Phase 4C - COMPLETED**
 7. **Response history system** ⏳ **Phase 4D - PENDING**
 8. **Interactive mode** (secondary interface built on single-line) ⏳ **Phase 5 - PENDING**
 
