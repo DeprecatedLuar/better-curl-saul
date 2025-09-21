@@ -143,6 +143,11 @@ better-curl-saul/
   - Clean preset switching: Any explicit preset command updates current session
   - Session files: `~/.config/saul/.session_[tty]` (terminal-specific, auto-cleanup on startup)
   - Zero overhead: ~50 lines of code, pure stdlib implementation with automatic stale session cleanup
+- ✅ **Phase 6A Complete**: System Command Delegation - Unix philosophy implementation
+  - Replaced custom `saul list` with system command delegation (`saul ls`)
+  - Whitelist-based security: only safe commands (ls, exa, lsd, tree, dir) allowed
+  - Working directory automatically set to presets folder for all delegated commands
+  - Perfect workspace visibility: see actual TOML files and directory structure
 - ⏳ **Next**: Phase 4E - Response History System for debugging workflow
 
 ## Codebase Architecture Flow

@@ -158,6 +158,7 @@ HTTP Response → Filter Extraction → Smart TOML Conversion → Display
 ```
 
 **Key Features:**
+- **System Command Integration**: Use familiar tools (`ls`, `exa`, `tree`) with preset workspace context
 - **Silent Error Handling**: Missing fields are ignored, no execution breakage
 - **Real-world Tested**: Validated against PokéAPI, GitHub API, JSONPlaceholder
 - **Terminal Optimized**: Large responses become readable and manageable

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/delegation"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor/commands"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
@@ -138,6 +139,13 @@ func main() {
 
 // executeCommand routes commands to appropriate handlers
 func executeCommand(cmd parser.Command) error {
+	// Check for system command delegation first
+	if delegation.IsSystemCommand(cmd.Preset) {
+		// Extract arguments from the original command line
+		args := os.Args[2:] // Skip "saul" and the system command
+		return delegation.DelegateToSystem(cmd.Preset, args)
+	}
+
 	// Update current preset when explicitly specified and save to session
 	if cmd.Preset != "" {
 		currentPreset = cmd.Preset
@@ -161,38 +169,7 @@ func executeGlobalCommand(cmd parser.Command) error {
 		fmt.Println("The workspace-based HTTP client that makes curl simple")
 		return nil
 
-	case "list":
-		presets, err := presets.ListPresets()
-		if err != nil {
-			return fmt.Errorf("failed to list presets: %v", err)
-		}
-		
-		if cmd.RawOutput {
-			// Raw mode: space-separated preset names (Unix style)
-			if len(presets) > 0 {
-				fmt.Println(strings.Join(presets, " "))
-			}
-			return nil
-		}
-		
-		// Normal mode: formatted display
-		if len(presets) == 0 {
-			content := "Create one with: saul [preset-name]"
-			formatted := display.FormatSimpleSection("No Presets Found", content)
-			display.Plain(formatted)
-			return nil
-		}
-		
-		var content strings.Builder
-		for _, preset := range presets {
-			content.WriteString(fmt.Sprintf("  %s\n", preset))
-		}
-		
-		formatted := display.FormatSimpleSection("Available Presets", strings.TrimSpace(content.String()))
-		display.Plain(formatted)
-		return nil
-
-	case "rm":
+case "rm":
 		if len(cmd.Targets) == 0 {
 			return fmt.Errorf("preset name required for rm command")
 		}
@@ -287,7 +264,7 @@ func showHelp() {
 
 	// Global Commands section
 	globalCmds := `  saul version              Show version information
-  saul list                 List all presets
+  saul ls [options]         List presets directory (system ls command)
   saul rm [preset...]       Delete one or more presets
   saul call [preset]        Execute HTTP request
   saul help                 Show this help`
