@@ -100,7 +100,7 @@ Variables with the same name are prompted only once, allowing consistent values 
 ```bash
 saul api set url https://httpbin.org/{@method}
 saul api set method {@method}
-saul call api
+saul api call
 method: post_    # Single prompt fills both URL and method
 ```
 
@@ -239,7 +239,7 @@ tags = ["red", "blue", "green"]
 ```bash
 saul pokeapi set header Content-Type=application/json
 saul pokeapi set body pokemon.name=pikachu
-saul call pokeapi
+saul pokeapi call
 ```
 
 **Interactive Mode (Secondary):**
@@ -371,7 +371,7 @@ Examples:
 saul pokeapi set header Authorization=Bearer123
 saul pokeapi set body pokemon.name={?}
 saul pokeapi set filters field1=name field2=stats.0.base_stat field3=types.0.type.name
-saul call pokeapi
+saul pokeapi call
 saul pokeapi check filters
 saul pokeapi check history
 saul pokeapi rm history
@@ -439,7 +439,7 @@ TOML files → Parse-merge-write → Variable resolution → JSON conversion →
 ## Final Polish & Easter Eggs
 
 ### Better Call Saul Easter Egg
-- **Command:** `saul call saul`
+- **Command:** `saul saul call`
 - **Behavior:** Opens browser to random Better Call Saul video
 - **URLs:**
   - https://www.youtube.com/watch?v=gDjMZvYWUdo

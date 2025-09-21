@@ -1247,6 +1247,13 @@ echo "✓ Phase 4E Response History Storage: PASSED"
 - ✅ **Genuine Debugging Value**: Compare API responses over time, reference previous structures
 - ✅ **Seamless Integration**: Works with existing filtering, formatting, and flag systems
 - ✅ **Optional & Lightweight**: Zero impact when disabled, minimal overhead when enabled
+
+**Phase 4E Post-Implementation Enhancement:** ✅ **History Filtering Integration**
+- ✅ **Consistent UX**: History displays same filtered TOML view as live responses
+- ✅ **Intuitive Numbering**: Fixed history indexing so `1` = most recent, `2` = second most recent
+- ✅ **Minimal Implementation**: Extracted `FormatResponseContent()` function for zero code duplication
+- ✅ **Full Data Preservation**: Stores complete responses, applies filtering at display time
+- ✅ **Development Efficiency**: ~20 lines of code, reuses entire existing filtering pipeline
 - ✅ **Production Ready**: Handles rotation, corruption, and edge cases gracefully
 - ✅ **Developer Friendly**: Intuitive commands that match existing patterns
 

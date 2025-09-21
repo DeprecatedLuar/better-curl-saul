@@ -202,3 +202,31 @@ func applyFiltering(jsonData []byte, preset string) []byte {
 
 	return filteredJSON
 }
+
+// FormatResponseContent applies same filtering/formatting as DisplayResponse
+func FormatResponseContent(jsonData []byte, preset string, rawMode bool) string {
+	filteredBody := applyFiltering(jsonData, preset)
+
+	if rawMode {
+		var jsonObj interface{}
+		if json.Unmarshal(filteredBody, &jsonObj) == nil {
+			if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
+				return string(prettyJSON)
+			}
+		}
+		return string(filteredBody)
+	}
+
+	if tomlFormatted := formatAsToml(filteredBody); tomlFormatted != "" {
+		return tomlFormatted
+	}
+
+	var jsonObj interface{}
+	if json.Unmarshal(filteredBody, &jsonObj) == nil {
+		if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
+			return string(prettyJSON)
+		}
+	}
+
+	return string(filteredBody)
+}
