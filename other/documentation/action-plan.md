@@ -67,6 +67,9 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
   - Zero regression: All existing functionality preserved with cleaner, more intuitive syntax
 - ✅ **Phase 4C Complete**: Response Filtering System
   - Terminal overflow solved: 257KB APIs → filtered fields display
+- ✅ **Phase 4D Complete**: Terminal Session Memory System *(emergent feature - implemented without prior planning)*
+  - Terminal-scoped preset memory enables shorthand commands: `saul set body name=val` (no preset needed)
+  - TTY-based session isolation with automatic preset injection for improved workflow efficiency
   - Pure UNIX design: Zero special parsing, uses existing KeyValuePairs system
   - Clean syntax: `saul api set filters field1=name field2=stats.0.base_stat field3=types.0.type.name`
   - TOML array storage: `fields = ["name", "stats.0.base_stat", "types.0.type.name"]`

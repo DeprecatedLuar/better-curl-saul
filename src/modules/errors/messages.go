@@ -26,6 +26,7 @@ const (
 	ErrInputRead          = "had trouble reading your input, try that again buddy"
 	ErrEditorNotFound     = "no editor found. Please set $EDITOR environment variable or install nano/vim"
 	ErrEditorFailed       = "editor didn't work out, something went sideways: %v"
+	ErrNoCurrentPreset    = "no current preset in memory - use: saul [preset] [command] to get started"
 )
 
 const (
