@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
@@ -12,19 +13,19 @@ import (
 // Set handles set operations for TOML files
 func Set(cmd parser.Command) error {
 	if cmd.Preset == "" {
-		return fmt.Errorf("preset name required for set command")
+		return fmt.Errorf(errors.ErrPresetNameRequired)
 	}
 	if cmd.Target == "" {
-		return fmt.Errorf("target required (body, headers, query, config)")
+		return fmt.Errorf(errors.ErrTargetRequired)
 	}
 	if len(cmd.KeyValuePairs) == 0 {
-		return fmt.Errorf("key=value pairs required for set operation")
+		return fmt.Errorf(errors.ErrKeyValueRequired)
 	}
 
 	// Normalize target aliases for better UX
 	normalizedTarget := NormalizeTarget(cmd.Target)
 	if normalizedTarget == "" {
-		return fmt.Errorf("invalid target '%s'. Use: body, headers/header, query, request, variables, filters", cmd.Target)
+		return fmt.Errorf(errors.ErrInvalidTarget, cmd.Target)
 	}
 
 	// Use normalized target for file operations
@@ -33,7 +34,7 @@ func Set(cmd parser.Command) error {
 	// Load the TOML file for the target
 	handler, err := presets.LoadPresetFile(cmd.Preset, cmd.Target)
 	if err != nil {
-		return fmt.Errorf("failed to load %s.toml: %v", cmd.Target, err)
+		return fmt.Errorf(errors.ErrFileLoadFailed, cmd.Target+".toml")
 	}
 
 	// Special handling for filters target - store values as array
@@ -59,7 +60,7 @@ func Set(cmd parser.Command) error {
 				// Store variable info in config.toml for later resolution
 				err := executor.StoreVariableInfo(cmd.Preset, kvp.Key, varType, varName)
 				if err != nil {
-					return fmt.Errorf("failed to store variable info: %v", err)
+					return fmt.Errorf(errors.ErrVariableSaveFailed)
 				}
 
 				// Set the raw variable in the target file for now
@@ -80,7 +81,7 @@ func Set(cmd parser.Command) error {
 	// Save the updated TOML file (once after all operations)
 	err = presets.SavePresetFile(cmd.Preset, cmd.Target, handler)
 	if err != nil {
-		return fmt.Errorf("failed to save %s.toml: %v", cmd.Target, err)
+		return fmt.Errorf(errors.ErrFileSaveFailed, cmd.Target+".toml")
 	}
 
 	// Silent success - Unix philosophy

@@ -41,22 +41,29 @@ better-curl-saul/
 ├── other/documentation/action-plan.md # Development action plan
 ├── cmd/
 │   └── main.go                  # Clean entry point - program flow only
-├── src/project/
-│   ├── parser/
-│   │   └── command.go           # Command struct + ParseCommand function
-│   ├── executor/
-│   │   ├── commands.go          # Core command execution logic
-│   │   ├── variables.go         # Variable prompting and substitution
-│   │   └── http/                # HTTP execution subfolder (Phase 4B)
-│   │       ├── client.go        # HTTP client setup and execution
-│   │       ├── display.go       # Response formatting and display
-│   │       └── request.go       # HTTP request building logic
-│   ├── presets/
-│   │   └── manager.go           # Preset directory and file management
-│   ├── toml/
-│   │   └── handler.go           # TOML manipulation with JSON conversion
-│   └── config/
-│       └── constants.go         # Constants and command aliases
+├── src/
+│   ├── modules/
+│   │   ├── errors/              # Centralized error handling system
+│   │   │   └── messages.go      # All error/warning constants with casual tone
+│   │   └── display/             # Universal printing system
+│   │       ├── printer.go       # Error, Success, Warning, Info, Tip, Plain functions
+│   │       └── sections.go      # Section formatting (temporary)
+│   └── project/
+│       ├── parser/
+│       │   └── command.go       # Command struct + ParseCommand function
+│       ├── executor/
+│       │   ├── commands.go      # Core command execution logic
+│       │   ├── variables.go     # Variable prompting and substitution
+│       │   └── http/            # HTTP execution subfolder (Phase 4B)
+│       │       ├── client.go    # HTTP client setup and execution
+│       │       ├── display.go   # Response formatting and display
+│       │       └── request.go   # HTTP request building logic
+│       ├── presets/
+│       │   └── manager.go       # Preset directory and file management
+│       ├── toml/
+│       │   └── handler.go       # TOML manipulation with JSON conversion
+│       └── config/
+│           └── constants.go     # Constants and command aliases
 ```
 
 **Core Architecture Concepts (from README.md):**
@@ -190,6 +197,8 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
 - **Variable Flexibility**: Soft vs hard variables for different workflow needs
 - **Unix Philosophy**: Small, composable functions that do one thing well
 - **Zero Dependencies**: Edit commands use existing TOML manipulation, no new complexity
+- **Centralized Error Handling**: All error messages use constants from `src/modules/errors/messages.go` with consistent casual tone
+- **Universal Display System**: All user-facing output uses `display.Error()`, `display.Warning()`, etc. instead of manual fmt.Printf
 
 **Edit Command Integration Points:**
 - **Parser**: Add "edit" recognition in `ParseCommand()`

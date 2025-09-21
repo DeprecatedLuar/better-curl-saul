@@ -6,33 +6,34 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/display"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 )
 
 
 // Check displays TOML file contents in a clean, readable format
 func Check(cmd parser.Command) error {
 	if cmd.Preset == "" {
-		return fmt.Errorf("preset name required for check command")
+		return fmt.Errorf(errors.ErrPresetNameRequired)
 	}
 	if cmd.Target == "" {
-		return fmt.Errorf("target required (body, headers, query, request, variables, filters)")
+		return fmt.Errorf(errors.ErrTargetRequired)
 	}
 
 	// Normalize target aliases
 	normalizedTarget := NormalizeTarget(cmd.Target)
 	if normalizedTarget == "" {
-		return fmt.Errorf("invalid target '%s'. Use: body, headers/header, query, request, variables, filters", cmd.Target)
+		return fmt.Errorf(errors.ErrInvalidTarget, cmd.Target)
 	}
 	cmd.Target = normalizedTarget
 
 	// Load the TOML file for the target
 	handler, err := presets.LoadPresetFile(cmd.Preset, cmd.Target)
 	if err != nil {
-		return fmt.Errorf("failed to load %s.toml: %v", cmd.Target, err)
+		return fmt.Errorf(errors.ErrFileLoadFailed, cmd.Target+".toml")
 	}
 
 	// Special handling for request fields (single values)
@@ -40,7 +41,7 @@ func Check(cmd parser.Command) error {
 		key := cmd.KeyValuePairs[0].Key
 		value := handler.Get(key)
 		if value == nil {
-			return fmt.Errorf("'%s' not set in request", key)
+			return fmt.Errorf(errors.ErrKeyNotFound, key, cmd.Target)
 		}
 		fmt.Println(value)
 		return nil
@@ -51,7 +52,7 @@ func Check(cmd parser.Command) error {
 		key := cmd.KeyValuePairs[0].Key
 		value := handler.Get(key)
 		if value == nil {
-			return fmt.Errorf("key '%s' not found in %s", key, cmd.Target)
+			return fmt.Errorf(errors.ErrKeyNotFound, key, cmd.Target)
 		}
 
 		// Format based on type

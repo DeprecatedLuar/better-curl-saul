@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// Section formatting functions (temporary - may be refactored)
 const sectionWidth = 55
 const headerToFooterRatio = 1.078 // 55:51 ratio (accounting for ┘ character)
 
@@ -26,10 +27,4 @@ func SectionFooter() string {
 // SectionStart creates a section header with proper spacing for content
 func SectionStart(title string) string {
 	return fmt.Sprintf("\n%s\n", SectionHeader(title))
-}
-
-// SectionWrap wraps content with header and footer for complete section formatting
-func SectionWrap(title, content string) string {
-	return fmt.Sprintf("%s\n%s\n%s\n%s",
-		SectionHeader(title), SectionFooter(), content, SectionFooter())
 }

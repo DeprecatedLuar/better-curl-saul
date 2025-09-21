@@ -3,14 +3,13 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/display"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 )
 
 
@@ -175,7 +174,7 @@ func applyFiltering(jsonData []byte, preset string) []byte {
 
 	// Warn if no fields matched
 	if len(filtered) == 0 {
-		fmt.Fprintf(os.Stderr, "Warning: No fields matched filters %v - check filter syntax\n", fields)
+		display.Warning(fmt.Sprintf("No fields matched filters %v - check filter syntax", fields))
 	}
 
 	return filteredJSON

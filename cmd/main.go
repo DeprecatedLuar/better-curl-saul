@@ -8,7 +8,7 @@ import (
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor/commands"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/display"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 )
 
 func main() {
@@ -21,13 +21,13 @@ func main() {
 
 	cmd, err := parser.ParseCommand(args)
 	if err != nil {
-		fmt.Printf("Oopsies: %v\n", err)
+		display.Error(err.Error())
 		return
 	}
 
 	err = executeCommand(cmd)
 	if err != nil {
-		fmt.Printf("Command failed: %v\n", err)
+		display.Error(err.Error())
 		os.Exit(1)
 	}
 }
@@ -93,7 +93,7 @@ func executeGlobalCommand(cmd parser.Command) error {
 		
 		// Print warnings if any
 		for _, warning := range warnings {
-			fmt.Fprintln(os.Stderr, warning)
+			display.Warning(warning)
 		}
 		
 		// Silent success if at least one was deleted, or no warnings
