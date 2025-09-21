@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor/commands"
@@ -57,18 +58,19 @@ func executeGlobalCommand(cmd parser.Command) error {
 			return fmt.Errorf("failed to list presets: %v", err)
 		}
 		if len(presets) == 0 {
-			fmt.Println(display.SectionHeader("No Presets Found"))
-			fmt.Println(display.SectionFooter())
-			fmt.Println("Create one with: saul [preset-name]")
-			fmt.Println(display.SectionFooter())
+			content := "Create one with: saul [preset-name]"
+			formatted := display.FormatSimpleSection("No Presets Found", content)
+			display.Plain(formatted)
 			return nil
 		}
-		fmt.Println(display.SectionHeader("Available Presets"))
-		fmt.Println(display.SectionFooter())
+		
+		var content strings.Builder
 		for _, preset := range presets {
-			fmt.Printf("  %s\n", preset)
+			content.WriteString(fmt.Sprintf("  %s\n", preset))
 		}
-		fmt.Println(display.SectionFooter())
+		
+		formatted := display.FormatSimpleSection("Available Presets", strings.TrimSpace(content.String()))
+		display.Plain(formatted)
 		return nil
 
 	case "rm":
@@ -159,54 +161,54 @@ func showHelp() {
 	fmt.Println("Better-Curl (Saul) - Workspace-based HTTP Client")
 	fmt.Println()
 
-	fmt.Println(display.SectionHeader("Usage"))
-	fmt.Println(display.SectionFooter())
-	fmt.Println("  saul [preset] [command] [target] [key=value]")
-	fmt.Println()
+	// Usage section
+	usage := "  saul [preset] [command] [target] [key=value]"
+	formatted := display.FormatSimpleSection("Usage", usage)
+	display.Plain(formatted)
 
-	fmt.Println(display.SectionHeader("Global Commands"))
-	fmt.Println(display.SectionFooter())
-	fmt.Println("  saul version              Show version information")
-	fmt.Println("  saul list                 List all presets")
-	fmt.Println("  saul rm [preset...]       Delete one or more presets")
-	fmt.Println("  saul call [preset]        Execute HTTP request")
-	fmt.Println("  saul help                 Show this help")
-	fmt.Println()
+	// Global Commands section
+	globalCmds := `  saul version              Show version information
+  saul list                 List all presets
+  saul rm [preset...]       Delete one or more presets
+  saul call [preset]        Execute HTTP request
+  saul help                 Show this help`
+	formatted = display.FormatSimpleSection("Global Commands", globalCmds)
+	display.Plain(formatted)
 
-	fmt.Println(display.SectionHeader("Preset Commands"))
-	fmt.Println(display.SectionFooter())
-	fmt.Println("  saul [preset]             Create or switch to preset")
-	fmt.Println("  saul [preset] set [target] [key=value]")
-	fmt.Println("                            Set value in target file")
-	fmt.Println("  saul [preset] check [target] [key]")
-	fmt.Println("                            Display target contents (clean format)")
-	fmt.Println("  saul [preset] get [target] [key]")
-	fmt.Println("                            Get value from target file")
-	fmt.Println()
+	// Preset Commands section
+	presetCmds := `  saul [preset]             Create or switch to preset
+  saul [preset] set [target] [key=value]
+                            Set value in target file
+  saul [preset] check [target] [key]
+                            Display target contents (clean format)
+  saul [preset] get [target] [key]
+                            Get value from target file`
+	formatted = display.FormatSimpleSection("Preset Commands", presetCmds)
+	display.Plain(formatted)
 
-	fmt.Println(display.SectionHeader("Targets"))
-	fmt.Println(display.SectionFooter())
-	fmt.Println("  body      HTTP request body (JSON)")
-	fmt.Println("  headers   HTTP headers")
-	fmt.Println("  query     Query/search payload data")
-	fmt.Println("  request   HTTP method, URL, and settings")
-	fmt.Println("  variables Hard variables only (soft variables never stored)")
-	fmt.Println()
+	// Targets section
+	targets := `  body      HTTP request body (JSON)
+  headers   HTTP headers
+  query     Query/search payload data
+  request   HTTP method, URL, and settings
+  variables Hard variables only (soft variables never stored)`
+	formatted = display.FormatSimpleSection("Targets", targets)
+	display.Plain(formatted)
 
-	fmt.Println(display.SectionHeader("Examples"))
-	fmt.Println(display.SectionFooter())
-	fmt.Println("  # Special request syntax (no = sign)")
-	fmt.Println("  saul pokeapi set url https://api.example.com")
-	fmt.Println("  saul pokeapi set method POST")
-	fmt.Println("  saul pokeapi set timeout 30")
-	fmt.Println()
-	fmt.Println("  # Regular TOML syntax (with = sign)")
-	fmt.Println("  saul pokeapi set body pokemon.name=pikachu")
-	fmt.Println("  saul pokeapi set header Content-Type=application/json")
-	fmt.Println("  saul pokeapi set body pokemon.level=@level")
-	fmt.Println()
-	fmt.Println("  # Check what's configured")
-	fmt.Println("  saul pokeapi check url")
-	fmt.Println("  saul pokeapi check body pokemon.name")
-	fmt.Println(display.SectionFooter())
+	// Examples section
+	examples := `  # Special request syntax (no = sign)
+  saul pokeapi set url https://api.example.com
+  saul pokeapi set method POST
+  saul pokeapi set timeout 30
+
+  # Regular TOML syntax (with = sign)
+  saul pokeapi set body pokemon.name=pikachu
+  saul pokeapi set header Content-Type=application/json
+  saul pokeapi set body pokemon.level=@level
+
+  # Check what's configured
+  saul pokeapi check url
+  saul pokeapi check body pokemon.name`
+	formatted = display.FormatSimpleSection("Examples", examples)
+	display.Plain(formatted)
 }

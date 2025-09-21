@@ -15,68 +15,86 @@ import (
 
 // DisplayResponse formats and displays the HTTP response with optional filtering
 func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
-	// Display status metadata with consistent boxing
-	fmt.Print(display.SectionStart("Status"))
-	fmt.Printf("Status: %s (%v, %d bytes)\n", response.Status(), response.Time(), len(response.Body()))
-	fmt.Printf("Content-Type: %s\n", response.Header().Get("Content-Type"))
-
-	// Display body with visual formatting
-	fmt.Print(display.SectionStart("Response"))
+	// Format response size
+	size := formatBytes(len(response.Body()))
+	
+	// Get content type for metadata
+	contentType := response.Header().Get("Content-Type")
+	
+	// Prepare response content
 	body := response.String()
+	var content string
+	
 	if body != "" {
 		// Check if content appears to be JSON
-		contentType := response.Header().Get("Content-Type")
 		if isJSONContent(contentType, response.Body()) {
 			// Apply filtering if filters are configured
 			filteredBody := applyFiltering(response.Body(), preset)
+			
 			// If raw mode requested, show pretty JSON
 			if rawMode {
 				var jsonObj interface{}
 				if err := json.Unmarshal(filteredBody, &jsonObj); err == nil {
 					if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
-						fmt.Println(string(prettyJSON))
-						fmt.Printf("%s\n\n", display.SectionFooter())
-						return
+						content = string(prettyJSON)
 					}
 				}
 			} else {
 				// Check if response is too large for TOML conversion
 				if len(filteredBody) > 10000 {
-					fmt.Printf("Response too large for TOML (%d bytes) - showing JSON:\n", len(filteredBody))
+					content = fmt.Sprintf("Response too large for TOML (%d bytes) - showing JSON:\n", len(filteredBody))
 					var jsonObj interface{}
 					if err := json.Unmarshal(filteredBody, &jsonObj); err == nil {
 						if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
-							fmt.Println(string(prettyJSON))
-							fmt.Printf("%s\n\n", display.SectionFooter())
-							return
+							content += string(prettyJSON)
 						}
 					}
-					// If JSON parsing fails, fall through to raw display
 				} else {
 					// Default: Try TOML formatting for JSON responses
 					if tomlFormatted := formatAsToml(filteredBody); tomlFormatted != "" {
-						fmt.Println(tomlFormatted)
-						fmt.Printf("%s\n\n", display.SectionFooter())
-						return
-					}
-				}
-				// Fallback to pretty JSON if TOML conversion fails
-				var jsonObj interface{}
-				if err := json.Unmarshal(filteredBody, &jsonObj); err == nil {
-					if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
-						fmt.Println(string(prettyJSON))
-						fmt.Printf("%s\n\n", display.SectionFooter())
-						return
+						content = tomlFormatted
+					} else {
+						// Fallback to pretty JSON if TOML conversion fails
+						var jsonObj interface{}
+						if err := json.Unmarshal(filteredBody, &jsonObj); err == nil {
+							if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
+								content = string(prettyJSON)
+							}
+						}
 					}
 				}
 			}
 		}
-		// Fallback to raw body for non-JSON or failed conversions
-		fmt.Println(body)
+		
+		// If no content generated yet, use raw body
+		if content == "" {
+			content = body
+		}
 	} else {
-		fmt.Println("(empty response)")
+		content = "(empty response)"
 	}
-	fmt.Printf("%s\n\n", display.SectionFooter())
+	
+	// Display using new formatter
+	formatted := display.FormatResponse(
+		response.Status(),
+		contentType,
+		response.Time().String(),
+		size,
+		content,
+	)
+	
+	display.Plain(formatted)
+}
+
+// formatBytes converts byte count to human-readable format
+func formatBytes(bytes int) string {
+	if bytes < 1024 {
+		return fmt.Sprintf("%d bytes", bytes)
+	} else if bytes < 1024*1024 {
+		return fmt.Sprintf("%.1fKB", float64(bytes)/1024)
+	} else {
+		return fmt.Sprintf("%.1fMB", float64(bytes)/(1024*1024))
+	}
 }
 
 // isJSONContent determines if the response content is JSON based on Content-Type and content

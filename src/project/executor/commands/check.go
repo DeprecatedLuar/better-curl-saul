@@ -82,27 +82,75 @@ func Check(cmd parser.Command) error {
 func displayTOMLFile(handler *toml.TomlHandler, target string, preset string) error {
 	// Capitalize target for display
 	displayTarget := strings.ToUpper(target[:1]) + target[1:]
-	fmt.Print(display.SectionStart(displayTarget))
-
+	
 	// Get the file path and read raw contents
 	presetPath, err := presets.GetPresetPath(preset)
 	if err != nil {
 		// Fall back to simple display if we can't get the preset path
-		fmt.Println("(Unable to display full file contents)")
-		fmt.Printf("%s\n\n", display.SectionFooter())
+		content := "(Unable to display full file contents)"
+		formatted := display.FormatSimpleSection(displayTarget, content)
+		display.Plain(formatted)
 		return nil
 	}
 
 	filePath := filepath.Join(presetPath, target+".toml")
 	content, err := os.ReadFile(filePath)
 	if err != nil {
-		fmt.Println("(File is empty or doesn't exist)")
-		fmt.Printf("%s\n\n", display.SectionFooter())
+		emptyContent := "(File is empty or doesn't exist)"
+		formatted := display.FormatSimpleSection(displayTarget, emptyContent)
+		display.Plain(formatted)
 		return nil
 	}
 
-	// Display raw TOML content
-	fmt.Print(strings.TrimSpace(string(content)))
-	fmt.Printf("\n%s\n\n", display.SectionFooter())
+	// Calculate file metadata
+	size := formatFileSize(len(content))
+	entryCount := calculateEntryCount(string(content))
+	
+	// Display using new formatter with metadata
+	fileContent := strings.TrimSpace(string(content))
+	formatted := display.FormatFileDisplay(displayTarget, size, entryCount, fileContent)
+	display.Plain(formatted)
+	
 	return nil
+}
+
+// formatFileSize converts byte count to human-readable format
+func formatFileSize(bytes int) string {
+	if bytes < 1024 {
+		return fmt.Sprintf("%d bytes", bytes)
+	} else if bytes < 1024*1024 {
+		return fmt.Sprintf("%.1fKB", float64(bytes)/1024)
+	} else {
+		return fmt.Sprintf("%.1fMB", float64(bytes)/(1024*1024))
+	}
+}
+
+// calculateEntryCount estimates the number of entries in TOML content
+func calculateEntryCount(content string) string {
+	if content == "" {
+		return "0"
+	}
+	
+	lines := strings.Split(content, "\n")
+	entryCount := 0
+	
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		// Count lines that contain assignments (key = value)
+		if strings.Contains(line, "=") && !strings.HasPrefix(line, "#") {
+			entryCount++
+		}
+	}
+	
+	if entryCount == 0 {
+		// If no assignments found, count non-empty, non-comment lines
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line != "" && !strings.HasPrefix(line, "#") {
+				entryCount++
+			}
+		}
+	}
+	
+	return fmt.Sprintf("%d", entryCount)
 }
