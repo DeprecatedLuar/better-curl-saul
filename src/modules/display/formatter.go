@@ -65,11 +65,7 @@ func FormatSection(title, content, metadata string) string {
 		if !strings.HasSuffix(content, "\n") {
 			result.WriteString("\n")
 		}
-		result.WriteString("\n")
 	}
-	
-	// Footer separator
-	result.WriteString(strings.Repeat(SeparatorChar, sepWidth))
 	
 	return result.String()
 }
