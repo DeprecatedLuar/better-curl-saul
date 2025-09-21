@@ -74,16 +74,21 @@ func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
 		content = "(empty response)"
 	}
 	
-	// Display using new formatter
-	formatted := display.FormatResponse(
-		response.Status(),
-		contentType,
-		response.Time().String(),
-		size,
-		content,
-	)
-	
-	display.Plain(formatted)
+	if rawMode {
+		// Raw mode: output only the response body (Unix style)
+		fmt.Print(response.String())
+	} else {
+		// Normal mode: formatted display with headers and metadata
+		formatted := display.FormatResponse(
+			response.Status(),
+			contentType,
+			response.Time().String(),
+			size,
+			content,
+		)
+		
+		display.Plain(formatted)
+	}
 }
 
 // formatBytes converts byte count to human-readable format

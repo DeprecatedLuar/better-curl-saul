@@ -27,10 +27,9 @@ func ExecuteCallCommand(cmd parser.Command) error {
 		return fmt.Errorf(errors.ErrPresetNotFound, cmd.Preset)
 	}
 
-	// Check for flags (simple flag parsing for now)
+	// Check for flags
 	persist := false
-	rawMode := false
-	// TODO: Implement proper flag parsing in parser package
+	rawMode := cmd.RawOutput
 
 	// Prompt for variables and get substitution map
 	substitutions, err := PromptForVariables(cmd.Preset, persist)

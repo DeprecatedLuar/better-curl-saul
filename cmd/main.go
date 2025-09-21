@@ -57,6 +57,16 @@ func executeGlobalCommand(cmd parser.Command) error {
 		if err != nil {
 			return fmt.Errorf("failed to list presets: %v", err)
 		}
+		
+		if cmd.RawOutput {
+			// Raw mode: space-separated preset names (Unix style)
+			if len(presets) > 0 {
+				fmt.Println(strings.Join(presets, " "))
+			}
+			return nil
+		}
+		
+		// Normal mode: formatted display
 		if len(presets) == 0 {
 			content := "Create one with: saul [preset-name]"
 			formatted := display.FormatSimpleSection("No Presets Found", content)
