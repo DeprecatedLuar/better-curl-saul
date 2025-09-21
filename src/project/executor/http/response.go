@@ -3,6 +3,7 @@ package http
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/go-resty/resty/v2"
@@ -170,6 +171,11 @@ func applyFiltering(jsonData []byte, preset string) []byte {
 	if err != nil {
 		// If filtering fails, return original data
 		return jsonData
+	}
+
+	// Warn if no fields matched
+	if len(filtered) == 0 {
+		fmt.Fprintf(os.Stderr, "Warning: No fields matched filters %v - check filter syntax\n", fields)
 	}
 
 	return filteredJSON
