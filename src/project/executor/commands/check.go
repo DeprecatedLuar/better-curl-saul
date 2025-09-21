@@ -81,15 +81,14 @@ func Check(cmd parser.Command) error {
 func displayTOMLFile(handler *toml.TomlHandler, target string, preset string) error {
 	// Capitalize target for display
 	displayTarget := strings.ToUpper(target[:1]) + target[1:]
-	fmt.Println(display.SectionHeader(displayTarget))
-	fmt.Println(display.SectionFooter())
+	fmt.Print(display.SectionStart(displayTarget))
 
 	// Get the file path and read raw contents
 	presetPath, err := presets.GetPresetPath(preset)
 	if err != nil {
 		// Fall back to simple display if we can't get the preset path
 		fmt.Println("(Unable to display full file contents)")
-		fmt.Println(display.SectionFooter())
+		fmt.Printf("%s\n\n", display.SectionFooter())
 		return nil
 	}
 
@@ -97,12 +96,12 @@ func displayTOMLFile(handler *toml.TomlHandler, target string, preset string) er
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		fmt.Println("(File is empty or doesn't exist)")
-		fmt.Println(display.SectionFooter())
+		fmt.Printf("%s\n\n", display.SectionFooter())
 		return nil
 	}
 
 	// Display raw TOML content
-	fmt.Print(string(content))
-	fmt.Println(display.SectionFooter())
+	fmt.Print(strings.TrimSpace(string(content)))
+	fmt.Printf("\n%s\n\n", display.SectionFooter())
 	return nil
 }
