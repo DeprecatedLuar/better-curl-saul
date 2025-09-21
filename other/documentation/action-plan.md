@@ -79,10 +79,17 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
   - Flag parsing foundation with extensible architecture for future flags
   - `--raw` flag implemented across all commands: check, call, list
   - Check commands: raw TOML file contents (cat behavior) for scripting
-  - Call commands: raw response body only (no headers/metadata) for automation  
+  - Call commands: raw response body only (no headers/metadata) for automation
   - List commands: space-separated preset names for shell scripting
   - Perfect Unix philosophy: crude, scriptable output when `--raw` specified
   - Zero regression: all existing formatted output remains default behavior
+- ✅ **Phase 6A Complete**: System Command Delegation
+  - Unix philosophy implementation: leverage existing tools instead of rebuilding
+  - Replaced custom `saul list` with system command delegation (`saul ls`)
+  - Whitelist-based security: only safe commands (ls, exa, lsd, tree, dir) allowed
+  - Working directory automatically set to presets folder for all delegated commands
+  - Cross-platform support with user's preferred tools (exa, lsd, etc.)
+  - Perfect workspace visibility: see actual TOML files and directory structure
 
 ### ⏳ **Next Priority Phases**
 
@@ -97,8 +104,9 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
 - No interactive mode for workflow efficiency
 
 ### ✅ **Major Systems Complete**
+- **System Command Delegation**: Unix philosophy - leverage existing tools (ls, exa, tree)
 - **Flag System**: `--raw` flag with extensible architecture for future flags
-- **Response Filtering**: Terminal-friendly filtering for large API responses  
+- **Response Filtering**: Terminal-friendly filtering for large API responses
 - **Visual Formatting**: Professional display system with consistent formatting
 - **Variable System**: Braced syntax with hard/soft variable support
 - **HTTP Execution**: Full HTTP method support with smart response formatting

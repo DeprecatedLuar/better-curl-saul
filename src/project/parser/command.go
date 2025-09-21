@@ -31,6 +31,12 @@ func ParseCommand(args []string) (Command, error) {
 		return cmd, fmt.Errorf(errors.ErrArgumentsNeeded)
 	}
 
+	// Check for system commands FIRST - skip flag parsing for them
+	if isSystemCommand(args[0]) {
+		cmd.Preset = args[0]  // Store system command in Preset field for delegation
+		return cmd, nil
+	}
+
 	// Parse flags and filter them out of args
 	filteredArgs, err := parseFlags(args, &cmd)
 	if err != nil {
@@ -48,7 +54,7 @@ func ParseCommand(args []string) (Command, error) {
 			cmd.Preset = args[1]
 		}
 		return cmd, nil
-	case "list", "version", "help", "call":
+	case "version", "help", "call":
 		cmd.Global = args[0]
 		if len(args) >= 2 {
 			cmd.Preset = args[1]
