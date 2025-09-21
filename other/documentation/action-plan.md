@@ -91,19 +91,27 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
   - Cross-platform support with user's preferred tools (exa, lsd, etc.)
   - Perfect workspace visibility: see actual TOML files and directory structure
 
+- ✅ **Phase 4E Complete**: Response History System
+  - History storage integration in HTTP execution pipeline
+  - Simple configuration: `saul api set history 5` enables storage with rotation
+  - Rich command set: `saul api check history`, `saul api check history 1`, `saul api check history last`
+  - Clean architecture: Split presets package into manager.go, files.go, history.go
+  - Automatic response rotation with configurable limits (1-100 responses)
+  - Raw mode support for scripting integration
+  - Smart response formatting using existing Phase 4B JSON→TOML conversion
+
 ### ⏳ **Next Priority Phases**
 
 ### ❌ **Missing Core Components**
-- **Response history system**: Storage, management, and access commands
 - **Interactive mode**: Command shell for preset management
 - **Advanced command system**: Enhanced help and management
 - **Production readiness**: Cross-platform compatibility, error handling polish
 
 ### 🔧 **Technical Debt**
-- No response history for debugging API interactions
 - No interactive mode for workflow efficiency
 
 ### ✅ **Major Systems Complete**
+- **Response History System**: Complete debugging workflow with automatic storage and rotation
 - **System Command Delegation**: Unix philosophy - leverage existing tools (ls, exa, tree)
 - **Flag System**: `--raw` flag with extensible architecture for future flags
 - **Response Filtering**: Terminal-friendly filtering for large API responses
@@ -1167,6 +1175,102 @@ echo "y" | saul testapi rm history
 [ ! -d ~/.config/saul/presets/testapi/history ]
 
 echo "✓ Phase 4E Response History Storage: PASSED"
+```
+
+---
+
+### **Phase 4E: Response History System** ✅ **COMPLETED**
+*Goal: Complete debugging workflow with automatic response storage and management*
+
+#### 4E.1 Architecture Refactoring ✅ **COMPLETED**
+- [x] ✅ **Split presets package for maintainability**:
+  - ✅ Created `history.go` with all history-related functionality
+  - ✅ Created `files.go` with TOML file operations
+  - ✅ Cleaned `manager.go` to focus on core preset management
+  - ✅ Maintained perfect backward compatibility and compilation
+  - ✅ Followed KISS principles with single responsibility per file
+
+#### 4E.2 History Storage Implementation ✅ **COMPLETED**
+- [x] ✅ **Automatic Response Storage**:
+  - ✅ Integrated storage into HTTP execution pipeline in `ExecuteCallCommand`
+  - ✅ Stores responses with rich metadata: timestamp, method, URL, status, headers, body
+  - ✅ Only stores when history is enabled (zero overhead when disabled)
+  - ✅ JSON format for structured storage and easy parsing
+  - ✅ Graceful error handling - history failures don't break HTTP execution
+
+- [x] ✅ **History Configuration System**:
+  - ✅ Simple syntax: `saul api set history 5` (just like `set url`, `set method`)
+  - ✅ Stores as `history_count` in `request.toml` alongside other request settings
+  - ✅ Validation: accepts 0-100, rejects negative values and non-numbers
+  - ✅ Special request field parsing for intuitive UX
+
+- [x] ✅ **Automatic Rotation Logic**:
+  - ✅ Maintains exactly N responses (configurable limit)
+  - ✅ Removes oldest responses when limit exceeded
+  - ✅ Renumbers files sequentially for clean organization
+  - ✅ File naming: `response-001.json`, `response-002.json`, etc.
+  - ✅ Handles edge cases: empty directories, corrupted files, concurrent access
+
+#### 4E.3 History Access Commands ✅ **COMPLETED**
+- [x] ✅ **Rich History Viewing**:
+  - ✅ `saul api check history` - Interactive list with metadata (method, URL, timestamp)
+  - ✅ `saul api check history 1` - View specific response with full formatting
+  - ✅ `saul api check history last` - Convenient alias for most recent response
+  - ✅ Professional formatting using existing Phase 4B JSON→TOML conversion
+  - ✅ Response metadata headers show request details and timing
+
+- [x] ✅ **Raw Mode Integration**:
+  - ✅ `saul api check history --raw` - Space-separated response numbers for scripting
+  - ✅ `saul api check history 1 --raw` - Pure response body for automation
+  - ✅ Perfect Unix philosophy integration for shell composition
+  - ✅ Consistent with existing raw flag behavior across all commands
+
+#### 4E.4 Real-World Testing & Validation ✅ **COMPLETED**
+- [x] ✅ **End-to-End Functionality**:
+  - ✅ History configuration works: `saul api set history 3`
+  - ✅ Automatic storage during HTTP calls: `saul call api`
+  - ✅ Rotation validation: tested with 7 calls, limit of 5, correctly maintains 5 responses
+  - ✅ All viewing commands work: list, specific number, last alias
+  - ✅ Raw mode tested for scripting integration
+  - ✅ Error handling verified: non-existent responses, invalid numbers
+
+**Phase 4E Success Criteria:** ✅ **ALL ACHIEVED**
+- [x] ✅ History storage automatic and transparent during HTTP execution
+- [x] ✅ Simple configuration interface matches existing patterns (`set history N`)
+- [x] ✅ Rich viewing commands with professional formatting
+- [x] ✅ Rotation logic maintains exact count with clean file organization
+- [x] ✅ Raw mode enables scripting and automation integration
+- [x] ✅ Zero regression - all existing functionality preserved
+- [x] ✅ Clean architecture with focused file organization
+
+**Benefits Delivered:**
+- ✅ **Genuine Debugging Value**: Compare API responses over time, reference previous structures
+- ✅ **Seamless Integration**: Works with existing filtering, formatting, and flag systems
+- ✅ **Optional & Lightweight**: Zero impact when disabled, minimal overhead when enabled
+- ✅ **Production Ready**: Handles rotation, corruption, and edge cases gracefully
+- ✅ **Developer Friendly**: Intuitive commands that match existing patterns
+
+**Real Usage Examples Working:**
+```bash
+# Configure and use history
+saul github set history 5
+saul github set body query="rust CLI tools"
+saul call github    # Response stored automatically
+
+# Later...
+saul github set body query="go HTTP clients"
+saul call github    # Different response stored
+
+# Compare what worked before
+saul github check history           # List all stored responses
+saul github check history 1        # View first response with full formatting
+saul github check history last     # Quick access to most recent
+
+# Scripting integration
+for response in $(saul github check history --raw); do
+    echo "Response $response:"
+    saul github check history $response --raw | jq '.query'
+done
 ```
 
 ---
