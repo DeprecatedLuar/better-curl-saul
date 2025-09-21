@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
 )
@@ -55,13 +56,13 @@ func PromptForVariables(preset string, persist bool) (map[string]string, error) 
 	// Load variables.toml to get hard variables
 	variablesHandler, err := presets.LoadPresetFile(preset, "variables")
 	if err != nil {
-		return nil, fmt.Errorf("failed to load variables: %v", err)
+		return nil, fmt.Errorf(errors.ErrVariableLoadFailed)
 	}
 
 	// Find all variables across all TOML files
 	variables, err := findAllVariables(preset)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find variables: %v", err)
+		return nil, fmt.Errorf(errors.ErrVariableLoadFailed)
 	}
 
 
@@ -109,7 +110,7 @@ func PromptForVariables(preset string, persist bool) (map[string]string, error) 
 					variablesHandler.Set(variable.Key, userInput)
 					err := presets.SavePresetFile(preset, "variables", variablesHandler)
 					if err != nil {
-						return nil, fmt.Errorf("failed to save variable: %v", err)
+						return nil, fmt.Errorf(errors.ErrVariableSaveFailed)
 					}
 				}
 			}
@@ -117,7 +118,7 @@ func PromptForVariables(preset string, persist bool) (map[string]string, error) 
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error reading input: %v", err)
+		return nil, fmt.Errorf(errors.ErrVariableLoadFailed)
 	}
 
 	return substitutions, nil

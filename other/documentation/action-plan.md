@@ -840,10 +840,114 @@ saul testapi set variables pokename=pikachu trainerId=ash123 region=kanto
 
 ---
 
-### **Phase 4D: Response History Storage** ⏳ **MEDIUM PRIORITY**
-*Goal: Add response storage and management for debugging*
+### **Phase 4D: Professional Visual Formatting System** ⏳ **HIGH PRIORITY**
+*Goal: Professional visual organization with responsive terminal-friendly display*
 
-#### 4D.1 History Storage Management
+#### 4D.1 Core Formatting Engine Implementation
+- [ ] **Create Universal Formatting System**:
+  - Create new `src/modules/display/formatter.go` for visual formatting logic
+  - Keep existing `src/modules/display/printer.go` for output mechanics (Error, Success, Warning, etc.)
+  - Add `FormatSection(title, content, metadata string) string` function to formatter.go
+  - Implement terminal width detection using `golang.org/x/term`
+  - Create responsive separator generation with 80-character target, 80% fallback
+  - Replace temporary `sections.go` with permanent formatting functions
+
+- [ ] **Clean Separation Architecture**:
+  - Content Generation: Commands produce TOML content using existing handlers
+  - Visual Formatting: `formatter.go` wraps content with headers/footers
+  - Output Delivery: `printer.go` handles actual printing (use existing `Plain()` function)
+  - Integration Pattern: `display.Plain(display.FormatSection("Title", content, "metadata"))`
+
+- [ ] **Visual Sandwich Pattern Implementation**:
+  - Implement three-part structure: Header → Content → Footer
+  - Use Unicode separator `─` (U+2500) for consistent visual boundaries
+  - Metadata headers with bullet separators: `Response: 200 OK • 1.2KB • application/json`
+  - Consistent footer width matching header separators
+
+#### 4D.2 Response Display Enhancement
+- [ ] **HTTP Response Integration** (`src/project/executor/http/display.go`):
+  - Wrap existing Phase 4B JSON→TOML conversion with sandwich formatting
+  - Add response metadata: status, size, content-type, timing
+  - Integrate with Phase 4C filtering: show filtered size vs original size
+  - Maintain existing content-type detection and graceful fallback
+
+- [ ] **Enhanced Response Headers**:
+  - Standard responses: `Response: 200 OK • 1.2KB • application/json`
+  - Filtered responses: `Filtered Response: 200 OK • 0.8KB (from 257KB) • application/json`
+  - Error responses: `Error Response: 404 Not Found • 0.5KB • text/html`
+  - Preserve existing HTTP execution pipeline
+
+#### 4D.3 Check Command Visual Enhancement
+- [ ] **File Display Integration** (`src/project/executor/commands.go`):
+  - Wrap all `ExecuteCheckCommand` outputs with consistent formatting
+  - File-specific headers: `Headers • 0.5KB • 3 entries`, `Request • 0.1KB • 2 properties`
+  - Smart counting: headers count, body fields, query parameters, variables
+  - Maintain current check command functionality (show entire file, not just field)
+
+- [ ] **Universal TOML Display**:
+  - Apply formatting to all TOML file displays consistently
+  - Intelligent entry counting for each file type (request, headers, body, query, filters, variables)
+  - File size calculation and display in human-readable format
+  - Integration with existing preset file management
+
+#### 4D.4 Terminal Responsiveness
+- [ ] **Dynamic Width Management**:
+  - Terminal width detection with graceful fallback to 80 characters
+  - Responsive separator width: 80% of terminal width if < 100 chars, otherwise 80 chars
+  - Consistent separator generation across all display contexts
+  - Cross-platform terminal compatibility
+
+- [ ] **Visual Consistency Rules**:
+  - Same separator character `─` throughout application
+  - Consistent bullet separator `•` in all metadata headers
+  - File size in KB format (0.1KB, 1.2KB, etc.)
+  - Opening and closing separators for all formatted content
+  - Integration with existing error/warning display patterns
+
+**Phase 4D Success Criteria:**
+- [ ] `saul call api` displays responses with professional sandwich formatting
+- [ ] `saul api check url` shows entire request file with consistent visual boundaries
+- [ ] All TOML displays use same visual formatting pattern
+- [ ] Responsive width works correctly on different terminal sizes
+- [ ] Integration with Phase 4B (JSON→TOML) and Phase 4C (filtering) seamless
+- [ ] All existing Phase 1-4C functionality unchanged (zero regression)
+
+**Phase 4D Testing:**
+```bash
+#!/bin/bash
+# Phase 4D Professional Visual Formatting Tests
+
+echo "4D.1 Testing response formatting..."
+saul pokeapi call | grep -q "Response:" # Should show formatted header
+saul pokeapi call | grep -q "─────" # Should show separators
+
+echo "4D.2 Testing check command formatting..."
+saul pokeapi check url | grep -q "Request •" # Should show file type header
+saul pokeapi check headers | grep -q "Headers •" # Should show headers header
+
+echo "4D.3 Testing filtered response formatting..."
+saul pokeapi set filters field1=name field2=stats.0.base_stat
+saul pokeapi call | grep -q "Filtered Response:" # Should show filtered header
+
+echo "4D.4 Testing width responsiveness..."
+# Manual test: resize terminal and verify separator width adapts
+
+echo "✓ Phase 4D Professional Visual Formatting: PASSED"
+```
+
+**Benefits:**
+- **Immediate Professional Appeal**: Every command looks organized and polished
+- **Enhanced Readability**: Clear content boundaries eliminate visual confusion
+- **Foundation for History**: Professional formatting ready for Phase 4E history display
+- **Terminal Optimized**: Responsive design works on all terminal sizes
+- **Zero Breaking Changes**: Pure visual enhancement of existing functionality
+
+---
+
+### **Phase 4E: Response History Storage** ⏳ **MEDIUM PRIORITY**
+*Goal: Add response storage and management for debugging workflow*
+
+#### 4E.1 History Storage Management
 - [ ] **History Storage Integration**:
   - Modify `ExecuteCallCommand` to store responses when history enabled
   - Implement `CreateHistoryDirectory(preset string)` in presets package
@@ -858,7 +962,7 @@ saul testapi set variables pokename=pikachu trainerId=ash123 region=kanto
   - Implement `set history N` command to configure per preset
   - Update `ExecuteSetCommand` to handle history configuration
 
-#### 4D.2 History Access Commands
+#### 4E.2 History Access Commands
 - [ ] **Check History Command**:
   - Implement `ExecuteCheckHistoryCommand` for history access
   - Add interactive menu: list all stored responses with metadata
@@ -872,7 +976,7 @@ saul testapi set variables pokename=pikachu trainerId=ash123 region=kanto
   - Support selective deletion: `rm history N` (future enhancement)
   - Handle cases where history doesn't exist (silent success)
 
-#### 4D.3 Enhanced Command Routing
+#### 4E.3 Enhanced Command Routing
 - [ ] **Extended Check Command**:
   - Add history routing to existing `ExecuteCheckCommand`
   - Handle `check history` variations (no args = menu, N = direct, last = recent)
@@ -883,7 +987,7 @@ saul testapi set variables pokename=pikachu trainerId=ash123 region=kanto
   - Validate history count values (non-negative integers)
   - Handle `set history 0` to disable without deleting existing history
 
-**Phase 4D Success Criteria:**
+**Phase 4E Success Criteria:**
 - [ ] `saul api set history 5` enables history collection
 - [ ] `saul call api` automatically stores responses when history enabled
 - [ ] `saul api check history` shows interactive menu of stored responses
@@ -892,29 +996,29 @@ saul testapi set variables pokename=pikachu trainerId=ash123 region=kanto
 - [ ] History rotation works correctly (keeps last N, deletes oldest)
 - [ ] Stored responses use Phase 4A smart formatting when displayed
 
-**Phase 4D Testing:**
+**Phase 4E Testing:**
 ```bash
 #!/bin/bash
-# Phase 4D History Storage Tests
+# Phase 4E History Storage Tests
 
-echo "4D.1 Testing history configuration..."
+echo "4E.1 Testing history configuration..."
 saul testapi set history 3
 grep -q 'history_count = 3' ~/.config/saul/presets/testapi/request.toml
 
-echo "4D.2 Testing history storage..."
+echo "4E.2 Testing history storage..."
 saul call testapi >/dev/null  # Should store response
 [ -d ~/.config/saul/presets/testapi/history ]
 [ -f ~/.config/saul/presets/testapi/history/response-001.json ]
 
-echo "4D.3 Testing history access with formatting..."
+echo "4E.3 Testing history access with formatting..."
 saul testapi check history | grep -q "1." # Should show menu
 saul testapi check history 1 | grep -q "Status:" # Should show formatted response
 
-echo "4D.4 Testing history management..."
+echo "4E.4 Testing history management..."
 echo "y" | saul testapi rm history
 [ ! -d ~/.config/saul/presets/testapi/history ]
 
-echo "✓ Phase 4D Response History Storage: PASSED"
+echo "✓ Phase 4E Response History Storage: PASSED"
 ```
 
 ---
@@ -1117,7 +1221,7 @@ echo "4D.1 Testing history configuration..."
 saul testapi set history 3
 grep -q 'history_count = 3' ~/.config/saul/presets/testapi/request.toml
 
-echo "4D.2 Testing history storage..."
+echo "4E.2 Testing history storage..."
 echo -e "testuser\n123" | saul call testapi >/dev/null
 [ -f ~/.config/saul/presets/testapi/history/response-001.json ]
 

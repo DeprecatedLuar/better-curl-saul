@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 )
 
 // ValidateRequestField validates special request field values
@@ -34,17 +36,17 @@ func validateHTTPMethod(method string) error {
 		}
 	}
 
-	return fmt.Errorf("sorry champ \"%s\" isn't really a thing, but i'll let you try again", method)
+	return fmt.Errorf(errors.ErrInvalidMethod, method)
 }
 
 // validateURL performs basic URL validation
 func validateURL(url string) error {
 	if url == "" {
-		return fmt.Errorf("listen pal, at least put in the URL. Come on")
+		return fmt.Errorf(errors.ErrMissingURL)
 	}
 	// Basic check - should start with http:// or https://
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		return fmt.Errorf("alright, so the \"U R L\" needs to start with one of these two here: 'http://' or 'https://'. Go get'em tiger")
+		return fmt.Errorf(errors.ErrInvalidURL)
 	}
 	return nil
 }
@@ -52,7 +54,7 @@ func validateURL(url string) error {
 // validateTimeout validates timeout value
 func validateTimeout(timeout string) error {
 	if _, err := strconv.Atoi(timeout); err != nil {
-		return fmt.Errorf("timeout must be a number (seconds)")
+		return fmt.Errorf(errors.ErrInvalidTimeout)
 	}
 	return nil
 }

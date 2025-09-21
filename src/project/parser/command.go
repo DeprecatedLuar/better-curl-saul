@@ -3,6 +3,8 @@ package parser
 import (
 	"fmt"
 	"strings"
+
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 )
 
 type Command struct {
@@ -25,7 +27,7 @@ func ParseCommand(args []string) (Command, error) {
 	var cmd Command
 
 	if len(args) < 1 {
-		return cmd, fmt.Errorf("you gonna need more arguments than that buddy (no pressure)")
+		return cmd, fmt.Errorf(errors.ErrArgumentsNeeded)
 	}
 
 	switch args[0] {
@@ -117,7 +119,7 @@ func ParseCommand(args []string) (Command, error) {
 		// Parse space-separated key=value pairs
 		pairs, err := parseSpaceSeparatedKeyValues(keyValueArgs)
 		if err != nil {
-			return cmd, fmt.Errorf("invalid key=value format: %v", err)
+			return cmd, fmt.Errorf(errors.ErrInvalidKeyValue)
 		}
 
 		cmd.KeyValuePairs = pairs
@@ -146,7 +148,7 @@ func parseSpaceSeparatedKeyValues(args []string) ([]KeyValuePair, error) {
 	for _, arg := range args {
 		parts := strings.SplitN(arg, "=", 2)
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid key=value format: %s", arg)
+			return nil, fmt.Errorf(errors.ErrInvalidKeyValue)
 		}
 
 		key := strings.TrimSpace(parts[0])
