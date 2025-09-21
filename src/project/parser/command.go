@@ -37,7 +37,7 @@ func ParseCommand(args []string) (Command, error) {
 		return cmd, nil
 	}
 
-	// Parse flags and filter them out of args
+	// Parse flags and filter them out of args (only for non-system commands)
 	filteredArgs, err := parseFlags(args, &cmd)
 	if err != nil {
 		return cmd, err
@@ -199,5 +199,17 @@ func parseFlags(args []string, cmd *Command) ([]string, error) {
 	}
 
 	return filteredArgs, nil
+}
+
+// isSystemCommand checks if a command is in the allowed system commands whitelist
+// Note: This duplicates the whitelist from delegation package to avoid circular imports
+func isSystemCommand(command string) bool {
+	allowedCommands := []string{"ls", "exa", "lsd", "tree", "dir"}
+	for _, allowed := range allowedCommands {
+		if command == allowed {
+			return true
+		}
+	}
+	return false
 }
 
