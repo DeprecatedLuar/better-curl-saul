@@ -68,12 +68,20 @@ func Set(cmd parser.Command) error {
 			} else {
 				// Infer type and set value, with special handling for request fields
 				valueToStore := kvp.Value
-				if cmd.Target == "request" && strings.ToLower(kvp.Key) == "method" {
-					// Store HTTP methods in uppercase
-					valueToStore = strings.ToUpper(kvp.Value)
+				keyToStore := kvp.Key
+
+				if cmd.Target == "request" {
+					if strings.ToLower(kvp.Key) == "method" {
+						// Store HTTP methods in uppercase
+						valueToStore = strings.ToUpper(kvp.Value)
+					} else if strings.ToLower(kvp.Key) == "history" {
+						// Map "history" to "history_count" for storage
+						keyToStore = "history_count"
+					}
 				}
+
 				inferredValue := executor.InferValueType(valueToStore)
-				handler.Set(kvp.Key, inferredValue)
+				handler.Set(keyToStore, inferredValue)
 			}
 		}
 	}

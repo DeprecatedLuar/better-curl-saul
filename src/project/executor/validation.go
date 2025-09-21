@@ -17,6 +17,8 @@ func ValidateRequestField(key, value string) error {
 		return validateURL(value)
 	case "timeout":
 		return validateTimeout(value)
+	case "history", "history_count":
+		return validateHistoryCount(value)
 	default:
 		return nil
 	}
@@ -55,6 +57,21 @@ func validateURL(url string) error {
 func validateTimeout(timeout string) error {
 	if _, err := strconv.Atoi(timeout); err != nil {
 		return fmt.Errorf(errors.ErrInvalidTimeout)
+	}
+	return nil
+}
+
+// validateHistoryCount validates history count value
+func validateHistoryCount(count string) error {
+	historyCount, err := strconv.Atoi(count)
+	if err != nil {
+		return fmt.Errorf("invalid history count: %s (must be a number)", count)
+	}
+	if historyCount < 0 {
+		return fmt.Errorf("history count cannot be negative: %d", historyCount)
+	}
+	if historyCount > 100 {
+		return fmt.Errorf("history count cannot exceed 100: %d", historyCount)
 	}
 	return nil
 }

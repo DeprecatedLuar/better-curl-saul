@@ -3,7 +3,9 @@ package executor
 import (
 	"fmt"
 	"os"
+	"strconv"
 
+	"github.com/go-resty/resty/v2"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor/http"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
@@ -73,9 +75,81 @@ func ExecuteCallCommand(cmd parser.Command) error {
 		return fmt.Errorf(errors.ErrHTTPRequestFailed)
 	}
 
+	// Check if history is enabled and store response
+	err = storeResponseHistory(cmd.Preset, request, response)
+	if err != nil {
+		// Don't fail the whole request if history storage fails
+		// Just log the error (could add warning display here)
+	}
+
 	// Display response with filtering support
 	http.DisplayResponse(response, rawMode, cmd.Preset)
 
 	return nil
+}
+
+// storeResponseHistory stores the HTTP response in history if enabled
+func storeResponseHistory(preset string, request *http.HTTPRequestConfig, response *resty.Response) error {
+	// Load request.toml to check for history configuration
+	requestHandler, err := presets.LoadPresetFile(preset, "request")
+	if err != nil {
+		return nil // If we can't load request config, skip history
+	}
+
+	// Get history count from request.toml
+	historyCountValue := requestHandler.Get("history_count")
+	if historyCountValue == nil {
+		return nil // No history configured
+	}
+
+	// Convert to int
+	var historyCount int
+	switch v := historyCountValue.(type) {
+	case int:
+		historyCount = v
+	case int64:
+		historyCount = int(v)
+	case string:
+		historyCount, err = strconv.Atoi(v)
+		if err != nil {
+			return nil // Invalid history count, skip
+		}
+	default:
+		return nil // Invalid type, skip
+	}
+
+	if historyCount <= 0 {
+		return nil // History disabled
+	}
+
+	// Convert response headers to map for storage
+	headers := make(map[string]string)
+	for key, values := range response.Header() {
+		if len(values) > 0 {
+			headers[key] = values[0] // Store first value
+		}
+	}
+
+	// Parse response body as interface{} for JSON storage
+	var body interface{}
+	if response.Body() != nil && len(response.Body()) > 0 {
+		// Try to unmarshal as JSON first
+		if err := response.Result(); err == nil {
+			body = string(response.Body()) // Store as string if JSON parsing fails
+		} else {
+			body = string(response.Body())
+		}
+	}
+
+	// Store the response
+	return presets.StoreResponse(
+		preset,
+		request.Method,
+		request.URL,
+		response.Status(),
+		headers,
+		body,
+		historyCount,
+	)
 }
 
