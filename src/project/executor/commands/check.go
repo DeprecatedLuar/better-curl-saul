@@ -43,7 +43,7 @@ func Check(cmd parser.Command) error {
 		}
 		
 		// Always print raw value (Unix philosophy)
-		fmt.Print(value)
+		fmt.Println(value)
 		return nil
 	}
 
@@ -65,9 +65,10 @@ func Check(cmd parser.Command) error {
 				}
 				fmt.Print(item)
 			}
+			fmt.Println() // Add newline after array
 		default:
 			// Simple value
-			fmt.Print(value)
+			fmt.Println(value)
 		}
 		return nil
 	}

@@ -205,7 +205,7 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
 - **Unix Philosophy**: Small, composable functions that do one thing well
 - **Zero Dependencies**: Edit commands use existing TOML manipulation, no new complexity
 - **Centralized Error Handling**: All error messages use constants from `src/modules/errors/messages.go` with consistent casual tone
-- **Universal Display System**: All user-facing output uses `display.Error()`, `display.Warning()`, etc. instead of manual fmt.Printf
+- **Raw-First Display Philosophy**: File operations output raw content for Unix composition, only HTTP responses get pretty formatting
 
 **Edit Command Integration Points:**
 - **Parser**: Add "edit" recognition in `ParseCommand()`
@@ -348,6 +348,13 @@ saul pokeapi set body pokemon.name={@pokename},pokemon.level=25
 - ✅ Real-world tested with JSONPlaceholder, PokéAPI, HTTPBin, GitHub APIs
 - ✅ Response metadata headers show status, timing, size, content-type
 - ✅ All existing functionality preserved with enhanced output formatting
+
+**✅ Raw-First Display Architecture (Phase 4C):**
+- ✅ File operations (`check`, `get`) output raw content for Unix composition
+- ✅ HTTP responses retain pretty formatting with metadata (status, timing, size)
+- ✅ Clean header separator without footer clutter
+- ✅ Perfect for piping: `saul api check body | grep pokemon`
+- ✅ Maintains scriptability while keeping HTTP responses readable
 
 **Architecture Improvements:**
 - Clean file separation: commands.go, variables.go, validation.go, http.go
