@@ -315,6 +315,53 @@ trainer_id: ash123_           # Hard variable (shows current value)
 - `list` - Show all presets
 - `rm presetname` - Delete preset (with confirmation)
 
+### Workspace Navigation
+
+**System Command Delegation:**
+Saul delegates familiar system commands to operate within your preset workspace, combining the power of existing tools with workspace-aware context.
+
+**Cross-Platform Listing Commands:**
+```bash
+# Linux/Mac users - use familiar ls with all native flags
+saul ls -la --color=always        # Long format with colors
+saul ls -t | head -5              # 5 most recent presets
+saul ls *.api                     # Glob pattern filtering
+
+# Windows users - use native dir command
+saul dir /w /p                    # Wide format with pagination
+
+# Power users with modern tools
+saul exa --tree --git --icons     # Tree view with git status
+saul lsd --tree --depth 2         # LSDeluxe with limited depth
+saul tree -C -L 2                 # Colored tree, 2 levels deep
+```
+
+**Command Composition & Pipelines:**
+```bash
+# Unix pipeline integration works seamlessly
+saul ls -1 | grep api             # Filter presets containing "api"
+saul exa --long | sort -k5        # Sort presets by file size
+saul tree | grep -E '\.toml$'     # Find all TOML files in preset tree
+```
+
+**Supported Commands:**
+- `ls` - Linux/Mac directory listing (all flags supported)
+- `dir` - Windows directory listing (all flags supported)
+- `exa` - Modern ls replacement with git integration
+- `lsd` - LSDeluxe with icons and colors
+- `tree` - Directory tree visualization
+
+**Security & Safety:**
+- **Whitelist-only**: Only safe, read-only commands are delegated
+- **No destructive operations**: `rm`, `del`, `mv` commands are never delegated
+- **Native tool behavior**: All arguments pass through to system commands unchanged
+
+**Design Philosophy:**
+Instead of forcing users to learn new listing syntax, Saul embraces Unix composition - use the tools you already know, but automatically operate in your preset workspace context. This eliminates the need to `cd ~/.config/saul/presets` before listing presets.
+
+**Future Enhancement:**
+User-configurable command preferences and platform-aware defaults in `~/.config/saul/config.toml`. See [COMMAND_DELEGATION.md](./COMMAND_DELEGATION.md) for detailed architecture documentation.
+
 ### Command Structure
 ```
 saul [global] [preset] [command] [target] [field=value]

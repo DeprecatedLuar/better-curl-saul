@@ -43,7 +43,14 @@ func Check(cmd parser.Command) error {
 		if value == nil {
 			return fmt.Errorf(errors.ErrKeyNotFound, key, cmd.Target)
 		}
-		fmt.Println(value)
+		
+		if cmd.RawOutput {
+			// Raw mode: print value only (no newline for scriptability)
+			fmt.Print(value)
+		} else {
+			// Normal mode: formatted output
+			fmt.Println(value)
+		}
 		return nil
 	}
 
@@ -55,38 +62,57 @@ func Check(cmd parser.Command) error {
 			return fmt.Errorf(errors.ErrKeyNotFound, key, cmd.Target)
 		}
 
-		// Format based on type
-		switch v := value.(type) {
-		case []interface{}:
-			// Array format
-			fmt.Printf("%s = [", key)
-			for i, item := range v {
-				if i > 0 {
-					fmt.Print(", ")
+		if cmd.RawOutput {
+			// Raw mode: print value only (no formatting, no newline for scriptability)
+			switch v := value.(type) {
+			case []interface{}:
+				// For arrays, print as space-separated values
+				for i, item := range v {
+					if i > 0 {
+						fmt.Print(" ")
+					}
+					fmt.Print(item)
 				}
-				fmt.Printf("\"%v\"", item)
+			default:
+				// Simple value
+				fmt.Print(value)
 			}
-			fmt.Println("]")
-		default:
-			// Simple value
-			fmt.Printf("%s = \"%v\"\n", key, value)
+		} else {
+			// Normal mode: formatted output
+			switch v := value.(type) {
+			case []interface{}:
+				// Array format
+				fmt.Printf("%s = [", key)
+				for i, item := range v {
+					if i > 0 {
+						fmt.Print(", ")
+					}
+					fmt.Printf("\"%v\"", item)
+				}
+				fmt.Println("]")
+			default:
+				// Simple value
+				fmt.Printf("%s = \"%v\"\n", key, value)
+			}
 		}
 		return nil
 	}
 
 	// Display entire file contents
-	return displayTOMLFile(handler, cmd.Target, cmd.Preset)
+	return displayTOMLFile(handler, cmd.Target, cmd.Preset, cmd.RawOutput)
 }
 
 // displayTOMLFile shows the entire TOML file in a clean format
-func displayTOMLFile(handler *toml.TomlHandler, target string, preset string) error {
-	// Capitalize target for display
-	displayTarget := strings.ToUpper(target[:1]) + target[1:]
-	
+func displayTOMLFile(handler *toml.TomlHandler, target string, preset string, rawOutput bool) error {
 	// Get the file path and read raw contents
 	presetPath, err := presets.GetPresetPath(preset)
 	if err != nil {
+		if rawOutput {
+			// Raw mode: silent failure for scriptability
+			return nil
+		}
 		// Fall back to simple display if we can't get the preset path
+		displayTarget := strings.ToUpper(target[:1]) + target[1:]
 		content := "(Unable to display full file contents)"
 		formatted := display.FormatSimpleSection(displayTarget, content)
 		display.Plain(formatted)
@@ -96,17 +122,28 @@ func displayTOMLFile(handler *toml.TomlHandler, target string, preset string) er
 	filePath := filepath.Join(presetPath, target+".toml")
 	content, err := os.ReadFile(filePath)
 	if err != nil {
+		if rawOutput {
+			// Raw mode: silent failure for scriptability
+			return nil
+		}
+		displayTarget := strings.ToUpper(target[:1]) + target[1:]
 		emptyContent := "(File is empty or doesn't exist)"
 		formatted := display.FormatSimpleSection(displayTarget, emptyContent)
 		display.Plain(formatted)
 		return nil
 	}
 
-	// Calculate file metadata
+	if rawOutput {
+		// Raw mode: print file contents as-is (like cat)
+		fmt.Print(string(content))
+		return nil
+	}
+
+	// Normal mode: formatted display
+	displayTarget := strings.ToUpper(target[:1]) + target[1:]
 	size := formatFileSize(len(content))
 	entryCount := calculateEntryCount(string(content))
 	
-	// Display using new formatter with metadata
 	fileContent := strings.TrimSpace(string(content))
 	formatted := display.FormatFileDisplay(displayTarget, size, entryCount, fileContent)
 	display.Plain(formatted)

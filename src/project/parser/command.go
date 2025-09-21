@@ -16,6 +16,7 @@ type Command struct {
 	ValueType     string
 	Mode          string
 	KeyValuePairs []KeyValuePair
+	RawOutput     bool          // For --raw flag
 }
 
 type KeyValuePair struct {
@@ -29,6 +30,13 @@ func ParseCommand(args []string) (Command, error) {
 	if len(args) < 1 {
 		return cmd, fmt.Errorf(errors.ErrArgumentsNeeded)
 	}
+
+	// Parse flags and filter them out of args
+	filteredArgs, err := parseFlags(args, &cmd)
+	if err != nil {
+		return cmd, err
+	}
+	args = filteredArgs
 
 	switch args[0] {
 	case "rm":
@@ -163,5 +171,27 @@ func parseSpaceSeparatedKeyValues(args []string) ([]KeyValuePair, error) {
 	}
 
 	return pairs, nil
+}
+
+// parseFlags extracts flags from args and sets them in cmd, returning filtered args
+func parseFlags(args []string, cmd *Command) ([]string, error) {
+	var filteredArgs []string
+
+	for _, arg := range args {
+		if strings.HasPrefix(arg, "--") {
+			// Handle long flags
+			switch arg {
+			case "--raw":
+				cmd.RawOutput = true
+			default:
+				return nil, fmt.Errorf("unknown flag: %s", arg)
+			}
+		} else {
+			// Not a flag, keep in filtered args
+			filteredArgs = append(filteredArgs, arg)
+		}
+	}
+
+	return filteredArgs, nil
 }
 
