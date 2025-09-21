@@ -147,22 +147,37 @@ func ListHistoryResponses(preset string) ([]HistoryResponse, error) {
 	return responses, nil
 }
 
-// LoadHistoryResponse loads a specific history response by number (1-based)
+// LoadHistoryResponse loads a specific history response by number (1-based, reverse chronological)
+// Number 1 = most recent, 2 = second most recent, etc.
 func LoadHistoryResponse(preset string, number int) (*HistoryResponse, error) {
 	historyPath, err := GetHistoryPath(preset)
 	if err != nil {
 		return nil, err
 	}
 
-	fileName := fmt.Sprintf("response-%03d.json", number)
+	// Get all available history files to determine reverse indexing
+	files, err := getHistoryFiles(historyPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("no history found for preset '%s'", preset)
+	}
+
+	// Validate number range
+	if number < 1 || number > len(files) {
+		return nil, fmt.Errorf("history response %d not found (available: 1-%d)", number, len(files))
+	}
+
+	// Reverse index: 1 = most recent (highest file number), 2 = second most recent, etc.
+	actualFileIndex := len(files) - number
+	fileName := files[actualFileIndex]
 	filePath := filepath.Join(historyPath, fileName)
 
 	data, err := os.ReadFile(filePath)
 	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("history response %d not found", number)
-		}
-		return nil, err
+		return nil, fmt.Errorf("failed to read history response %d", number)
 	}
 
 	var response HistoryResponse

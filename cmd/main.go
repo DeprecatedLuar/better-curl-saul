@@ -20,7 +20,7 @@ var currentPreset string
 
 // isActionCommand checks if a command is a preset action command
 func isActionCommand(cmd string) bool {
-	return cmd == "set" || cmd == "get" || cmd == "check" || cmd == "edit"
+	return cmd == "set" || cmd == "get" || cmd == "check" || cmd == "edit" || cmd == "call"
 }
 
 // getTTY returns a sanitized terminal device identifier for session files
@@ -201,11 +201,6 @@ case "rm":
 		showHelp()
 		return nil
 
-	case "call":
-		if cmd.Preset == "" {
-			return fmt.Errorf("preset name required for call command")
-		}
-		return executor.ExecuteCallCommand(cmd)
 
 	default:
 		return fmt.Errorf("unknown global command: %s", cmd.Global)
@@ -247,6 +242,9 @@ func executePresetCommand(cmd parser.Command) error {
 	case "edit":
 		return commands.Edit(cmd)
 
+	case "call":
+		return executor.ExecuteCallCommand(cmd)
+
 	default:
 		return fmt.Errorf("unknown preset command: %s", cmd.Command)
 	}
@@ -266,7 +264,6 @@ func showHelp() {
 	globalCmds := `  saul version              Show version information
   saul ls [options]         List presets directory (system ls command)
   saul rm [preset...]       Delete one or more presets
-  saul call [preset]        Execute HTTP request
   saul help                 Show this help`
 	formatted = display.FormatSimpleSection("Global Commands", globalCmds)
 	display.Plain(formatted)
@@ -278,7 +275,9 @@ func showHelp() {
   saul [preset] check [target] [key]
                             Display target contents (clean format)
   saul [preset] get [target] [key]
-                            Get value from target file`
+                            Get value from target file
+  saul [preset] call        Execute HTTP request
+  saul call                 Execute HTTP request (current preset)`
 	formatted = display.FormatSimpleSection("Preset Commands", presetCmds)
 	display.Plain(formatted)
 

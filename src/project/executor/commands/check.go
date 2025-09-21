@@ -13,6 +13,7 @@ import (
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
+	httpModule "github.com/DeprecatedLuar/better-curl-saul/src/project/executor/http"
 )
 
 
@@ -174,11 +175,13 @@ func listHistoryResponses(preset string, rawOutput bool) error {
 		return nil
 	}
 
-	// Formatted mode: show interactive menu
+	// Formatted mode: show interactive menu (reverse chronological order)
 	content := ""
-	for i, response := range responses {
+	for i := len(responses) - 1; i >= 0; i-- {
+		displayIndex := len(responses) - i
+		response := responses[i]
 		content += fmt.Sprintf("%d. %s %s (%s)\n",
-			i+1,
+			displayIndex,
 			response.Method,
 			response.URL,
 			response.Timestamp)
@@ -213,41 +216,20 @@ func displayHistoryResponse(preset string, number int, rawOutput bool) error {
 		return nil
 	}
 
-	// Formatted mode: use the Phase 4B response formatting
-	content := ""
+	// Get JSON data and format using same logic as live responses
+	jsonStr := response.Body.(string)
+	content := httpModule.FormatResponseContent([]byte(jsonStr), preset, rawOutput)
 
-	// Add request metadata
-	content += fmt.Sprintf("Method: %s\nURL: %s\nTimestamp: %s\nStatus: %s\n\n",
-		response.Method, response.URL, response.Timestamp, response.Status)
-
-	// Add response body with smart formatting
-	switch v := response.Body.(type) {
-	case string:
-		// Try to parse as JSON for pretty formatting
-		var jsonObj interface{}
-		if json.Unmarshal([]byte(v), &jsonObj) == nil {
-			if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
-				content += string(prettyJSON)
-			} else {
-				content += v
-			}
-		} else {
-			content += v
-		}
-	default:
-		// Marshal as JSON
-		if jsonData, err := json.MarshalIndent(v, "", "  "); err == nil {
-			content += string(jsonData)
-		} else {
-			content += fmt.Sprintf("%v", v)
-		}
+	if rawOutput {
+		fmt.Print(content)
+	} else {
+		formatted := display.FormatSection(
+			fmt.Sprintf("History Response %d", number),
+			content,
+			fmt.Sprintf("%s • %s", response.Status, response.Timestamp))
+		display.Plain(formatted)
 	}
-
-	formatted := display.FormatSection(
-		fmt.Sprintf("History Response %d", number),
-		content,
-		fmt.Sprintf("%s • %s", response.Status, response.Timestamp))
-	display.Plain(formatted)
 
 	return nil
 }
+

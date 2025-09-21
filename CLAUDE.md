@@ -87,7 +87,7 @@ better-curl-saul/
   - Target normalization and validation
   - Comprehensive test suite validation
 - ✅ **Phase 3 Complete**: HTTP Execution Engine
-  - `saul call preset` command fully functional
+  - `saul preset call` command fully functional
   - Variable prompting and substitution system
   - HTTP client integration using go-resty
   - Support for all major HTTP methods
@@ -148,7 +148,13 @@ better-curl-saul/
   - Whitelist-based security: only safe commands (ls, exa, lsd, tree, dir) allowed
   - Working directory automatically set to presets folder for all delegated commands
   - Perfect workspace visibility: see actual TOML files and directory structure
-- ⏳ **Next**: Phase 4E - Response History System for debugging workflow
+- ✅ **Phase 4E Complete**: Response History System with Consistent Filtering
+  - History numbering fix: `1` = most recent, `2` = second most recent (intuitive chronological order)
+  - Consistent filtering: History displays same filtered TOML view as live responses
+  - Minimal implementation: Extracted `FormatResponseContent()` function for code reuse
+  - Zero code duplication: Same filtering + TOML conversion pipeline for live and historical responses
+  - Raw mode support: `saul api check history 1 --raw` for debugging with full JSON
+  - Full data preservation: Stores complete responses, applies filtering at display time
 
 ## Codebase Architecture Flow
 
@@ -161,7 +167,7 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
 ### 1. Entry Point: `cmd/main.go`
 - **Purpose**: Clean entry point following Go conventions
 - **Flow**: `os.Args[1:]` → `parser.ParseCommand()` → `executeCommand()` → Route to handlers
-- **Routing**: Global commands (`call`, `list`, `rm`) vs Preset commands (`set`, `check`, `get`)
+- **Routing**: Global commands (`list`, `rm`) vs Preset commands (`set`, `check`, `get`, `call`)
 
 ### 2. Command Parsing: `src/project/parser/command.go`
 - **Input**: Raw command line arguments
@@ -235,14 +241,14 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
 - Variables: `saul pokeapi set body name={@pokename}` (hard) or `name={?}` (soft)
 - Flow: Parse command → TomlHandler.Set("pokemon.stats.hp", 100) → Write to appropriate .toml file
 
-**Variable Substitution**: Variables stored in variables.toml (hard only), resolved during `call` command
+**Variable Substitution**: Variables stored in variables.toml (hard only), resolved during preset `call` command
 
 ## Development Approach
 
 **Key Technical Components Remaining:**
 1. ✅ Command parsing and validation system
 2. ✅ TOML file operations and directory structure management  
-3. ✅ HTTP request execution engine (`call` command)
+3. ✅ HTTP request execution engine (preset `call` command)
 4. ✅ Variable substitution system during request execution
 5. ✅ TOML-to-JSON conversion with variable resolution
 6. ⏳ Interactive command mode with state management
@@ -324,7 +330,7 @@ saul pokeapi set body pokemon.name={@pokename},pokemon.level=25
 ## Phase 3, 3.5, 4A & 4B Implementation Summary
 
 **✅ HTTP Execution Engine Complete (Phase 3):**
-- `saul call preset` command fully functional
+- `saul preset call` command fully functional
 - Variable prompting system with `{@}` hard variables, `{?}` soft variables
 - HTTP client integration using go-resty
 - Support for all major HTTP methods (GET, POST, PUT, DELETE, etc.)
