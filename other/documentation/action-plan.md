@@ -964,7 +964,89 @@ echo "✓ Phase 4D Professional Visual Formatting: PASSED"
 
 ---
 
-### **Phase 4E: Response History Storage** ⏳ **MEDIUM PRIORITY**
+### **Phase 5A: Universal Flag System** ⏳ **HIGH PRIORITY**
+*Goal: Implement --raw flag and establish foundation for all future flags*
+
+#### 5A.1 Flag Parsing Foundation ✅ **PLANNED**
+- [ ] **Parser Enhancement** (`parser/command.go`):
+  - Add `RawOutput bool` field to Command struct
+  - Implement flag detection logic: arguments starting with `--` or `-`
+  - Parse `--raw` flag and set `cmd.RawOutput = true`
+  - Maintain backward compatibility with existing argument parsing
+  - Support combined flag usage: `saul api check url --raw`
+
+- [ ] **Flag Architecture**:
+  - Clean separation: flag parsing vs command parsing
+  - Forward compatibility: extensible for future flags (`--verbose`, `--format=json`, etc.)
+  - Error handling: unknown flags, malformed flags
+  - Help integration: `--help` flag support
+
+#### 5A.2 Check Command Raw Implementation ✅ **PLANNED**
+- [ ] **Conditional Output Logic** (`commands/check.go`):
+  - Special fields (url/method/timeout): `if cmd.RawOutput { fmt.Print(value) } else { display.FormatSection(...) }`
+  - File structures (body/headers/query): `if cmd.RawOutput { fmt.Print(fileContent) } else { display.FormatFileDisplay(...) }`
+  - No newlines in raw mode for scriptability
+  - Preserve all existing formatted display as default
+
+- [ ] **Usage Examples**:
+  ```bash
+  # Raw for scripting
+  saul api check url --raw                    # https://pokeapi.co/api/v2/pokemon/pikachu
+  saul api check body --raw                   # Raw TOML file contents (cat behavior)
+  
+  # Formatted for humans (default)
+  saul api check url                          # Shows entire request.toml with context
+  saul api check body                         # Shows body.toml with metadata
+  ```
+
+#### 5A.3 Call Command Raw Implementation ✅ **PLANNED**
+- [ ] **Response Raw Mode** (`http/response.go`):
+  - `if cmd.RawOutput { fmt.Print(rawResponse) } else { /* existing Phase 4B formatting */ }`
+  - No filtering, no TOML conversion, no metadata headers
+  - Pure JSON/raw response output for automation
+  - Maintain all existing smart formatting as default
+
+#### 5A.4 Display System Integration ✅ **PLANNED**
+- [ ] **Universal Pattern**: All output-producing commands check `cmd.RawOutput`
+- [ ] **Future-Proof**: Establish pattern for additional flags (`--verbose`, `--format`, etc.)
+- [ ] **Testing**: Comprehensive test coverage for both raw and formatted modes
+
+**Phase 5A Success Criteria:**
+- [ ] `saul api check url --raw` outputs bare URL value for scripting
+- [ ] `saul api check body --raw` outputs raw TOML file contents (cat behavior)
+- [ ] `saul call api --raw` outputs raw JSON response without formatting
+- [ ] All existing formatted output remains default behavior
+- [ ] Flag parsing foundation ready for future flag additions
+- [ ] Zero regression in existing functionality
+
+---
+
+### **Phase 5B: Display System Migration & Check Command Enhancement** ⏳ **MEDIUM PRIORITY**
+*Goal: Complete display system migration and improve check command consistency*
+
+#### 5B.1 Check Command Behavior Update ✅ **PLANNED**
+- [ ] **Remove Special Case Logic** (`commands/check.go` lines 40-48):
+  - Remove bare value printing for URL/method/timeout fields
+  - Let all check commands fall through to standard file display
+  - Show entire request.toml with context for URL/method/timeout checks
+  - Maintain raw flag functionality for bare values when needed
+
+#### 5B.2 Display System Audit ✅ **PLANNED**
+- [ ] **Find Remaining fmt.Printf Usage**:
+  - Audit codebase for any direct printing not using display system
+  - Migrate list command if not already using display.FormatSection
+  - Update help system to use display formatting
+  - Ensure all user-facing output uses display.Plain(), display.Error(), etc.
+
+**Phase 5B Success Criteria:**
+- [ ] `saul api check url` shows entire request.toml with clean formatting
+- [ ] All commands use consistent display system formatting
+- [ ] No direct fmt.Printf for user-facing output (except raw mode)
+- [ ] Visual consistency across all command outputs
+
+---
+
+### **Phase 5C: Response History Storage** ⏳ **MEDIUM PRIORITY**
 *Goal: Add response storage and management for debugging workflow*
 
 #### 4E.1 History Storage Management
