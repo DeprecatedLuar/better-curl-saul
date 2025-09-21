@@ -136,7 +136,14 @@ better-curl-saul/
   - TOML array storage: `fields = ["name", "stats.0.base_stat", "types.0.type.name"]`
   - Real-world tested: PokéAPI, JSONPlaceholder complex filtering works perfectly
   - Silent error handling: Missing fields ignored gracefully
-- ⏳ **Next**: Phase 4D - Response History System for debugging workflow
+- ✅ **Phase 4D Complete**: Terminal Session Memory System
+  - Terminal-scoped preset memory: `saul api set body name=val` → `saul check body` (no preset needed)
+  - TTY-based session isolation: Each terminal maintains independent current preset
+  - Automatic preset injection: Action commands (`set`, `check`, `get`, `edit`) use current preset
+  - Clean preset switching: Any explicit preset command updates current session
+  - Session files: `~/.config/saul/.session_[tty]` (terminal-specific, auto-cleanup on startup)
+  - Zero overhead: ~50 lines of code, pure stdlib implementation with automatic stale session cleanup
+- ⏳ **Next**: Phase 4E - Response History System for debugging workflow
 
 ## Codebase Architecture Flow
 
