@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/config"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
 )
 
 // SessionManager encapsulates session state and file operations
@@ -77,7 +78,7 @@ func (s *SessionManager) SaveSession() error {
 		return fmt.Errorf("failed to create session directory: %v", err)
 	}
 
-	return os.WriteFile(sessionFile, []byte(s.currentPreset), config.FilePermissions)
+	return utils.AtomicWriteFile(sessionFile, []byte(s.currentPreset), config.FilePermissions)
 }
 
 // HasCurrentPreset returns true if a current preset is set

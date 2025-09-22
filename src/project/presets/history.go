@@ -11,6 +11,7 @@ import (
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/config"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
 )
 
 // HistoryResponse represents a stored response with metadata
@@ -106,7 +107,7 @@ func StoreResponse(preset string, response HistoryResponse, historyCount int) er
 		return err
 	}
 
-	return os.WriteFile(filePath, jsonData, config.FilePermissions)
+	return utils.AtomicWriteFile(filePath, jsonData, config.FilePermissions)
 }
 
 // ListHistoryResponses returns a list of history responses with metadata
@@ -233,19 +234,21 @@ func renumberHistoryFiles(historyPath string, maxCount int) error {
 		files = files[len(files)-maxCount:]
 	}
 
-	// Renumber from 1
+	// Prepare atomic batch rename operations
+	var renameOps []utils.RenameOperation
 	for i, fileName := range files {
 		oldPath := filepath.Join(historyPath, fileName)
 		newFileName := fmt.Sprintf("%03d.json", i+1)
 		newPath := filepath.Join(historyPath, newFileName)
 
 		if oldPath != newPath {
-			err = os.Rename(oldPath, newPath)
-			if err != nil {
-				return err
-			}
+			renameOps = append(renameOps, utils.RenameOperation{
+				OldPath: oldPath,
+				NewPath: newPath,
+			})
 		}
 	}
 
-	return nil
+	// Execute all renames atomically with rollback on failure
+	return utils.AtomicBatchRename(renameOps)
 }
