@@ -1,3 +1,6 @@
+// Package toml provides TOML file manipulation capabilities with dot notation support.
+// This package handles TOML parsing, modification, JSON conversion, and file I/O operations
+// for Better-Curl-Saul's configuration management system.
 package toml
 
 import (

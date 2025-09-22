@@ -1,3 +1,6 @@
+// Package commands provides individual command implementations for Better-Curl-Saul.
+// This package contains the specific logic for set, get, check, edit, call, and history commands,
+// implementing the core functionality of the HTTP client workspace system.
 package commands
 
 import (

@@ -1,3 +1,6 @@
+// Package core provides fundamental command parsing and session management for Better-Curl-Saul.
+// This package handles command line argument parsing, session state management,
+// and system command delegation following Unix philosophy principles.
 package core
 
 import (

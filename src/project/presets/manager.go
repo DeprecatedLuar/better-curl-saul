@@ -1,3 +1,6 @@
+// Package presets provides TOML preset file and directory management for Better-Curl-Saul.
+// This package handles the 5-file structure (body.toml, headers.toml, query.toml, request.toml, variables.toml)
+// with lazy file creation, directory operations, and history management following Unix philosophy.
 package presets
 
 import (
