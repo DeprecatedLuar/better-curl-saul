@@ -101,15 +101,36 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
   - Raw mode support for scripting integration
   - Smart response formatting using existing Phase 4B JSON→TOML conversion
 
-### ⏳ **Next Priority Phases**
+### ⏳ **IMMEDIATE PRIORITY: Phase 0 - Critical Infrastructure Cleanup**
+
+**Status**: READY FOR IMPLEMENTATION (Day 1 - Critical Blind Spots)
+**Updated Priority**: Based on comprehensive code review revealing critical architectural issues
+
+#### Phase 0.1: Remove Global State Variable ✅ **IDENTIFIED**
+**Problem**: `var currentPreset string` in `cmd/main.go:19` violates Go conventions
+- **Impact**: Testing difficulty, concurrency issues, state corruption
+- **Solution**: Create `internal/session/manager.go` with encapsulated session management
+- **Implementation**: Session Manager struct with methods for GetCurrentPreset(), SetCurrentPreset(), LoadSession(), SaveSession()
+
+#### Phase 0.2: Fix Module Imports ✅ **IDENTIFIED**
+**Problem**: Module name `github.com/DeprecatedLuar/better-curl-saul` may not match actual repository
+- **Impact**: Deployment failures, import confusion
+- **Solution**: Run `go mod tidy`, verify all import paths match repository structure
+- **Dependencies**: 2 unused dependencies found, clean them up
+
+#### Phase 0.3: Remove Backup Directory Pollution ✅ **CONFIRMED EXISTS**
+**Problem**: `src/modules/display/display_backup/` duplicate implementations causing maintenance confusion
+- **Impact**: Code confusion, maintenance overhead
+- **Solution**: `rm -rf src/modules/display/display_backup/` (immediate fix)
 
 ### ❌ **Missing Core Components**
-- **Interactive mode**: Command shell for preset management
 - **Advanced command system**: Enhanced help and management
 - **Production readiness**: Cross-platform compatibility, error handling polish
 
 ### 🔧 **Technical Debt**
-- No interactive mode for workflow efficiency
+**CRITICAL (Phase 0)**: Global state, module imports, backup pollution
+**HIGH**: Configuration centralization, file size violations
+**MEDIUM**: Console output bypass, single responsibility violations
 
 ### ✅ **Major Systems Complete**
 - **Response History System**: Complete debugging workflow with automatic storage and rotation
@@ -123,10 +144,57 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
 
 ## Implementation Phases
 
+### **Phase 0: Critical Infrastructure Cleanup** ⏳ **CURRENT PRIORITY**
+*Goal: Eliminate critical architectural issues before proceeding with new features*
+
+#### Phase 0 Implementation Plan
+
+**Phase 0.1: Global State Elimination** ⏳ **READY TO IMPLEMENT**
+```go
+// Current Problem (cmd/main.go:19):
+var currentPreset string  // ❌ Global mutable state in main package
+
+// Solution: Create internal/session/manager.go
+type SessionManager struct {
+    currentPreset string
+    ttyID        string
+    configPath   string
+}
+
+func (s *SessionManager) GetCurrentPreset() string
+func (s *SessionManager) SetCurrentPreset(preset string) error
+func (s *SessionManager) LoadSession() error
+func (s *SessionManager) SaveSession() error
+```
+
+**Files to Modify:**
+- ✅ `cmd/main.go` - Remove global variable, inject SessionManager
+- ✅ Create `internal/session/manager.go` - Session management logic
+- ✅ Update functions using `currentPreset` to use SessionManager methods
+
+**Phase 0.2: Module Import Cleanup** ⏳ **READY TO IMPLEMENT**
+```bash
+# Current Issues:
+# - Module name may not match repository structure
+# - 2 unused dependencies in go.mod
+# - Import path validation needed
+
+# Solution:
+go mod tidy                    # Clean unused dependencies
+# Verify all imports match actual repository structure
+# Update any mismatched import paths
+```
+
+**Phase 0.3: Remove Backup Pollution** ✅ **SOLUTION IDENTIFIED**
+```bash
+# Simple fix - already confirmed safe to delete:
+rm -rf src/modules/display/display_backup/
+```
+
 ### **Phase 1: Foundation & TOML Integration** ✅ **COMPLETED**
 *All functionality implemented and tested.*
 
-### **Phase 2: Core TOML Operations & Variable System** ✅ **COMPLETED**  
+### **Phase 2: Core TOML Operations & Variable System** ✅ **COMPLETED**
 *All functionality implemented and tested.*
 
 ### **Phase 3: HTTP Execution Engine** ✅ **COMPLETED**
@@ -1101,84 +1169,6 @@ echo "✓ Phase 4D Professional Visual Formatting: PASSED"
 
 ---
 
-### **Phase 5C: Response History Storage** ⏳ **MEDIUM PRIORITY**
-*Goal: Add response storage and management for debugging workflow*
-
-#### 4E.1 History Storage Management
-- [ ] **History Storage Integration**:
-  - Modify `ExecuteCallCommand` to store responses when history enabled
-  - Implement `CreateHistoryDirectory(preset string)` in presets package
-  - Add history rotation logic (keep last N, delete oldest)
-  - Create response file naming: `response-001.json`, `response-002.json`, etc.
-  - Include request metadata (method, URL, timestamp) with raw response
-  - Store raw JSON responses but display with Phase 4A formatting
-
-- [ ] **History Configuration**:
-  - Extend `request.toml` structure to include `[settings]` section
-  - Add `history_count = N` setting (0 = disabled)
-  - Implement `set history N` command to configure per preset
-  - Update `ExecuteSetCommand` to handle history configuration
-
-#### 4E.2 History Access Commands
-- [ ] **Check History Command**:
-  - Implement `ExecuteCheckHistoryCommand` for history access
-  - Add interactive menu: list all stored responses with metadata
-  - Support direct access: `check history N` for specific response
-  - Add `check history last` alias for most recent response
-  - Display stored responses using Phase 4A smart formatting
-
-- [ ] **History Management**:
-  - Implement `rm history` command with confirmation prompt
-  - Add "Delete all history for 'preset'? (y/N):" confirmation
-  - Support selective deletion: `rm history N` (future enhancement)
-  - Handle cases where history doesn't exist (silent success)
-
-#### 4E.3 Enhanced Command Routing
-- [ ] **Extended Check Command**:
-  - Add history routing to existing `ExecuteCheckCommand`
-  - Handle `check history` variations (no args = menu, N = direct, last = recent)
-  - Maintain existing check functionality for TOML inspection
-
-- [ ] **Extended Set Command**:
-  - Add history configuration to `ExecuteSetCommand`
-  - Validate history count values (non-negative integers)
-  - Handle `set history 0` to disable without deleting existing history
-
-**Phase 4E Success Criteria:**
-- [ ] `saul api set history 5` enables history collection
-- [ ] `saul call api` automatically stores responses when history enabled
-- [ ] `saul api check history` shows interactive menu of stored responses
-- [ ] `saul api check history 1` displays most recent response with Phase 4A formatting
-- [ ] `saul api rm history` deletes all history with confirmation prompt
-- [ ] History rotation works correctly (keeps last N, deletes oldest)
-- [ ] Stored responses use Phase 4A smart formatting when displayed
-
-**Phase 4E Testing:**
-```bash
-#!/bin/bash
-# Phase 4E History Storage Tests
-
-echo "4E.1 Testing history configuration..."
-saul testapi set history 3
-grep -q 'history_count = 3' ~/.config/saul/presets/testapi/request.toml
-
-echo "4E.2 Testing history storage..."
-saul call testapi >/dev/null  # Should store response
-[ -d ~/.config/saul/presets/testapi/history ]
-[ -f ~/.config/saul/presets/testapi/history/response-001.json ]
-
-echo "4E.3 Testing history access with formatting..."
-saul testapi check history | grep -q "1." # Should show menu
-saul testapi check history 1 | grep -q "Status:" # Should show formatted response
-
-echo "4E.4 Testing history management..."
-echo "y" | saul testapi rm history
-[ ! -d ~/.config/saul/presets/testapi/history ]
-
-echo "✓ Phase 4E Response History Storage: PASSED"
-```
-
----
 
 ### **Phase 4E: Response History System with Split Command Architecture** ✅ **COMPLETED**
 *Goal: Unix-style list-then-select workflow for response debugging and management*
@@ -1295,66 +1285,6 @@ done
 
 ---
 
-### **Phase 5: Interactive Mode**
-*Goal: Working interactive shell for preset management*
-
-#### 5.1 Interactive Shell Implementation
-- [ ] **Shell Mode Detection**:
-  - Detect when `saul preset` called without additional commands
-  - Implement `EnterInteractiveMode(preset string)` function
-  - Create command loop with `[preset]> ` prompt showing current preset
-  - Handle shell-specific commands: `exit`, `quit`, `help`
-
-- [ ] **Command Processing in Interactive Mode**:
-  - Reuse existing command parsing but strip preset name
-  - Route commands through same executors as single-line mode
-  - Maintain command history within session
-  - Handle multi-word commands and proper argument parsing
-
-- [ ] **Interactive User Experience**:
-  - Show welcome message: "Entered interactive mode for 'preset'"
-  - Display help reminder: "Type 'help' for commands or 'exit' to leave"
-  - Handle Ctrl+C gracefully (exit interactive mode, return to shell)
-  - Clear error handling without exiting interactive session
-
-#### 5.2 Interactive Command Integration
-- [ ] **All Existing Commands Work**:
-  - `set url/method/timeout` commands work identically
-  - `set body/headers/query` commands work identically  
-  - `call` command works with variable prompting
-  - `check` commands work including history access
-  - `rm` commands work with confirmations
-
-- [ ] **Interactive-Specific Enhancements**:
-  - Command abbreviation support (optional): `c` for `call`, `s` for `set`
-  - Tab completion for commands and targets (optional)
-  - Show current configuration summary on demand
-  - Context-aware help based on current preset state
-
-#### 5.3 Advanced Interactive Features
-- [ ] **Session Management**:
-  - Track commands executed in session for debugging
-  - Provide session summary on exit
-  - Handle long-running sessions gracefully
-  - Memory management for extended usage
-
-**Phase 5 Success Criteria:**
-- [ ] `saul myapi` enters interactive mode successfully
-- [ ] All commands work identically to single-line mode
-- [ ] `exit` and Ctrl+C handling works properly
-- [ ] Interactive session maintains state correctly
-- [ ] Help system works in interactive context
-- [ ] User experience feels natural and responsive
-
-**Phase 5 Testing:**
-```bash
-# Interactive mode testing (manual)
-echo "Testing interactive mode..."
-echo -e "set url https://httpbin.org/get\nset method GET\ncall\nexit" | saul testapi
-echo "✓ Interactive mode basic functionality works"
-```
-
----
 
 ### **Phase 6: Advanced Features & Polish**
 *Goal: Complete feature set with editing and production readiness*
@@ -1623,7 +1553,6 @@ echo "✓ Phase 4D: Response History Storage - PASSED"
 - Comma-separated syntax dramatically improves configuration efficiency (Phase 4B-Post)
 - Response filtering solves terminal overflow for large APIs (Phase 4C)
 - History system provides valuable debugging workflow (Phase 4D)
-- Interactive mode enables efficient preset management (Phase 5)
 - Ready for production distribution with advanced features (Phase 6)
 - Maintains KISS principles while adding powerful features throughout
 
