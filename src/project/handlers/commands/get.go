@@ -4,12 +4,12 @@ import (
 	"fmt"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 )
 
 // Get retrieves values from TOML files for debugging
-func Get(cmd parser.Command) (interface{}, error) {
+func Get(cmd core.Command) (interface{}, error) {
 	if cmd.Preset == "" {
 		return nil, fmt.Errorf(errors.ErrPresetNameRequired)
 	}

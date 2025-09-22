@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 )
 
 // Set handles set operations for TOML files
-func Set(cmd parser.Command) error {
+func Set(cmd core.Command) error {
 	if cmd.Preset == "" {
 		return fmt.Errorf(errors.ErrPresetNameRequired)
 	}
@@ -49,16 +49,16 @@ func Set(cmd parser.Command) error {
 		for _, kvp := range cmd.KeyValuePairs {
 			// Special validation for request fields
 			if cmd.Target == "request" {
-				if err := executor.ValidateRequestField(kvp.Key, kvp.Value); err != nil {
+				if err := handlers.ValidateRequestField(kvp.Key, kvp.Value); err != nil {
 					return err
 				}
 			}
 
 			// Detect if value is a variable
-			isVar, varType, varName := executor.DetectVariableType(kvp.Value)
+			isVar, varType, varName := handlers.DetectVariableType(kvp.Value)
 			if isVar {
 				// Store variable info in config.toml for later resolution
-				err := executor.StoreVariableInfo(cmd.Preset, kvp.Key, varType, varName)
+				err := handlers.StoreVariableInfo(cmd.Preset, kvp.Key, varType, varName)
 				if err != nil {
 					return fmt.Errorf(errors.ErrVariableSaveFailed)
 				}
@@ -80,7 +80,7 @@ func Set(cmd parser.Command) error {
 					}
 				}
 
-				inferredValue := executor.InferValueType(valueToStore)
+				inferredValue := handlers.InferValueType(valueToStore)
 				handler.Set(keyToStore, inferredValue)
 			}
 		}

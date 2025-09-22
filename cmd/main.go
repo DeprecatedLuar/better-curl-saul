@@ -6,12 +6,10 @@ import (
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/delegation"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor/commands"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers/commands"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/session"
 )
 
 // isActionCommand checks if a command is a preset action command
@@ -29,7 +27,7 @@ func main() {
 	}
 
 	// Initialize session manager
-	sessionManager, err := session.NewSessionManager()
+	sessionManager, err := core.NewSessionManager()
 	if err != nil {
 		display.Error(fmt.Sprintf("failed to initialize session: %v", err))
 		return
@@ -47,7 +45,7 @@ func main() {
 		}
 	}
 
-	cmd, err := parser.ParseCommand(args)
+	cmd, err := core.ParseCommand(args)
 	if err != nil {
 		display.Error(err.Error())
 		return
@@ -61,12 +59,12 @@ func main() {
 }
 
 // executeCommand routes commands to appropriate handlers
-func executeCommand(cmd parser.Command, sessionManager *session.SessionManager) error {
+func executeCommand(cmd core.Command, sessionManager *core.SessionManager) error {
 	// Check for system command delegation first
-	if delegation.IsSystemCommand(cmd.Preset) {
+	if core.IsSystemCommand(cmd.Preset) {
 		// Extract arguments from the original command line
 		args := os.Args[2:] // Skip "saul" and the system command
-		return delegation.DelegateToSystem(cmd.Preset, args)
+		return core.DelegateToSystem(cmd.Preset, args)
 	}
 
 	// Update current preset when explicitly specified and save to session
@@ -88,7 +86,7 @@ func executeCommand(cmd parser.Command, sessionManager *session.SessionManager) 
 }
 
 // executeGlobalCommand handles global commands like list, rm, version
-func executeGlobalCommand(cmd parser.Command) error {
+func executeGlobalCommand(cmd core.Command) error {
 	switch cmd.Global {
 	case "version":
 		fmt.Println("Better-Curl (Saul) v0.1.0")
@@ -133,7 +131,7 @@ func executeGlobalCommand(cmd parser.Command) error {
 }
 
 // executePresetCommand handles preset-specific commands
-func executePresetCommand(cmd parser.Command) error {
+func executePresetCommand(cmd core.Command) error {
 	if cmd.Preset == "" {
 		return fmt.Errorf("preset name required")
 	}
@@ -168,7 +166,7 @@ func executePresetCommand(cmd parser.Command) error {
 		return commands.Edit(cmd)
 
 	case "call":
-		return executor.ExecuteCallCommand(cmd)
+		return handlers.ExecuteCallCommand(cmd)
 
 	default:
 		return fmt.Errorf("unknown preset command: %s", cmd.Command)

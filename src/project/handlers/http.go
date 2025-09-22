@@ -1,4 +1,4 @@
-package executor
+package handlers
 
 import (
 	"fmt"
@@ -7,13 +7,13 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor/http"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers/http"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 )
 
 // ExecuteCallCommand handles HTTP execution for call commands
-func ExecuteCallCommand(cmd parser.Command) error {
+func ExecuteCallCommand(cmd core.Command) error {
 	if cmd.Preset == "" {
 		return fmt.Errorf(errors.ErrPresetNameRequired)
 	}

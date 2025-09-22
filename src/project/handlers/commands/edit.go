@@ -9,13 +9,13 @@ import (
 
 	"github.com/chzyer/readline"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 )
 
 // Edit handles both field-level and container-level editing
-func Edit(cmd parser.Command) error {
+func Edit(cmd core.Command) error {
 	if cmd.Preset == "" {
 		return fmt.Errorf(errors.ErrPresetNameRequired)
 	}
@@ -41,7 +41,7 @@ func Edit(cmd parser.Command) error {
 }
 
 // executeFieldEdit handles field-level editing with pre-filled prompts (existing functionality)
-func executeFieldEdit(cmd parser.Command) error {
+func executeFieldEdit(cmd core.Command) error {
 	// Use first key-value pair for field editing
 	key := cmd.KeyValuePairs[0].Key
 	
@@ -72,7 +72,7 @@ func executeFieldEdit(cmd parser.Command) error {
 
 	// Special validation for request fields
 	if cmd.Target == "request" {
-		if err := executor.ValidateRequestField(key, newValue); err != nil {
+		if err := handlers.ValidateRequestField(key, newValue); err != nil {
 			return err
 		}
 	}
@@ -83,7 +83,7 @@ func executeFieldEdit(cmd parser.Command) error {
 		// Store HTTP methods in uppercase
 		valueToStore = strings.ToUpper(newValue)
 	}
-	inferredValue := executor.InferValueType(valueToStore)
+	inferredValue := handlers.InferValueType(valueToStore)
 	handler.Set(key, inferredValue)
 
 	err = presets.SavePresetFile(cmd.Preset, cmd.Target, handler)
@@ -96,7 +96,7 @@ func executeFieldEdit(cmd parser.Command) error {
 }
 
 // executeContainerEdit handles container-level editing (open file in editor)
-func executeContainerEdit(cmd parser.Command) error {
+func executeContainerEdit(cmd core.Command) error {
 	// Get the file path for the target
 	presetPath, err := presets.GetPresetPath(cmd.Preset)
 	if err != nil {

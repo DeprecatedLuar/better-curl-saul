@@ -1,4 +1,4 @@
-package delegation
+package core
 
 import (
 	"fmt"
