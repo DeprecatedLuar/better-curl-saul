@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/config"
 	lib "github.com/pelletier/go-toml"
 )
 
@@ -165,7 +166,7 @@ func (t *TomlHandler) Write() error {
 		return err
 	}
 
-	return os.WriteFile(path, []byte(tomlString), 0644)
+	return os.WriteFile(path, []byte(tomlString), config.FilePermissions)
 }
 
 // ToBytes returns the TOML data as bytes
