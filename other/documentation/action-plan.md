@@ -131,12 +131,245 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
 - **✅ VERIFIED**: No backup pollution found - codebase was already clean
 - **✅ STATUS**: This issue did not exist, marked as resolved
 
+---
+
+## 🚀 **NEXT IMPLEMENTATION: Phase 1A - Configuration Integration**
+
+**Status**: ⏳ **READY FOR IMPLEMENTATION**
+**Priority**: **HIGH** - Addresses critical configuration violations and enables planned library integration
+**Estimated Time**: 1-2 hours
+
+### **Objective**
+Centralize configuration management by integrating existing `settings.toml` into the codebase, eliminating hardcoded paths and preparing foundation for planned `.env` migration and `toml-vars-letsgooo` library integration.
+
+### **Technical Scope**
+
+#### **Files to Modify**:
+1. **`src/project/config/`** - Create new configuration management
+2. **`src/project/delegation/system.go:25`** - Replace hardcoded path
+3. **`src/settings/settings.toml`** - Use existing configuration structure
+
+#### **Current Issues**:
+- **Hardcoded Path**: `filepath.Join(os.Getenv("HOME"), ".config", "saul", "presets")` in delegation/system.go:25
+- **Scattered Permissions**: `0755`, `0644` hardcoded across 5 files
+- **Environment Vulnerability**: No $HOME validation or fallback mechanisms
+
+### **Implementation Plan**
+
+#### **Step 1: Create .env Configuration File**
+**File**: `.env` (tracked in git - contains application config, not secrets)
+
+Based on existing `src/settings/settings.toml`, create environment variable equivalents:
+```bash
+# .env - Application Configuration (tracked in git)
+# Temporary bridge until toml-vars-letsgooo library integration
+
+# Directory Configuration
+SAUL_CONFIG_DIR_PATH=.config
+SAUL_APP_DIR_NAME=saul
+SAUL_PRESETS_DIR_NAME=presets
+
+# Default Values
+SAUL_DEFAULT_TIMEOUT_SECONDS=30
+SAUL_DEFAULT_MAX_RETRIES=3
+SAUL_DEFAULT_HTTP_METHOD=GET
+```
+
+#### **Step 2: Create Configuration Management Module**
+**File**: `src/project/config/settings.go`
+```go
+package config
+
+import (
+    "os"
+    "path/filepath"
+    "strconv"
+)
+
+// LoadConfigFromEnv loads configuration from environment variables
+// This is temporary until toml-vars-letsgooo library is ready
+func LoadConfigFromEnv() *Config {
+    return &Config{
+        ConfigDirPath:   getEnvOrDefault("SAUL_CONFIG_DIR_PATH", ".config"),
+        AppDirName:      getEnvOrDefault("SAUL_APP_DIR_NAME", "saul"),
+        PresetsDirName:  getEnvOrDefault("SAUL_PRESETS_DIR_NAME", "presets"),
+        TimeoutSeconds:  getEnvIntOrDefault("SAUL_DEFAULT_TIMEOUT_SECONDS", 30),
+        MaxRetries:      getEnvIntOrDefault("SAUL_DEFAULT_MAX_RETRIES", 3),
+        HTTPMethod:      getEnvOrDefault("SAUL_DEFAULT_HTTP_METHOD", "GET"),
+    }
+}
+
+type Config struct {
+    ConfigDirPath   string
+    AppDirName      string
+    PresetsDirName  string
+    TimeoutSeconds  int
+    MaxRetries      int
+    HTTPMethod      string
+}
+
+// GetConfigBase returns base config directory with environment validation
+func GetConfigBase() (string, error) {
+    home := os.Getenv("HOME")
+    if home == "" {
+        // Fallback mechanism for containerized environments
+        return "/tmp/saul", nil
+    }
+    return home, nil
+}
+
+// GetPresetsPath returns full presets directory path
+func (c *Config) GetPresetsPath() (string, error) {
+    base, err := GetConfigBase()
+    if err != nil {
+        return "", err
+    }
+    return filepath.Join(base, c.ConfigDirPath, c.AppDirName, c.PresetsDirName), nil
+}
+
+// Helper functions for environment variable loading
+func getEnvOrDefault(key, defaultVal string) string {
+    if val := os.Getenv(key); val != "" {
+        return val
+    }
+    return defaultVal
+}
+
+func getEnvIntOrDefault(key string, defaultVal int) int {
+    if val := os.Getenv(key); val != "" {
+        if intVal, err := strconv.Atoi(val); err == nil {
+            return intVal
+        }
+    }
+    return defaultVal
+}
+```
+
+#### **Step 3: Add File Permission Constants**
+**File**: `src/project/config/constants.go` (extend existing)
+```go
+// Add to existing constants.go:
+const (
+    // File permissions
+    DirPermissions  = 0755
+    FilePermissions = 0644
+
+    // Existing constants remain unchanged
+    SaulVersion = "version"
+    SaulSet     = "set"
+    // ... etc
+)
+```
+
+#### **Step 4: Update Delegation System**
+**File**: `src/project/delegation/system.go:25`
+
+**BEFORE**:
+```go
+presetsDir := filepath.Join(os.Getenv("HOME"), ".config", "saul", "presets")
+```
+
+**AFTER**:
+```go
+config := config.LoadConfigFromEnv()
+presetsDir, err := config.GetPresetsPath()
+if err != nil {
+    return fmt.Errorf("failed to get presets path: %v", err)
+}
+```
+
+#### **Step 5: Replace Hardcoded Permissions**
+**Files to Update**:
+- `src/project/presets/history.go`
+- `src/project/presets/manager.go`
+- `src/project/presets/files.go`
+- `src/project/toml/handler.go`
+
+**Pattern**: Replace `0755` → `config.DirPermissions`, `0644` → `config.FilePermissions`
+
+#### **Step 6: Create .env File in Project Root**
+**File**: `.env` (create in project root, tracked in git)
+```bash
+# .env - Application Configuration (tracked in git)
+# Temporary bridge until toml-vars-letsgooo library integration
+
+# Directory Configuration
+SAUL_CONFIG_DIR_PATH=.config
+SAUL_APP_DIR_NAME=saul
+SAUL_PRESETS_DIR_NAME=presets
+
+# Default Values
+SAUL_DEFAULT_TIMEOUT_SECONDS=30
+SAUL_DEFAULT_MAX_RETRIES=3
+SAUL_DEFAULT_HTTP_METHOD=GET
+```
+
+### **Testing Validation**
+
+#### **Test 1: Environment Variable Loading**
+```bash
+# Verify .env values are loaded correctly
+source .env
+go run cmd/main.go version  # Should not error
+
+# Verify path resolution works
+go run cmd/main.go ls       # Should delegate to presets directory
+```
+
+#### **Test 2: Environment Safety**
+```bash
+# Test fallback mechanism
+unset HOME
+source .env
+go run cmd/main.go ls       # Should fallback to /tmp/saul gracefully
+
+# Restore environment
+export HOME=/home/luar
+```
+
+#### **Test 3: Existing Functionality**
+```bash
+# All existing commands should work unchanged
+source .env
+go run cmd/main.go pokeapi set url https://pokeapi.co/api/v2/pokemon/{@pokemon}
+go run cmd/main.go pokeapi call
+```
+
+### **Expected Outcomes**
+
+1. **✅ Centralized Configuration**: All paths managed through environment variables
+2. **✅ Environment Safety**: Graceful handling of missing $HOME
+3. **✅ Library Integration Ready**: Prepared for `toml-vars-letsgooo` integration (same values, different loading)
+4. **✅ Zero Regression**: All existing functionality preserved
+5. **✅ Improved Compliance**: Addresses critical configuration violations
+
+### **Strategic Alignment & Migration Path**
+
+#### **Phase 1A (Current)**: Environment Variables
+- **Immediate**: Load configuration from `.env` file using `os.Getenv()`
+- **Benefits**: Simple, works everywhere, no parsing dependencies
+- **File tracked in git**: Contains application config, not secrets
+
+#### **Future (when library ready)**: TOML Integration
+- **Replace**: `config.LoadConfigFromEnv()` → `config.LoadConfigFromTOML()` using `toml-vars-letsgooo`
+- **Same interface**: `Config` struct remains identical
+- **Same values**: Copy `.env` values to `settings.toml`
+- **Migration**: One function change, same configuration values
+
+#### **Benefits of this approach**:
+- ✅ **No wasted work**: `.env` values map 1:1 to future TOML values
+- ✅ **Clean migration**: Just swap loading mechanism, keep interface
+- ✅ **Immediate solution**: Solves hardcoded paths now
+- ✅ **Library ready**: Structure prepared for `toml-vars-letsgooo` integration
+
+---
+
 ### ❌ **Missing Core Components**
 - **Advanced command system**: Enhanced help and management
 - **Production readiness**: Cross-platform compatibility, error handling polish
 
 ### 🔧 **Technical Debt**
-**CRITICAL (Phase 0)**: Global state, module imports, backup pollution
+**CRITICAL (Phase 0)**: ✅ Global state, module imports, backup pollution **COMPLETED**
 **HIGH**: Configuration centralization, file size violations
 **MEDIUM**: Console output bypass, single responsibility violations
 
