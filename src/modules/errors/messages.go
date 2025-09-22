@@ -37,4 +37,5 @@ const (
 	WarnNoFiltersMatch = "Heads up champ - no fields matched filters %v, might wanna check that syntax"
 	WarnPresetExists   = "Just so we're clear, pal - preset '%s' already exists! No harm, no foul!"
 	WarnResponseLarge  = "That response is huge (%d bytes), even 'loco' maybe - giving you raw JSON instead of TOML! That's just good business!"
+	WarnHistoryFailed  = "Listen, buddy - couldn't save that response to history! No biggie, but thought you should know!"
 )

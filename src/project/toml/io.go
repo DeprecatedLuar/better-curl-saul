@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/config"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
 )
 
 // readFile reads the TOML file from disk
@@ -32,7 +33,7 @@ func (t *TomlHandler) Write() error {
 		return err
 	}
 
-	return os.WriteFile(path, []byte(tomlString), config.FilePermissions)
+	return utils.AtomicWriteFile(path, []byte(tomlString), config.FilePermissions)
 }
 
 // ToBytes returns the TOML data as bytes

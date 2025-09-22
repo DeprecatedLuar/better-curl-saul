@@ -6,6 +6,15 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
 ## Current State Analysis
 
 ### ✅ **Implemented**
+- **✅ ATOMIC FILE OPERATIONS COMPLETE**: Corruption-Resistant File Handling *(2025-09-22)*
+  - ✅ Atomic utility module: `src/project/utils/atomic.go` with temp file + rename pattern
+  - ✅ TOML writes protected: `toml/io.go` now uses `utils.AtomicWriteFile()`
+  - ✅ Session writes protected: `core/session.go` now corruption-resistant
+  - ✅ History writes protected: `presets/history.go` now uses atomic operations
+  - ✅ Batch rename safety: History rotation now transactional with rollback
+  - ✅ Zero breaking changes: Drop-in replacements, same function signatures
+  - ✅ Full test validation: Build successful, all operations tested and working
+  - ✅ System reliability: Configuration and history files now corruption-proof
 - **✅ Phase 2 Complete**: Go Standards Compliance & Package Documentation *(2025-09-22)*
   - ✅ Package documentation: All 8 core packages now have Go-style documentation
   - ✅ Architectural refactoring: File size violations resolved (main.go: 308→234 lines)
@@ -1852,10 +1861,174 @@ With **88% compliance achieved** through major architectural refactoring and Go 
    - Focus on history.go storage for improved type safety
 
 ### **Future Enhancement Phases**
-- **Atomic File Operations**: Implement temp file + rename pattern for TOML writes
+- **✅ Atomic File Operations**: ✅ **COMPLETED** - Implemented temp file + rename pattern for all file operations
 - **Error Handling Consistency**: Convert remaining `fmt.Errorf` to error constants
 - **Performance Enhancements**: Add goroutines for concurrent file operations
 
 **Achievement**: Major architectural goals completed - from 42% to 92% compliance through systematic refactoring
 
 *This updated plan reflects the current excellent state of the codebase, with all critical architectural issues resolved. The remaining work focuses on polish and production readiness rather than fundamental structural changes.*
+
+---
+
+## ⏳ **PLANNED: Phase 3 - Critical Code Duplication Elimination**
+
+**Status**: 🎯 **IMPLEMENTATION READY** (2025-09-22)
+**Priority**: **IMMEDIATE** - High Impact, Zero Risk
+**Estimated Impact**: -64 lines, improved maintainability, eliminated security risk
+
+### **Objective**
+Eliminate all critical code duplication patterns identified by specialized code review agents, focusing on high-impact, zero-risk consolidations that improve maintainability and security consistency.
+
+### **Phase 3.1: Consolidate InferValueType Function**
+
+**Problem**: 32-line identical function duplicated across two files
+- **File 1**: `src/project/handlers/validation.go:83-114` - Public `InferValueType(value string) interface{}`
+- **File 2**: `src/project/handlers/variables/storage.go:87-118` - Private `inferValueType(value string) interface{}`
+
+**Current Usage Patterns**:
+- `validation.go` exports for external packages: `handlers.InferValueType()`
+- `storage.go` uses private version internally: `inferValueType()`
+- **Used by**: `set.go:86`, `edit.go:86` (public), `storage.go:25` (private)
+
+**Implementation Plan**:
+1. **Create shared utility**: `src/project/utils/types.go`
+   ```go
+   // Package utils provides shared utility functions for Better-Curl-Saul
+   package utils
+
+   import (
+       "strconv"
+       "strings"
+   )
+
+   // InferValueType converts string values to appropriate Go types for TOML
+   func InferValueType(value string) interface{} {
+       // [32-line implementation moved here]
+   }
+   ```
+
+2. **Update validation.go** (lines 82-114):
+   ```go
+   // Remove lines 82-114, replace with:
+   import "github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
+
+   // InferValueType converts string values to appropriate Go types for TOML
+   func InferValueType(value string) interface{} {
+       return utils.InferValueType(value)
+   }
+   ```
+
+3. **Update storage.go** (lines 87-118):
+   ```go
+   // Remove lines 87-118, replace line 25:
+   import "github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
+
+   // Line 25: Change from:
+   typedValue := inferValueType(newValue)
+   // To:
+   typedValue := utils.InferValueType(newValue)
+   ```
+
+**Impact**: -32 lines, single source of truth, maintains all existing functionality
+
+### **Phase 3.2: Unify Security Whitelists**
+
+**Problem**: Duplicate security whitelists create maintenance risk
+- **File 1**: `src/project/core/parser.go:216` - `allowedCommands := []string{"ls", "exa", "lsd", "tree", "dir"}`
+- **File 2**: `src/project/core/delegation.go:12` - `var allowedCommands = []string{"ls", "exa", "lsd", "tree", "dir"}`
+- **TODO comment**: "This duplicates the whitelist from delegation package to avoid circular imports"
+
+**Current Usage Patterns**:
+- `parser.go:38`: `if isSystemCommand(args[0])` - private function
+- `main.go:66`: `if core.IsSystemCommand(cmd.Preset)` - public function
+
+**Implementation Plan**:
+1. **Add to constants.go**:
+   ```go
+   // src/project/config/constants.go
+   // Add after line 16:
+
+   // AllowedSystemCommands defines the whitelist of safe system commands for delegation
+   var AllowedSystemCommands = []string{"ls", "exa", "lsd", "tree", "dir"}
+   ```
+
+2. **Update delegation.go** (lines 11-22):
+   ```go
+   // Remove lines 11-12, update import:
+   import "github.com/DeprecatedLuar/better-curl-saul/src/project/config"
+
+   // Update IsSystemCommand function:
+   func IsSystemCommand(command string) bool {
+       for _, allowed := range config.AllowedSystemCommands {
+           if command == allowed {
+               return true
+           }
+       }
+       return false
+   }
+   ```
+
+3. **Update parser.go** (lines 213-223):
+   ```go
+   // Remove lines 213-223 (entire isSystemCommand function)
+   // Update line 38 from:
+   if isSystemCommand(args[0])
+   // To:
+   if IsSystemCommand(args[0])  // Use public function from delegation.go
+   ```
+
+**Impact**: -8 lines, security consistency, single whitelist maintenance
+
+### **Phase 3.3: Remove Dead Code**
+
+**Problem**: Unused constants and map clutter codebase
+- **File**: `src/project/config/constants.go`
+- **Lines 18-23**: `SaulVersion`, `SaulSet`, `SaulRemove`, `SaulEdit` constants (defined, never used)
+- **Lines 25-30**: `ShortAliases` map (defined, never used)
+
+**Verification**: Grep confirmed no usage except in definitions and documentation
+
+**Implementation Plan**:
+1. **Remove unused constants** (lines 18-23):
+   ```go
+   // DELETE these lines:
+   // Command constants
+   SaulVersion = "version"
+   SaulSet     = "set"
+   SaulRemove  = "remove"
+   SaulEdit    = "edit"
+   ```
+
+2. **Remove unused map** (lines 25-30):
+   ```go
+   // DELETE these lines:
+   var ShortAliases = map[string]string{
+       "v":  "version",
+       "s":  "set",
+       "rm": "remove",
+       "ed": "edit",
+   }
+   ```
+
+**Impact**: -12 lines, cleaner constants file
+
+### **Success Criteria**
+- ✅ All tests pass after each phase
+- ✅ No functional changes - identical behavior
+- ✅ Total reduction: ~52 lines of duplicated/dead code
+- ✅ Improved maintainability: single source of truth
+- ✅ Enhanced security: unified whitelist management
+- ✅ Build successful with clean imports
+
+### **Risk Assessment**
+- **Phase 3.1**: Medium risk - Package restructuring, import changes
+- **Phase 3.2**: Low risk - Clear consolidation path
+- **Phase 3.3**: Very low risk - Removing unused code
+
+### **Execution Order**
+1. Phase 3.3 (dead code) - safest first
+2. Phase 3.2 (security whitelist) - medium risk
+3. Phase 3.1 (function consolidation) - highest risk last
+
+**Next**: After Phase 3 completion, assess Phase 4 pattern consolidation opportunities

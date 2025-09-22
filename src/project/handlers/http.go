@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/go-resty/resty/v2"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers/http"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
@@ -79,7 +80,7 @@ func ExecuteCallCommand(cmd core.Command) error {
 	err = storeResponseHistory(cmd.Preset, request, response)
 	if err != nil {
 		// Don't fail the whole request if history storage fails
-		// Just log the error (could add warning display here)
+		display.Warning(errors.WarnHistoryFailed)
 	}
 
 	// Display response with filtering support
