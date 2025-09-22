@@ -148,12 +148,15 @@ better-curl-saul/
   - Whitelist-based security: only safe commands (ls, exa, lsd, tree, dir) allowed
   - Working directory automatically set to presets folder for all delegated commands
   - Perfect workspace visibility: see actual TOML files and directory structure
-- ✅ **Phase 4E Complete**: Response History System with Consistent Filtering
-  - History numbering fix: `1` = most recent, `2` = second most recent (intuitive chronological order)
+- ✅ **Phase 4E Complete**: Response History System with Split Command Architecture
+  - Unix list-then-select pattern: `saul check history` (list) + `saul check response N` (fetch)
+  - Sequential file naming: `001.json`, `002.json`, `003.json` (CLI research-backed standard)
+  - Metadata-in-content: timestamp, method, URL, status stored inside JSON files (no filename clutter)
+  - Simple configuration: `saul set history N` (just the number, Unix-style)
   - Consistent filtering: History displays same filtered TOML view as live responses
   - Minimal implementation: Extracted `FormatResponseContent()` function for code reuse
   - Zero code duplication: Same filtering + TOML conversion pipeline for live and historical responses
-  - Raw mode support: `saul api check history 1 --raw` for debugging with full JSON
+  - Raw mode support: `saul check history --raw`, `saul check response 1 --raw` for automation
   - Full data preservation: Stores complete responses, applies filtering at display time
 
 ## Codebase Architecture Flow
@@ -242,6 +245,45 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
 - Flow: Parse command → TomlHandler.Set("pokemon.stats.hp", 100) → Write to appropriate .toml file
 
 **Variable Substitution**: Variables stored in variables.toml (hard only), resolved during preset `call` command
+
+## Response History System Architecture
+
+**Split Command Pattern (Unix Philosophy):**
+- **LIST**: `saul check history` → Show metadata (method, URL, status, timestamp) for all responses
+- **FETCH**: `saul check response N` → Show specific response content with formatting
+- **DEFAULT**: `saul check response` → Most recent response (no number needed for 80% use case)
+
+**File Organization:**
+- **Location**: `~/.config/saul/presets/[preset]/.history/`
+- **Naming**: `001.json`, `002.json`, `003.json` (sequential, CLI standard)
+- **Content**: JSON with embedded metadata + raw response data
+- **Rotation**: Automatic when limit exceeded (keeps newest N, removes oldest)
+
+**JSON Structure:**
+```json
+{
+  "metadata": {
+    "timestamp": "2025-01-15T14:32:45Z",
+    "method": "POST",
+    "endpoint": "/api/users",
+    "status": 201,
+    "duration": "0.234s",
+    "size": "1.2KB"
+  },
+  "response": { /* raw response data */ }
+}
+```
+
+**Configuration:**
+- **Syntax**: `saul set history N` (just the number, Unix-style)
+- **Storage**: `history_count` in `request.toml` alongside other settings
+- **Range**: 0-100 (0 = disabled)
+
+**Benefits:**
+- **Discoverable**: List-then-select workflow shows what's available
+- **Research-backed**: Sequential naming follows universal CLI patterns
+- **Clean**: Metadata in content, not cluttered filenames
+- **Efficient**: List command fast, fetch command loads full content only when needed
 
 ## Development Approach
 
