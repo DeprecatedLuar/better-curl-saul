@@ -1,3 +1,6 @@
+// Package errors provides centralized error message constants with consistent casual tone.
+// All error messages in Better-Curl-Saul use these constants to maintain the
+// characteristic "Saul Goodman" personality throughout the application.
 package errors
 
 const (

@@ -1,3 +1,6 @@
+// Package display provides centralized console output functions with consistent formatting.
+// All console output in Better-Curl-Saul should use these functions instead of direct fmt.Print* calls
+// to maintain consistent styling, proper stderr/stdout separation, and Unix philosophy compliance.
 package display
 
 import (

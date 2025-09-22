@@ -1,3 +1,6 @@
+// Package handlers provides command execution logic and validation for Better-Curl-Saul.
+// This package orchestrates HTTP requests, variable processing, validation,
+// and integrates all components to execute user commands.
 package handlers
 
 import (

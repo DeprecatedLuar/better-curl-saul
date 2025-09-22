@@ -1,3 +1,6 @@
+// Package config provides centralized configuration management for Better-Curl-Saul.
+// This package handles path resolution, environment validation, and configuration loading
+// with fallback mechanisms for containerized and production environments.
 package config
 
 import (
