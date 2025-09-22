@@ -91,10 +91,11 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
   - Cross-platform support with user's preferred tools (exa, lsd, etc.)
   - Perfect workspace visibility: see actual TOML files and directory structure
 
-- ✅ **Phase 4E Complete**: Response History System
-  - History storage integration in HTTP execution pipeline
-  - Simple configuration: `saul api set history 5` enables storage with rotation
-  - Rich command set: `saul api check history`, `saul api check history 1`, `saul api check history last`
+- ✅ **Phase 4E Complete**: Response History System with Split Command Architecture
+  - Unix list-then-select pattern: `saul check history` (list) + `saul check response N` (fetch)
+  - Sequential file naming: 001.json, 002.json, 003.json (research-backed CLI standard)
+  - Metadata-in-content: timestamp, method, URL, status stored inside JSON files
+  - Simple configuration: `saul set history N` (just the number, Unix-style)
   - Clean architecture: Split presets package into manager.go, files.go, history.go
   - Automatic response rotation with configurable limits (1-100 responses)
   - Raw mode support for scripting integration
@@ -1179,8 +1180,8 @@ echo "✓ Phase 4E Response History Storage: PASSED"
 
 ---
 
-### **Phase 4E: Response History System** ✅ **COMPLETED**
-*Goal: Complete debugging workflow with automatic response storage and management*
+### **Phase 4E: Response History System with Split Command Architecture** ✅ **COMPLETED**
+*Goal: Unix-style list-then-select workflow for response debugging and management*
 
 #### 4E.1 Architecture Refactoring ✅ **COMPLETED**
 - [x] ✅ **Split presets package for maintainability**:
@@ -1193,13 +1194,14 @@ echo "✓ Phase 4E Response History Storage: PASSED"
 #### 4E.2 History Storage Implementation ✅ **COMPLETED**
 - [x] ✅ **Automatic Response Storage**:
   - ✅ Integrated storage into HTTP execution pipeline in `ExecuteCallCommand`
-  - ✅ Stores responses with rich metadata: timestamp, method, URL, status, headers, body
+  - ✅ Sequential file naming: `001.json`, `002.json`, `003.json` (CLI research-backed)
+  - ✅ Metadata stored inside JSON files: timestamp, method, URL, status, headers, body
   - ✅ Only stores when history is enabled (zero overhead when disabled)
   - ✅ JSON format for structured storage and easy parsing
   - ✅ Graceful error handling - history failures don't break HTTP execution
 
 - [x] ✅ **History Configuration System**:
-  - ✅ Simple syntax: `saul api set history 5` (just like `set url`, `set method`)
+  - ✅ Simple syntax: `saul set history N` (just the number, Unix-style)
   - ✅ Stores as `history_count` in `request.toml` alongside other request settings
   - ✅ Validation: accepts 0-100, rejects negative values and non-numbers
   - ✅ Special request field parsing for intuitive UX
@@ -1208,37 +1210,41 @@ echo "✓ Phase 4E Response History Storage: PASSED"
   - ✅ Maintains exactly N responses (configurable limit)
   - ✅ Removes oldest responses when limit exceeded
   - ✅ Renumbers files sequentially for clean organization
-  - ✅ File naming: `response-001.json`, `response-002.json`, etc.
+  - ✅ File naming: `001.json`, `002.json`, `003.json` (universal CLI standard)
   - ✅ Handles edge cases: empty directories, corrupted files, concurrent access
 
-#### 4E.3 History Access Commands ✅ **COMPLETED**
-- [x] ✅ **Rich History Viewing**:
-  - ✅ `saul api check history` - Interactive list with metadata (method, URL, timestamp)
-  - ✅ `saul api check history 1` - View specific response with full formatting
-  - ✅ `saul api check history last` - Convenient alias for most recent response
+#### 4E.3 Split Command Architecture ✅ **COMPLETED**
+- [x] ✅ **Unix List-Then-Select Pattern**:
+  - ✅ `saul check history` - LIST: show all responses with metadata (method, URL, timestamp)
+  - ✅ `saul check response N` - FETCH: show specific response content with formatting
+  - ✅ Follows proven Unix pattern: `ls` → `cat filename`, `git log` → `git show commit`
+  - ✅ Discoverable workflow: see what's available, then drill down
   - ✅ Professional formatting using existing Phase 4B JSON→TOML conversion
-  - ✅ Response metadata headers show request details and timing
 
-- [x] ✅ **Raw Mode Integration**:
-  - ✅ `saul api check history --raw` - Space-separated response numbers for scripting
-  - ✅ `saul api check history 1 --raw` - Pure response body for automation
+- [x] ✅ **Enhanced UX Patterns**:
+  - ✅ `saul check response` - Most recent response (no number needed for 80% use case)
+  - ✅ Intuitive numbering: `1` = most recent, `2` = second most recent
+  - ✅ Raw mode integration: `saul check history --raw`, `saul check response 1 --raw`
   - ✅ Perfect Unix philosophy integration for shell composition
   - ✅ Consistent with existing raw flag behavior across all commands
 
 #### 4E.4 Real-World Testing & Validation ✅ **COMPLETED**
-- [x] ✅ **End-to-End Functionality**:
-  - ✅ History configuration works: `saul api set history 3`
+- [x] ✅ **End-to-End Split Command Functionality**:
+  - ✅ History configuration works: `saul set history 3` (simplified syntax)
   - ✅ Automatic storage during HTTP calls: `saul call api`
-  - ✅ Rotation validation: tested with 7 calls, limit of 5, correctly maintains 5 responses
-  - ✅ All viewing commands work: list, specific number, last alias
+  - ✅ List command shows metadata: `saul check history` (method, URL, status, timestamp)
+  - ✅ Fetch command shows content: `saul check response 1` (formatted response)
+  - ✅ Default behavior: `saul check response` (most recent, no number needed)
+  - ✅ Rotation validation: tested with sequential file naming and clean organization
   - ✅ Raw mode tested for scripting integration
   - ✅ Error handling verified: non-existent responses, invalid numbers
 
 **Phase 4E Success Criteria:** ✅ **ALL ACHIEVED**
-- [x] ✅ History storage automatic and transparent during HTTP execution
-- [x] ✅ Simple configuration interface matches existing patterns (`set history N`)
-- [x] ✅ Rich viewing commands with professional formatting
-- [x] ✅ Rotation logic maintains exact count with clean file organization
+- [x] ✅ Unix list-then-select pattern provides discoverable workflow
+- [x] ✅ Sequential file naming follows CLI research best practices
+- [x] ✅ Metadata-in-content eliminates filename clutter
+- [x] ✅ Simple configuration interface: `saul set history N` (just the number)
+- [x] ✅ Split commands optimize for different use cases (browse vs view)
 - [x] ✅ Raw mode enables scripting and automation integration
 - [x] ✅ Zero regression - all existing functionality preserved
 - [x] ✅ Clean architecture with focused file organization
@@ -1259,24 +1265,30 @@ echo "✓ Phase 4E Response History Storage: PASSED"
 
 **Real Usage Examples Working:**
 ```bash
-# Configure and use history
+# Configure and use history (simplified syntax)
 saul github set history 5
 saul github set body query="rust CLI tools"
-saul call github    # Response stored automatically
+saul call github    # Response stored automatically as 001.json
 
 # Later...
 saul github set body query="go HTTP clients"
-saul call github    # Different response stored
+saul call github    # Different response stored as 002.json
 
-# Compare what worked before
-saul github check history           # List all stored responses
-saul github check history 1        # View first response with full formatting
-saul github check history last     # Quick access to most recent
+# Discover what responses are available (list-then-select pattern)
+saul github check history          # LIST: show metadata (method, URL, status, time)
+# Output:
+# 1  POST /api/search    200  0.234s  2m ago
+# 2  GET  /api/repos     200  0.156s  5m ago
+
+# View specific response content (fetch)
+saul github check response 1       # FETCH: most recent with formatting
+saul github check response 2       # FETCH: second most recent
+saul github check response         # FETCH: most recent (default, no number needed)
 
 # Scripting integration
 for response in $(saul github check history --raw); do
     echo "Response $response:"
-    saul github check history $response --raw | jq '.query'
+    saul github check response $response --raw | jq '.query'
 done
 ```
 
