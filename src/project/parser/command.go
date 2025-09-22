@@ -83,8 +83,8 @@ func ParseCommand(args []string) (Command, error) {
 	// Handle check command (special syntax: check target [key])
 	if cmd.Command == "check" {
 		if len(args) > 2 {
-			// Special case: "history" as target should not be treated as request field
-			if strings.ToLower(args[2]) == "history" {
+			// Special cases: "history" and "response" as targets should not be treated as request fields
+			if strings.ToLower(args[2]) == "history" || strings.ToLower(args[2]) == "response" {
 				cmd.Target = args[2]
 				if len(args) > 3 {
 					cmd.KeyValuePairs = []KeyValuePair{{Key: args[3], Value: ""}}

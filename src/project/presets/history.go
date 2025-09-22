@@ -18,6 +18,7 @@ type HistoryResponse struct {
 	Method    string      `json:"method"`
 	URL       string      `json:"url"`
 	Status    string      `json:"status"`
+	Duration  string      `json:"duration"`
 	Headers   interface{} `json:"headers"`
 	Body      interface{} `json:"body"`
 }
@@ -28,7 +29,7 @@ func GetHistoryPath(preset string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(presetPath, "history"), nil
+	return filepath.Join(presetPath, ".history"), nil
 }
 
 // CreateHistoryDirectory creates the history directory for a preset
@@ -48,7 +49,7 @@ func CreateHistoryDirectory(preset string) error {
 }
 
 // StoreResponse stores an HTTP response in the history with rotation
-func StoreResponse(preset, method, url, status string, headers, body interface{}, historyCount int) error {
+func StoreResponse(preset, method, url, status, duration string, headers, body interface{}, historyCount int) error {
 	if historyCount <= 0 {
 		return nil // History disabled
 	}
@@ -70,6 +71,7 @@ func StoreResponse(preset, method, url, status string, headers, body interface{}
 		Method:    method,
 		URL:       url,
 		Status:    status,
+		Duration:  duration,
 		Headers:   headers,
 		Body:      body,
 	}
@@ -103,7 +105,7 @@ func StoreResponse(preset, method, url, status string, headers, body interface{}
 	}
 
 	// Save new response
-	fileName := fmt.Sprintf("response-%03d.json", nextNum)
+	fileName := fmt.Sprintf("%03d.json", nextNum)
 	filePath := filepath.Join(historyPath, fileName)
 
 	jsonData, err := json.MarshalIndent(response, "", "  ")
@@ -217,7 +219,7 @@ func getHistoryFiles(historyPath string) ([]string, error) {
 
 	var files []string
 	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasPrefix(entry.Name(), "response-") && strings.HasSuffix(entry.Name(), ".json") {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".json") {
 			files = append(files, entry.Name())
 		}
 	}
@@ -241,7 +243,7 @@ func renumberHistoryFiles(historyPath string, maxCount int) error {
 	// Renumber from 1
 	for i, fileName := range files {
 		oldPath := filepath.Join(historyPath, fileName)
-		newFileName := fmt.Sprintf("response-%03d.json", i+1)
+		newFileName := fmt.Sprintf("%03d.json", i+1)
 		newPath := filepath.Join(historyPath, newFileName)
 
 		if oldPath != newPath {
