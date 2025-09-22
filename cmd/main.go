@@ -6,13 +6,13 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/delegation"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor/commands"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 )
 
 // Session state: current preset memory (session-only)
@@ -102,7 +102,7 @@ func main() {
 	args := os.Args[1:]
 
 	if len(args) == 0 {
-		fmt.Println("\nOkay, so let me break it down to you buddy:\nsaul [preset] [set/rm/edit...] [url/body...] [key=value]\n ")
+		fmt.Println("\nAlright, alright! Let me break it down for you, folk:\nsaul [preset] [set/rm/edit...] [url/body...] [key=value]\n\nThat's the real cha-cha-cha. Use 'saul help' for the full legal brief")
 		return
 	}
 
@@ -166,19 +166,19 @@ func executeGlobalCommand(cmd parser.Command) error {
 	switch cmd.Global {
 	case "version":
 		fmt.Println("Better-Curl (Saul) v0.1.0")
-		fmt.Println("The workspace-based HTTP client that makes curl simple")
+		fmt.Println("'When http gets complicated, Better Curl Saul'")
 		return nil
 
-case "rm":
+	case "rm":
 		if len(cmd.Targets) == 0 {
 			return fmt.Errorf("preset name required for rm command")
 		}
-		
+
 		// Handle multiple targets: saul rm preset1 preset2 preset3
 		// Continue processing, warn about non-existent presets
 		var warnings []string
 		deletedCount := 0
-		
+
 		for _, presetName := range cmd.Targets {
 			err := presets.DeletePreset(presetName)
 			if err != nil {
@@ -188,19 +188,18 @@ case "rm":
 				deletedCount++
 			}
 		}
-		
+
 		// Print warnings if any
 		for _, warning := range warnings {
 			display.Warning(warning)
 		}
-		
+
 		// Silent success if at least one was deleted, or no warnings
 		return nil
 
 	case "help":
 		showHelp()
 		return nil
-
 
 	default:
 		return fmt.Errorf("unknown global command: %s", cmd.Global)

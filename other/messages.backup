@@ -1,0 +1,37 @@
+// package errors
+
+// const (
+	// Error Messages - Casual tone throughout
+	ErrInvalidMethod      = "Whoa whoa whoa there, counselor! '%s'? That's not gonna fly. We're talking GET, POST, PUT, DELETE - the classics!"
+	ErrMissingURL         = "Listen pal, I can't work with nothing here! You gotta give me a URL - that's Internet Law 101!"
+	ErrInvalidURL         = "Listen pal, I can't work with nothing here! You gotta give me a URL - that's Internet Law 101!"
+	ErrInvalidTimeout     = "Time is money, friend! Give me actual numbers for timeout, not whatever that was supposed to be."
+	ErrPresetNotFound     = "whoops, preset '%s' doesn't exist yet chief"
+	ErrKeyNotFound        = "can't find key '%s' in %s, friend"
+	ErrInvalidTarget      = "nice try pal, but '%s' isn't valid. Try: body, headers/header, query, request, variables, filters"
+	ErrPresetNameRequired = "buddy, you're gonna need to tell me which preset you want"
+	ErrTargetRequired     = "come on chief, gotta specify what you want to work with (body, headers, query, request, variables, filters)"
+	ErrKeyValueRequired   = "hey there, need some key=value pairs to work with"
+	ErrInvalidKeyValue    = "that key=value format doesn't look right, try again sport"
+	ErrArgumentsNeeded    = "you gonna need more arguments than that buddy (no pressure)"
+	ErrUnsupportedMethod  = "sorry pal, don't know how to handle method '%s'"
+	ErrRequestBuildFailed = "couldn't build that request for you, something went not as expected"
+	ErrHTTPRequestFailed  = "request didn't go through, network's being difficult"
+	ErrVariableLoadFailed = "had trouble loading your variables, chief"
+	ErrVariableSaveFailed = "couldn't save that variable... sorry about that"
+	ErrFileLoadFailed     = "couldn't load file '%s', might not be there"
+	ErrFileSaveFailed     = "couldn't save file '%s', permissions maybe?"
+	ErrDirectoryFailed    = "had trouble with the directory, file system's being picky"
+	ErrReadlineSetup      = "couldn't set up the text input interface, something's wonky"
+	ErrInputRead          = "had trouble reading your input, try that again buddy"
+	ErrEditorNotFound     = "no editor found. Please set $EDITOR environment variable or install nano/vim"
+	ErrEditorFailed       = "editor didn't work out, something went sideways: %v"
+	ErrNoCurrentPreset    = "no current preset in memory - use: saul [preset] [command] to get started"
+)
+
+const (
+	// Warning Messages
+	WarnNoFiltersMatch = "heads up - no fields matched filters %v, might wanna check that syntax"
+	WarnPresetExists   = "preset '%s' already exists, friendly reminder, alright?"
+	WarnResponseLarge  = "response's pretty big (%d bytes) - I won't parse it for you. Here is the JSON instead of TOML"
+)
