@@ -145,15 +145,15 @@ func storeResponseHistory(preset string, request *http.HTTPRequestConfig, respon
 	duration := fmt.Sprintf("%.3fs", response.Time().Seconds())
 
 	// Store the response
-	return presets.StoreResponse(
-		preset,
-		request.Method,
-		request.URL,
-		response.Status(),
-		duration,
-		headers,
-		body,
-		historyCount,
-	)
+	responseData := presets.HistoryResponse{
+		Method:   request.Method,
+		URL:      request.URL,
+		Status:   response.Status(),
+		Duration: duration,
+		Headers:  headers,
+		Body:     body,
+	}
+
+	return presets.StoreResponse(preset, responseData, historyCount)
 }
 
