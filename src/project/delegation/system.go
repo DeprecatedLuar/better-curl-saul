@@ -1,9 +1,11 @@
 package delegation
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
+
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/config"
 )
 
 // allowedCommands defines the whitelist of safe system commands for delegation
@@ -22,7 +24,11 @@ func IsSystemCommand(command string) bool {
 // DelegateToSystem executes a system command in the presets directory
 func DelegateToSystem(command string, args []string) error {
 	// Set working directory to presets folder
-	presetsDir := filepath.Join(os.Getenv("HOME"), ".config", "saul", "presets")
+	config := config.LoadConfig()
+	presetsDir, err := config.GetPresetsPath()
+	if err != nil {
+		return fmt.Errorf("failed to get presets path: %v", err)
+	}
 
 	// Create the command with arguments
 	execCmd := exec.Command(command, args...)

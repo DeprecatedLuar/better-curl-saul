@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/config"
 )
 
 // HistoryResponse represents a stored response with metadata
@@ -40,7 +41,7 @@ func CreateHistoryDirectory(preset string) error {
 	}
 
 	// Create history directory
-	err = os.MkdirAll(historyPath, 0755)
+	err = os.MkdirAll(historyPath, config.DirPermissions)
 	if err != nil {
 		return fmt.Errorf(errors.ErrDirectoryFailed)
 	}
@@ -113,7 +114,7 @@ func StoreResponse(preset, method, url, status, duration string, headers, body i
 		return err
 	}
 
-	return os.WriteFile(filePath, jsonData, 0644)
+	return os.WriteFile(filePath, jsonData, config.FilePermissions)
 }
 
 // ListHistoryResponses returns a list of history responses with metadata

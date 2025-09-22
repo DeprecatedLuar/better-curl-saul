@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/config"
 )
 
 // getPresetsDir returns the presets directory path using environment variables with defaults
@@ -54,7 +55,7 @@ func CreatePresetDirectory(name string) error {
 	}
 
 	// Create preset directory
-	err = os.MkdirAll(presetPath, 0755)
+	err = os.MkdirAll(presetPath, config.DirPermissions)
 	if err != nil {
 		return fmt.Errorf(errors.ErrDirectoryFailed)
 	}
@@ -73,7 +74,7 @@ func ListPresets() ([]string, error) {
 	}
 
 	// Create presets directory if it doesn't exist
-	err = os.MkdirAll(presetsDir, 0755)
+	err = os.MkdirAll(presetsDir, config.DirPermissions)
 	if err != nil {
 		return nil, fmt.Errorf(errors.ErrDirectoryFailed)
 	}
