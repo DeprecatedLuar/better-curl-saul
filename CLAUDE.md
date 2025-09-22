@@ -9,13 +9,11 @@ This project is **Better-Curl (Saul)** - a workspace-based HTTP client designed 
 **README.md is the source of truth for AI-assisted development** - it documents all core ideas, concepts, and foundational vision that guide development decisions. Always reference this file for project scope, feature requirements, and architectural direction. The action-plan.md handles specific technical implementation details.
 
 **Collaborative Development Philosophy:**
-- This is a learning-focused project where the user wants to understand every piece of code generated
 - Follow KISS principles: clean, intelligent, self-maintained, resilient code above all else
 - Avoid over-engineering at all costs - prioritize simple and clean solutions
 - Always engage in strategic discussion before implementation
 - Break down complex tasks into understandable components
 - Explain architectural decisions and reasoning during development
-- User wants to learn Go through AI-assisted development while maintaining deep code understanding
 
 ## Development Commands
 
