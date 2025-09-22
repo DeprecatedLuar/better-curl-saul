@@ -310,6 +310,70 @@ go run cmd/main.go pokeapi call       # ✅ Works: Makes HTTP requests
 
 ---
 
+### ⏳ **CURRENT PRIORITY: Phase 1B - File Size Refactoring**
+
+**Status**: **READY TO IMPLEMENT** (2025-09-22)
+**Priority**: **CRITICAL** - File Size Violations (Code Review Issue #2)
+
+#### **Objective**
+Break down oversized files to achieve single responsibility principle compliance and eliminate critical file size violations identified in CODE_REVIEW.md.
+
+#### **Current File Size Status**
+- ✅ **main.go**: 234 lines (UNDER 250 limit - no longer oversized)
+- 🔴 **check.go**: 316 lines (26% over limit) - **HIGHEST PRIORITY**
+- 🔴 **handler.go**: 285 lines (14% over limit)
+- 🔴 **variables.go**: 276 lines (10% over limit)
+- 🟡 **history.go**: 258 lines (close to limit)
+
+#### **Refactoring Strategy (Respecting Existing Architecture)**
+
+**Architecture Understanding:**
+- **`src/modules/`** = Reusable framework components (cross-cutting concerns)
+- **`src/project/`** = Application-specific business logic
+- **`src/modules/display/`** already exists with `printer.go` and `formatter.go`
+
+**Phase 1B.1: Break Down check.go (316 lines) - HIGHEST PRIORITY**
+- **Extract Display Utilities** → Move to existing `src/modules/display/`
+  - History display formatting logic
+  - Response content formatting utilities
+  - Visual section formatting helpers
+- **Keep Business Logic** → Within `src/project/executor/commands/`
+  - Check command routing and validation
+  - File content retrieval logic
+  - Command-specific business rules
+
+**Phase 1B.2: Break Down handler.go (285 lines)**
+- **Separate Concerns** within `src/project/toml/`:
+  - `handler.go` - Core TOML manipulation operations
+  - `json.go` - JSON conversion functionality
+  - `io.go` - File I/O operations and persistence
+- **Maintain Clean Interfaces** - Same public API, better internal organization
+
+**Phase 1B.3: Break Down variables.go (276 lines)**
+- **Separate Concerns** within `src/project/executor/`:
+  - `variables/detection.go` - Variable pattern detection and parsing
+  - `variables/prompting.go` - User interaction and input handling
+  - `variables/storage.go` - Variable persistence and retrieval
+- **Maintain Existing Functionality** - Same command integration, cleaner code
+
+#### **Implementation Guidelines**
+1. **Display utilities** → `src/modules/display/` (framework level)
+2. **Business logic** → Keep within `src/project/` structure
+3. **Preserve interfaces** → Zero breaking changes to public APIs
+4. **Single responsibility** → Each file focused on one clear concern
+5. **Test coverage** → Ensure all existing tests continue passing
+
+#### **Success Criteria**
+- ✅ All files under 250-line limit
+- ✅ Single responsibility principle compliance
+- ✅ Zero regression in existing functionality
+- ✅ Clean separation between framework and application concerns
+- ✅ Improved CODE_REVIEW.md compliance score
+
+**Expected Impact**: Addresses critical file size violations, improves maintainability, and moves toward "COMPLIANT" status in code review metrics.
+
+---
+
 ### ❌ **Missing Core Components**
 - **Advanced command system**: Enhanced help and management
 - **Production readiness**: Cross-platform compatibility, error handling polish
