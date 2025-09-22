@@ -1,4 +1,4 @@
-package display
+package commands
 
 import (
 	"encoding/json"
@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
 )
@@ -48,7 +49,7 @@ func ListHistoryResponses(preset string, rawOutput bool) error {
 			// Silent in raw mode (Unix philosophy)
 			return nil
 		}
-		fmt.Printf("No history found for preset '%s'\n", preset)
+		display.Info(fmt.Sprintf("No history found for preset '%s'", preset))
 		return nil
 	}
 
@@ -79,13 +80,13 @@ func ListHistoryResponses(preset string, rawOutput bool) error {
 		relativeTime := FormatRelativeTime(response.Timestamp)
 
 		// Clean tabular format: "  1  POST /api/users    201  0.234s  2m ago"
-		fmt.Printf("  %-2d %-4s %-20s %-3s %-8s %s\n",
+		display.Plain(fmt.Sprintf("  %-2d %-4s %-20s %-3s %-8s %s",
 			displayIndex,
 			response.Method,
 			path,
 			statusCode,
 			response.Duration,
-			relativeTime)
+			relativeTime))
 	}
 
 	return nil
@@ -121,11 +122,11 @@ func DisplayHistoryResponse(preset string, number int, rawOutput bool) error {
 	if rawOutput {
 		fmt.Print(content)
 	} else {
-		formatted := FormatSection(
+		formatted := display.FormatSection(
 			fmt.Sprintf("History Response %d", number),
 			content,
 			fmt.Sprintf("%s • %s", response.Status, FormatRelativeTime(response.Timestamp)))
-		Plain(formatted)
+		display.Plain(formatted)
 	}
 
 	return nil

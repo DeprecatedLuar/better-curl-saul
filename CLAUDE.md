@@ -44,6 +44,13 @@ go run cmd/main.go pokeapi set body pokemon.name=pikachu
 - Updated all imports and function references across codebase
 - All builds passing with improved Go convention compliance
 
+**✅ CONSOLE OUTPUT STANDARDIZATION COMPLETED (2025-09-22)**
+- Fixed main.go display violations: 6 direct `fmt.Print*` → proper `display.*` functions
+- Architectural refactor: `modules/display/history.go` → `project/handlers/commands/history.go`
+- Proper layer separation: Business logic moved from generic display to project layer
+- Preserved Unix raw output philosophy: 20 legitimate `fmt.Print*` kept for `--raw` piping
+- Import cleanup and build validation: All refactoring tested and working
+
 **Project Structure:**
 ```
 better-curl-saul/

@@ -6,6 +6,13 @@ Comprehensive implementation plan for Better-Curl (Saul) - a workspace-based HTT
 ## Current State Analysis
 
 ### ✅ **Implemented**
+- **✅ Phase 1B Complete**: Console Output Standardization & Architectural Cleanup *(2025-09-22)*
+  - ✅ Fixed main.go display output: 6 direct `fmt.Print*` calls → proper `display.Info/Plain/Tip` functions
+  - ✅ Architectural refactor: Moved `modules/display/history.go` → `project/handlers/commands/history.go`
+  - ✅ Proper layer separation: Business logic moved from generic display module to project layer
+  - ✅ Console output standardization: 28 violations audited → 20 legitimate Unix raw outputs preserved
+  - ✅ Import cleanup: Removed unused imports after refactoring
+  - ✅ Build validation: All changes tested and verified working
 - **✅ Phase 0 Complete**: Critical Infrastructure Cleanup *(2025-09-22)*
   - ✅ Global state variable eliminated from cmd/main.go
   - ✅ SessionManager implemented in src/project/session/manager.go with proper encapsulation
