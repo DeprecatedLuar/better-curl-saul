@@ -22,7 +22,9 @@ func main() {
 	args := os.Args[1:]
 
 	if len(args) == 0 {
-		fmt.Println("\nAlright, alright! Let me break it down for you, folk:\nsaul [preset] [set/rm/edit...] [url/body...] [key=value]\n\nThat's the real cha-cha-cha. Use 'saul help' for the full legal brief")
+		display.Info("Alright, alright! Let me break it down for you, folk:")
+		display.Plain("saul [preset] [set/rm/edit...] [url/body...] [key=value]")
+		display.Tip("That's the real cha-cha-cha. Use 'saul help' for the full legal brief")
 		return
 	}
 
@@ -89,8 +91,8 @@ func executeCommand(cmd core.Command, sessionManager *core.SessionManager) error
 func executeGlobalCommand(cmd core.Command) error {
 	switch cmd.Global {
 	case "version":
-		fmt.Println("Better-Curl (Saul) v0.1.0")
-		fmt.Println("'When http gets complicated, Better Curl Saul'")
+		display.Info("Better-Curl (Saul) v0.1.0")
+		display.Plain("'When http gets complicated, Better Curl Saul'")
 		return nil
 
 	case "rm":
@@ -156,7 +158,7 @@ func executePresetCommand(cmd core.Command) error {
 		if err != nil {
 			return err
 		}
-		fmt.Printf("Value: %v\n", value)
+		display.Plain(fmt.Sprintf("Value: %v", value))
 		return nil
 
 	case "check":
@@ -175,8 +177,8 @@ func executePresetCommand(cmd core.Command) error {
 
 // showHelp displays usage information
 func showHelp() {
-	fmt.Println("Better-Curl (Saul) - Workspace-based HTTP Client")
-	fmt.Println()
+	display.Info("Better-Curl (Saul) - Workspace-based HTTP Client")
+	display.Plain("")
 
 	// Usage section
 	usage := "  saul [preset] [command] [target] [key=value]"

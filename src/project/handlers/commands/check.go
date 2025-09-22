@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
@@ -87,14 +86,14 @@ func Check(cmd core.Command) error {
 	}
 
 	// Display entire file contents
-	return display.DisplayTOMLFile(handler, cmd.Target, cmd.Preset, cmd.RawOutput)
+	return DisplayTOMLFile(handler, cmd.Target, cmd.Preset, cmd.RawOutput)
 }
 
 
 // checkHistory handles history listing (LIST operation only)
 func checkHistory(cmd core.Command) error {
 	// History command only lists responses - no specific response access
-	return display.ListHistoryResponses(cmd.Preset, cmd.RawOutput)
+	return ListHistoryResponses(cmd.Preset, cmd.RawOutput)
 }
 
 // checkResponse handles response content fetching (FETCH operation)
@@ -106,19 +105,19 @@ func checkResponse(cmd core.Command) error {
 	if len(cmd.KeyValuePairs) > 0 && cmd.KeyValuePairs[0].Key != "" {
 		numberStr := cmd.KeyValuePairs[0].Key
 
-		number, err = display.ParseResponseNumber(numberStr, cmd.Preset)
+		number, err = ParseResponseNumber(numberStr, cmd.Preset)
 		if err != nil {
 			return err
 		}
 	} else {
 		// No number provided - default to most recent response
-		number, err = display.GetMostRecentResponseNumber(cmd.Preset)
+		number, err = GetMostRecentResponseNumber(cmd.Preset)
 		if err != nil {
 			return fmt.Errorf("no history found for preset '%s'", cmd.Preset)
 		}
 	}
 
-	return display.DisplayHistoryResponse(cmd.Preset, number, cmd.RawOutput)
+	return DisplayHistoryResponse(cmd.Preset, number, cmd.RawOutput)
 }
 
 
