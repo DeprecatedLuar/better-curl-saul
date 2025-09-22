@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
@@ -13,90 +11,14 @@ import (
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/executor/commands"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/session"
 )
-
-// Session state: current preset memory (session-only)
-var currentPreset string
 
 // isActionCommand checks if a command is a preset action command
 func isActionCommand(cmd string) bool {
 	return cmd == "set" || cmd == "get" || cmd == "check" || cmd == "edit" || cmd == "call"
 }
 
-// getTTY returns a sanitized terminal device identifier for session files
-func getTTY() string {
-	// Try TTY environment variable first
-	if tty := os.Getenv("TTY"); tty != "" {
-		// Clean up path: /dev/pts/0 -> pts_0
-		cleaned := strings.TrimPrefix(tty, "/dev/")
-		return strings.ReplaceAll(cleaned, "/", "_")
-	}
-
-	// Fallback: read from stdin's tty
-	if file, err := os.Open("/proc/self/fd/0"); err == nil {
-		defer file.Close()
-		if link, err := os.Readlink("/proc/self/fd/0"); err == nil {
-			if strings.HasPrefix(link, "/dev/") {
-				cleaned := strings.TrimPrefix(link, "/dev/")
-				return strings.ReplaceAll(cleaned, "/", "_")
-			}
-		}
-	}
-
-	// Final fallback: use a generic identifier
-	return "console"
-}
-
-// loadCurrentPreset loads the current preset from terminal session file
-func loadCurrentPreset() {
-	tty := getTTY()
-	sessionFile := filepath.Join(os.Getenv("HOME"), ".config", "saul", fmt.Sprintf(".session_%s", tty))
-	if data, err := os.ReadFile(sessionFile); err == nil {
-		currentPreset = strings.TrimSpace(string(data))
-	}
-}
-
-// saveCurrentPreset saves the current preset to terminal session file
-func saveCurrentPreset() {
-	if currentPreset == "" {
-		return
-	}
-
-	configDir := filepath.Join(os.Getenv("HOME"), ".config", "saul")
-	os.MkdirAll(configDir, 0755)
-
-	tty := getTTY()
-	sessionFile := filepath.Join(configDir, fmt.Sprintf(".session_%s", tty))
-	os.WriteFile(sessionFile, []byte(currentPreset), 0644)
-}
-
-// cleanupStaleSessionFiles removes session files for terminals that no longer exist
-func cleanupStaleSessionFiles() {
-	configDir := filepath.Join(os.Getenv("HOME"), ".config", "saul")
-
-	// Read all session files
-	files, err := filepath.Glob(filepath.Join(configDir, ".session_*"))
-	if err != nil {
-		return // Silent failure - cleanup is optional
-	}
-
-	for _, sessionFile := range files {
-		// Extract TTY from filename: .session_pts_0 -> pts_0
-		basename := filepath.Base(sessionFile)
-		if strings.HasPrefix(basename, ".session_") {
-			ttyName := strings.TrimPrefix(basename, ".session_")
-
-			// Check if TTY device exists
-			if ttyName != "console" { // Don't cleanup console sessions
-				devicePath := "/dev/" + strings.ReplaceAll(ttyName, "_", "/")
-				if _, err := os.Stat(devicePath); os.IsNotExist(err) {
-					// TTY no longer exists, remove stale session
-					os.Remove(sessionFile)
-				}
-			}
-		}
-	}
-}
 
 func main() {
 	args := os.Args[1:]
@@ -106,17 +28,18 @@ func main() {
 		return
 	}
 
-	// Clean up stale session files from closed terminals
-	cleanupStaleSessionFiles()
-
-	// Load current preset from terminal session
-	loadCurrentPreset()
+	// Initialize session manager
+	sessionManager, err := session.NewSessionManager()
+	if err != nil {
+		display.Error(fmt.Sprintf("failed to initialize session: %v", err))
+		return
+	}
 
 	// Inject current preset for action commands
 	if len(args) > 0 && isActionCommand(args[0]) {
-		if currentPreset != "" {
+		if sessionManager.HasCurrentPreset() {
 			// Inject preset: ["set", "body"] -> ["pokeapi", "set", "body"]
-			args = append([]string{currentPreset}, args...)
+			args = append([]string{sessionManager.GetCurrentPreset()}, args...)
 		} else {
 			// Error: action command but no current preset
 			display.Error(errors.ErrNoCurrentPreset)
@@ -130,7 +53,7 @@ func main() {
 		return
 	}
 
-	err = executeCommand(cmd)
+	err = executeCommand(cmd, sessionManager)
 	if err != nil {
 		display.Error(err.Error())
 		os.Exit(1)
@@ -138,7 +61,7 @@ func main() {
 }
 
 // executeCommand routes commands to appropriate handlers
-func executeCommand(cmd parser.Command) error {
+func executeCommand(cmd parser.Command, sessionManager *session.SessionManager) error {
 	// Check for system command delegation first
 	if delegation.IsSystemCommand(cmd.Preset) {
 		// Extract arguments from the original command line
@@ -148,8 +71,11 @@ func executeCommand(cmd parser.Command) error {
 
 	// Update current preset when explicitly specified and save to session
 	if cmd.Preset != "" {
-		currentPreset = cmd.Preset
-		saveCurrentPreset()
+		err := sessionManager.SetCurrentPreset(cmd.Preset)
+		if err != nil {
+			// Session save failure is not critical - log but continue
+			fmt.Fprintf(os.Stderr, "Warning: failed to save session: %v\n", err)
+		}
 	}
 
 	// Handle global commands
