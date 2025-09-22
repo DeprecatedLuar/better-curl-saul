@@ -151,7 +151,8 @@ better-curl-saul/
 - ✅ **Phase 4E Complete**: Response History System with Split Command Architecture
   - Unix list-then-select pattern: `saul check history` (list) + `saul check response N` (fetch)
   - Sequential file naming: `001.json`, `002.json`, `003.json` (CLI research-backed standard)
-  - Metadata-in-content: timestamp, method, URL, status stored inside JSON files (no filename clutter)
+  - Hidden directory storage: `~/.config/saul/presets/[preset]/.history/` (dot-prefixed)
+  - Metadata-in-content: timestamp, method, URL, status, duration stored inside JSON files (no filename clutter)
   - Simple configuration: `saul set history N` (just the number, Unix-style)
   - Consistent filtering: History displays same filtered TOML view as live responses
   - Minimal implementation: Extracted `FormatResponseContent()` function for code reuse

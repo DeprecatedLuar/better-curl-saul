@@ -141,12 +141,16 @@ func storeResponseHistory(preset string, request *http.HTTPRequestConfig, respon
 		}
 	}
 
+	// Format duration as a human-readable string
+	duration := fmt.Sprintf("%.3fs", response.Time().Seconds())
+
 	// Store the response
 	return presets.StoreResponse(
 		preset,
 		request.Method,
 		request.URL,
 		response.Status(),
+		duration,
 		headers,
 		body,
 		historyCount,

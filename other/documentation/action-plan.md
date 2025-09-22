@@ -1195,7 +1195,8 @@ echo "✓ Phase 4E Response History Storage: PASSED"
 - [x] ✅ **Automatic Response Storage**:
   - ✅ Integrated storage into HTTP execution pipeline in `ExecuteCallCommand`
   - ✅ Sequential file naming: `001.json`, `002.json`, `003.json` (CLI research-backed)
-  - ✅ Metadata stored inside JSON files: timestamp, method, URL, status, headers, body
+  - ✅ Hidden directory storage: `~/.config/saul/presets/[preset]/.history/` (dot-prefixed)
+  - ✅ Metadata stored inside JSON files: timestamp, method, URL, status, duration, headers, body
   - ✅ Only stores when history is enabled (zero overhead when disabled)
   - ✅ JSON format for structured storage and easy parsing
   - ✅ Graceful error handling - history failures don't break HTTP execution
@@ -1215,7 +1216,7 @@ echo "✓ Phase 4E Response History Storage: PASSED"
 
 #### 4E.3 Split Command Architecture ✅ **COMPLETED**
 - [x] ✅ **Unix List-Then-Select Pattern**:
-  - ✅ `saul check history` - LIST: show all responses with metadata (method, URL, timestamp)
+  - ✅ `saul check history` - LIST: show tabular format with method, path, status, duration, relative time
   - ✅ `saul check response N` - FETCH: show specific response content with formatting
   - ✅ Follows proven Unix pattern: `ls` → `cat filename`, `git log` → `git show commit`
   - ✅ Discoverable workflow: see what's available, then drill down
@@ -1275,10 +1276,10 @@ saul github set body query="go HTTP clients"
 saul call github    # Different response stored as 002.json
 
 # Discover what responses are available (list-then-select pattern)
-saul github check history          # LIST: show metadata (method, URL, status, time)
+saul github check history          # LIST: show tabular format (method, path, status, duration, relative time)
 # Output:
-# 1  POST /api/search    200  0.234s  2m ago
-# 2  GET  /api/repos     200  0.156s  5m ago
+#   1  POST /api/search    200 0.234s   2m ago
+#   2  GET  /api/repos     200 0.156s   5m ago
 
 # View specific response content (fetch)
 saul github check response 1       # FETCH: most recent with formatting
