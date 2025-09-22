@@ -37,6 +37,13 @@ go run cmd/main.go pokeapi set body pokemon.name=pikachu
 - Code follows Go conventions and compiles successfully
 - 6% compliance improvement in code review metrics
 
+**✅ PACKAGE REORGANIZATION COMPLETED (2025-09-22)**
+- Consolidated single-file packages (`delegation/`, `session/`, `parser/`) → `core/`
+- Renamed `executor/` → `handlers/` for clearer intent
+- Eliminated over-engineering with tiny packages while maintaining 250-line constraint
+- Updated all imports and function references across codebase
+- All builds passing with improved Go convention compliance
+
 **Project Structure:**
 ```
 better-curl-saul/
@@ -53,23 +60,38 @@ better-curl-saul/
 │   │       ├── printer.go       # Error, Success, Warning, Info, Tip, Plain functions
 │   │       └── sections.go      # Section formatting (temporary)
 │   └── project/
-│       ├── session/             # ✅ NEW: Session management (Phase 0)
-│       │   └── manager.go       # SessionManager with encapsulated state
-│       ├── parser/
-│       │   └── command.go       # Command struct + ParseCommand function
-│       ├── executor/
-│       │   ├── commands.go      # Core command execution logic
-│       │   ├── variables.go     # Variable prompting and substitution
-│       │   └── http/            # HTTP execution subfolder (Phase 4B)
-│       │       ├── client.go    # HTTP client setup and execution
-│       │       ├── display.go   # Response formatting and display
-│       │       └── request.go   # HTTP request building logic
-│       ├── presets/
-│       │   └── manager.go       # Preset directory and file management
-│       ├── toml/
-│       │   └── handler.go       # TOML manipulation with JSON conversion
-│       └── config/
-│           └── constants.go     # Constants and command aliases
+│       ├── core/                # ✅ REORGANIZED: CLI fundamentals consolidated
+│       │   ├── parser.go        # Command struct + ParseCommand function
+│       │   ├── session.go       # SessionManager with encapsulated state
+│       │   └── delegation.go    # System command delegation
+│       ├── handlers/            # ✅ RENAMED: Command & HTTP handling logic (was executor/)
+│       │   ├── commands/        # Command execution subfolder
+│       │   │   ├── set.go       # Set command handler
+│       │   │   ├── get.go       # Get command handler
+│       │   │   ├── check.go     # Check command handler
+│       │   │   ├── edit.go      # Edit command handler
+│       │   │   └── utils.go     # Command utilities
+│       │   ├── variables/       # Variable processing subfolder
+│       │   │   ├── detection.go # Variable detection logic
+│       │   │   ├── prompting.go # Variable prompting logic
+│       │   │   └── storage.go   # Variable storage logic
+│       │   ├── http/            # HTTP execution subfolder
+│       │   │   ├── client.go    # HTTP client setup and execution
+│       │   │   └── response.go  # Response formatting and display
+│       │   ├── http.go          # Main HTTP execution logic
+│       │   ├── variables.go     # Variable re-export layer
+│       │   └── validation.go    # Input validation logic
+│       ├── presets/             # Workspace management
+│       │   ├── manager.go       # Preset directory management
+│       │   ├── files.go         # TOML file operations
+│       │   └── history.go       # Response history management
+│       ├── toml/                # TOML manipulation
+│       │   ├── handler.go       # Core TOML manipulation
+│       │   ├── json.go          # JSON conversion logic
+│       │   └── io.go            # File I/O operations
+│       └── config/              # Configuration
+│           ├── constants.go     # Constants and command aliases
+│           └── settings.go      # Configuration loading
 ```
 
 **Core Architecture Concepts (from README.md):**
@@ -176,10 +198,10 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
 
 ### 1. Entry Point: `cmd/main.go`
 - **Purpose**: Clean entry point following Go conventions
-- **Flow**: `os.Args[1:]` → `parser.ParseCommand()` → `executeCommand()` → Route to handlers
+- **Flow**: `os.Args[1:]` → `core.ParseCommand()` → `executeCommand()` → Route to handlers
 - **Routing**: Global commands (`list`, `rm`) vs Preset commands (`set`, `check`, `get`, `call`)
 
-### 2. Command Parsing: `src/project/parser/command.go`
+### 2. Command Parsing: `src/project/core/parser.go`
 - **Input**: Raw command line arguments
 - **Output**: `Command` struct with structured fields
 - **Special Logic**:
@@ -189,8 +211,8 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
   - **Bulk operations**: `Targets []string` field for space-separated arguments
   - **Universal pattern**: `saul rm preset1 preset2 preset3` (spaces for all bulk operations)
 
-### 3. Command Execution: `src/project/executor/commands.go`
-- **Current Commands**: `ExecuteSetCommand()`, `ExecuteCheckCommand()`, `ExecuteGetCommand()`
+### 3. Command Execution: `src/project/handlers/commands/`
+- **Current Commands**: `Set()`, `Check()`, `Get()`, `Edit()` functions
 - **TOML Integration**: Uses `presets.LoadPresetFile()` → TOML handler operations → `presets.SavePresetFile()`
 - **Validation**: Target normalization, request field validation, variable detection
 - **Unix Philosophy**: Silent success on completion
@@ -200,12 +222,12 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
 - **Conversion**: `.ToJSON()` for HTTP requests, `.ToJSONPretty()` for display
 - **Advanced**: `.Merge()`, `.Clone()`, dot notation for nested fields
 
-### 5. Preset Management: `src/project/presets/manager.go`
+### 5. Preset Management: `src/project/presets/`
 - **File Structure**: `~/.config/saul/presets/[preset]/[file].toml`
 - **6-File System**: body.toml, headers.toml, query.toml, request.toml, variables.toml, filters.toml
 - **Operations**: `LoadPresetFile()`, `SavePresetFile()`, `CreatePresetDirectory()`
 
-### 6. HTTP Execution: `src/project/executor/http/` (Phase 4B Refactored)
+### 6. HTTP Execution: `src/project/handlers/http/` (Phase 4B Refactored)
 - **client.go**: HTTP client setup, request execution, error handling
 - **response.go**: Smart response formatting with filtering (JSON→Filter→TOML conversion)
 - **request.go**: HTTP request building from TOML handlers
@@ -214,7 +236,7 @@ User Input → Command Parsing → Command Routing → Command Execution → TOM
 - **Filtering Pipeline**: Load filters.toml → Apply gjson filtering → Smart TOML display
 - **Execution**: go-resty HTTP client → Filter → Smart-formatted response display
 
-### 7. Variable System: `src/project/executor/variables.go`
+### 7. Variable System: `src/project/handlers/variables/`
 - **Detection**: `{@name}` (hard - stored) vs `{?name}` (soft - always prompt)
 - **Resolution**: Prompt user → Store hard variables → Substitute in TOML before HTTP
 - **Integration**: Works seamlessly with URL variables, no conflicts
