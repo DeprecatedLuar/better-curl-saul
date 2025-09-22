@@ -50,7 +50,7 @@ func CreateHistoryDirectory(preset string) error {
 }
 
 // StoreResponse stores an HTTP response in the history with rotation
-func StoreResponse(preset, method, url, status, duration string, headers, body interface{}, historyCount int) error {
+func StoreResponse(preset string, response HistoryResponse, historyCount int) error {
 	if historyCount <= 0 {
 		return nil // History disabled
 	}
@@ -66,16 +66,8 @@ func StoreResponse(preset, method, url, status, duration string, headers, body i
 		return err
 	}
 
-	// Create response object
-	response := HistoryResponse{
-		Timestamp: time.Now().Format(time.RFC3339),
-		Method:    method,
-		URL:       url,
-		Status:    status,
-		Duration:  duration,
-		Headers:   headers,
-		Body:      body,
-	}
+	// Add timestamp to response
+	response.Timestamp = time.Now().Format(time.RFC3339)
 
 	// Get existing files and handle rotation
 	files, err := getHistoryFiles(historyPath)
