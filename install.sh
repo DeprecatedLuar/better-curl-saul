@@ -22,6 +22,12 @@ esac
 echo "Checking for latest release..."
 LATEST_RELEASE=$(curl -s "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
 
+# If no stable release, try the first release (including prereleases)
+if [ -z "$LATEST_RELEASE" ]; then
+    echo "No stable release found, checking for prereleases..."
+    LATEST_RELEASE=$(curl -s "https://api.github.com/repos/$REPO/releases" | grep '"tag_name":' | head -1 | sed -E 's/.*"([^"]+)".*/\1/' || echo "")
+fi
+
 if [ -n "$LATEST_RELEASE" ]; then
     DOWNLOAD_URL="https://github.com/$REPO/releases/download/$LATEST_RELEASE/${BINARY_NAME}-${OS}-${ARCH}"
 
