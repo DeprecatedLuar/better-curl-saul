@@ -15,16 +15,4 @@ const (
 	DefaultMaxRetries     = 3
 	DefaultHTTPMethod     = "GET"
 
-	// Command constants
-	SaulVersion = "version"
-	SaulSet     = "set"
-	SaulRemove  = "remove"
-	SaulEdit    = "edit"
 )
-
-var ShortAliases = map[string]string{
-	"v":  "version",
-	"s":  "set",
-	"rm": "remove",
-	"ed": "edit",
-}
