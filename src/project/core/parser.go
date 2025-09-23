@@ -140,7 +140,7 @@ func ParseCommand(args []string) (Command, error) {
 		keyValueArgs := args[3:]
 
 		// Special handling for filters - just field names, no key=value
-		if cmd.Target == "filters" {
+		if cmd.Target == "filters" || cmd.Target == "filter" {
 			var pairs []KeyValuePair
 			for _, fieldName := range keyValueArgs {
 				pairs = append(pairs, KeyValuePair{Key: "", Value: fieldName})
