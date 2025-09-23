@@ -67,21 +67,27 @@ saul call
 
 ## 📦 Installation
 
-**Supports:** Linux, macOS, Windows (I think)
+**Supports:** Linux, macOS, Windows (all architectures)
 
-### Quick Install (Clone & Build)
+### One-Line Install (Easiest)
+```bash
+curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh | bash
+```
+
+### Manual Install
+1. Download binary for your OS from [releases](https://github.com/DeprecatedLuar/better-curl-saul/releases)
+2. Make executable: `chmod +x saul-*`
+3. Move to PATH: `sudo mv saul-* /usr/local/bin/saul`
+
+### From Source (Try-Harders)
 ```bash
 git clone https://github.com/DeprecatedLuar/better-curl-saul.git
 cd better-curl-saul
-./install.sh
+./other/install-local.sh  # Local development build
 ```
 
-### From Source (Go developers)
-```bash
-go install github.com/DeprecatedLuar/better-curl-saul@latest
-```
 >[!NOTE]
-> Requires Go 1.19+ AND electricity for installation from source
+> One-line install automatically downloads pre-built binaries or builds from source as fallback
 
 <h1 align=center> Quick Start </h1 align=center>
 
