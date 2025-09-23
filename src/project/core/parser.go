@@ -35,7 +35,7 @@ func ParseCommand(args []string) (Command, error) {
 	}
 
 	// Check for system commands FIRST - skip flag parsing for them
-	if isSystemCommand(args[0]) {
+	if IsSystemCommand(args[0]) {
 		cmd.Preset = args[0]  // Store system command in Preset field for delegation
 		return cmd, nil
 	}
@@ -210,15 +210,4 @@ func parseFlags(args []string, cmd *Command) ([]string, error) {
 	return filteredArgs, nil
 }
 
-// isSystemCommand checks if a command is in the allowed system commands whitelist
-// Note: This duplicates the whitelist from delegation package to avoid circular imports
-func isSystemCommand(command string) bool {
-	allowedCommands := []string{"ls", "exa", "lsd", "tree", "dir"}
-	for _, allowed := range allowedCommands {
-		if command == allowed {
-			return true
-		}
-	}
-	return false
-}
 
