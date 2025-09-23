@@ -63,6 +63,8 @@ saul call
 - **Git-friendly** - TOML files version control beautifully
 - **Unix composable** - Script it, pipe it, shell it
 
+<img src="other/assets/saul-hd-wide.png" width="800"/>
+
 ## 📦 Installation
 
 **Supports:** Linux, macOS, Windows (I think)
@@ -83,7 +85,6 @@ go install github.com/DeprecatedLuar/better-curl-saul@latest
 
 <h1 align=center> Quick Start </h1 align=center>
 
-<img src="other/assets/saul-hd-wide.png" width="800"/>
 
 
 ```bash
@@ -97,6 +98,8 @@ saul api set url https://httpbin.org/post
 saul api set method POST
 saul api set body name={?your_name} message="Hello from Saul"
 saul api call
+
+# Oh... yeah, for nesting just use dot notation like obj.field=idk
 ```
 
 ## 📖 Core Commands
