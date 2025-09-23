@@ -147,6 +147,7 @@ saul [workspace] check history
 
 Bug or feedback? I will be very, very, very happy if you let me know your thoughts.
 
+<img src="other/assets/saul-pointing.png" width="800"/>
 
 ---
 
@@ -156,6 +157,3 @@ Bug or feedback? I will be very, very, very happy if you let me know your though
   </a>
 </p>
 
-<p align="center">
-  <em>Built for developers who work with APIs daily and are tired of escaping JSON in bash.</em>
-</p>
