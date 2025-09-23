@@ -47,30 +47,67 @@ fi
 if [ -z "$LATEST_RELEASE" ]; then
     echo "Building from source..."
 
-    # Check if we're in the repo directory
-    if [ ! -f "go.mod" ] || [ ! -f "cmd/main.go" ]; then
-        echo "Error: Not in better-curl-saul repository directory"
-        echo "Either:"
-        echo "1. Clone the repo: git clone https://github.com/$REPO.git"
-        echo "2. Use the one-liner: curl -sSL https://raw.githubusercontent.com/$REPO/main/install.sh | bash"
-        exit 1
+    # Check if we're in the repo directory (local usage)
+    if [ -f "go.mod" ] && [ -f "cmd/main.go" ]; then
+        echo "Building from current directory..."
+
+        # Check if Go is installed
+        if ! command -v go &> /dev/null; then
+            echo "Error: Go is not installed. Please install Go first."
+            exit 1
+        fi
+
+        go build -o "$BINARY_NAME" cmd/main.go
+
+        if [ $? -ne 0 ]; then
+            echo "Build failed!"
+            exit 1
+        fi
+
+        echo "Build successful!"
+    else
+        # Remote usage - clone and build
+        echo "Cloning repository for build..."
+
+        # Check if Git and Go are installed
+        if ! command -v git &> /dev/null; then
+            echo "Error: Git is not installed. Cannot clone repository."
+            echo "Please install Git and Go, then try again."
+            exit 1
+        fi
+
+        if ! command -v go &> /dev/null; then
+            echo "Error: Go is not installed. Cannot build from source."
+            echo "Please install Go, then try again."
+            exit 1
+        fi
+
+        # Clone to temporary directory
+        TEMP_DIR=$(mktemp -d)
+        cd "$TEMP_DIR"
+
+        if ! git clone "https://github.com/$REPO.git" .; then
+            echo "Failed to clone repository"
+            rm -rf "$TEMP_DIR"
+            exit 1
+        fi
+
+        echo "Building $BINARY_NAME..."
+        go build -o "$BINARY_NAME" cmd/main.go
+
+        if [ $? -ne 0 ]; then
+            echo "Build failed!"
+            rm -rf "$TEMP_DIR"
+            exit 1
+        fi
+
+        # Move binary to original directory
+        mv "$BINARY_NAME" "$OLDPWD/"
+        cd "$OLDPWD"
+        rm -rf "$TEMP_DIR"
+
+        echo "Build successful!"
     fi
-
-    # Check if Go is installed
-    if ! command -v go &> /dev/null; then
-        echo "Error: Go is not installed. Please install Go first."
-        exit 1
-    fi
-
-    echo "Building $BINARY_NAME..."
-    go build -o "$BINARY_NAME" cmd/main.go
-
-    if [ $? -ne 0 ]; then
-        echo "Build failed!"
-        exit 1
-    fi
-
-    echo "Build successful!"
 fi
 
 # Install binary
