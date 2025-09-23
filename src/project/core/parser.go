@@ -139,13 +139,21 @@ func ParseCommand(args []string) (Command, error) {
 	if len(args) > 3 {
 		keyValueArgs := args[3:]
 
-		// Parse space-separated key=value pairs
-		pairs, err := parseSpaceSeparatedKeyValues(keyValueArgs)
-		if err != nil {
-			return cmd, fmt.Errorf(errors.ErrInvalidKeyValue)
+		// Special handling for filters - just field names, no key=value
+		if cmd.Target == "filters" {
+			var pairs []KeyValuePair
+			for _, fieldName := range keyValueArgs {
+				pairs = append(pairs, KeyValuePair{Key: "", Value: fieldName})
+			}
+			cmd.KeyValuePairs = pairs
+		} else {
+			// Parse space-separated key=value pairs for other targets
+			pairs, err := parseSpaceSeparatedKeyValues(keyValueArgs)
+			if err != nil {
+				return cmd, fmt.Errorf(errors.ErrInvalidKeyValue)
+			}
+			cmd.KeyValuePairs = pairs
 		}
-
-		cmd.KeyValuePairs = pairs
 	}
 
 	return cmd, nil
