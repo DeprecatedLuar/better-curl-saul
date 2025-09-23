@@ -71,7 +71,7 @@ saul call
 
 ### One-Line Install (Easiest)
 ```bash
-curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/releases/install.sh | bash
 ```
 
 ### Manual Install
