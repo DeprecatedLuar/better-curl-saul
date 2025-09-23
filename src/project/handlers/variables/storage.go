@@ -2,11 +2,11 @@ package variables
 
 import (
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
 )
 
 // SubstituteVariables replaces variables in TOML handler with actual values using simple regex
@@ -22,7 +22,7 @@ func SubstituteVariables(handler *toml.TomlHandler, substitutions map[string]str
 			newValue := substituteVariablesInText(strValue, substitutions)
 			if newValue != strValue {
 				// String was modified, update it
-				typedValue := inferValueType(newValue)
+				typedValue := utils.InferValueType(newValue)
 				handler.Set(key, typedValue)
 			}
 		}
@@ -83,36 +83,3 @@ func StoreVariableInfo(preset, key, varType, varName string) error {
 	return presets.SavePresetFile(preset, "variables", handler)
 }
 
-// inferValueType converts string values to appropriate types
-func inferValueType(value string) interface{} {
-	// Check for explicit array notation with brackets: [item1,item2,item3]
-	if strings.HasPrefix(value, "[") && strings.HasSuffix(value, "]") {
-		// Remove brackets and parse as array
-		content := strings.TrimSpace(value[1 : len(value)-1])
-		if content == "" {
-			// Empty array
-			return []string{}
-		}
-
-		// Split by comma and clean up each item
-		parts := strings.Split(content, ",")
-		var result []string
-		for _, part := range parts {
-			trimmed := strings.TrimSpace(part)
-			// Remove quotes if present
-			if len(trimmed) >= 2 && trimmed[0] == '"' && trimmed[len(trimmed)-1] == '"' {
-				trimmed = trimmed[1 : len(trimmed)-1]
-			}
-			result = append(result, trimmed)
-		}
-		return result
-	}
-
-	// Try to parse as boolean
-	if boolVal, err := strconv.ParseBool(value); err == nil {
-		return boolVal
-	}
-
-	// Default to string (no automatic comma-to-array conversion)
-	return value
-}
