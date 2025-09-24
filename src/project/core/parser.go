@@ -57,7 +57,7 @@ func ParseCommand(args []string) (Command, error) {
 			cmd.Preset = args[1]
 		}
 		return cmd, nil
-	case "version", "help":
+	case "version", "help", "update":
 		cmd.Global = args[0]
 		if len(args) >= 2 {
 			cmd.Preset = args[1]
