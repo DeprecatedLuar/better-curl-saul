@@ -21,17 +21,23 @@ jobs:
 
     - name: Build binaries
       run: |
+        # Extract version from tag
+        VERSION=${GITHUB_REF#refs/tags/}
+
+        # Build flags
+        LDFLAGS="-X github.com/DeprecatedLuar/better-curl-saul/src/project/utils.Version=${VERSION}"
+
         # Linux
-        GOOS=linux GOARCH=amd64 go build -o saul-linux-amd64 cmd/main.go
-        GOOS=linux GOARCH=arm64 go build -o saul-linux-arm64 cmd/main.go
+        GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o saul-linux-amd64 cmd/main.go
+        GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o saul-linux-arm64 cmd/main.go
 
         # macOS
-        GOOS=darwin GOARCH=amd64 go build -o saul-darwin-amd64 cmd/main.go
-        GOOS=darwin GOARCH=arm64 go build -o saul-darwin-arm64 cmd/main.go
+        GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o saul-darwin-amd64 cmd/main.go
+        GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o saul-darwin-arm64 cmd/main.go
 
         # Windows
-        GOOS=windows GOARCH=amd64 go build -o saul-windows-amd64.exe cmd/main.go
-        GOOS=windows GOARCH=arm64 go build -o saul-windows-arm64.exe cmd/main.go
+        GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o saul-windows-amd64.exe cmd/main.go
+        GOOS=windows GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o saul-windows-arm64.exe cmd/main.go
 
     - name: Create Release
       uses: softprops/action-gh-release@v1

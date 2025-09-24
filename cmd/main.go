@@ -10,6 +10,7 @@ import (
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers/commands"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
 )
 
 // isActionCommand checks if a command is a preset action command
@@ -91,7 +92,7 @@ func executeCommand(cmd core.Command, sessionManager *core.SessionManager) error
 func executeGlobalCommand(cmd core.Command) error {
 	switch cmd.Global {
 	case "version":
-		display.Info("Better-Curl (Saul) v0.1.0")
+		display.Info(utils.GetVersionInfo())
 		display.Plain("'When http gets complicated, Better Curl Saul'")
 		return nil
 
