@@ -23,18 +23,7 @@
   <img src="other/assets/saul-catboy-final.png" width="700"/>
 </p>
 
-
-
-<p align="center">
-  <img src="other/assets/demo.gif" alt="Better-Curl Demo" width="800"/>
-</p>
-
-
----
-
-## The Problem
-
-**In a nutshell, this is disgusting:**
+## **In a nutshell,** this is disgusting:
 ```bash
 curl -X POST https://api.github.com/repos/owner/repo/issues \
   -H "Authorization: Bearer ghp_token123" \
@@ -48,17 +37,13 @@ curl -X POST https://api.github.com/repos/owner/repo/issues \
   }'
 ```
 
-### **Try this instead:**
+<h1 align="center">─── Try this instead ───</h1 align="center">
 
-```bash
-saul github set url https://api.github.com/repos/{?repo_owner}/{?repo_name}/{@endpoint}
-saul set method POST
-saul set header Authorization="Bearer {@token}" #Btw this {@} prompts you the first time, then you need to choose to update the variable with a flag on call
-saul set body title="Bug Report" body="Something is broken" labels=[bug,priority-high] assignees=[developer1,developer2]
-saul call
-```
+<p align="center">
+  <img src="other/assets/demo.gif" alt="Better-Curl Demo" width="800"/>
+</p>
+
 ---
-
 
 ## The cool stuff you've never seen before
 
