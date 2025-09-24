@@ -128,6 +128,9 @@ func executeGlobalCommand(cmd core.Command) error {
 		showHelp()
 		return nil
 
+	case "update":
+		return utils.HandleUpdateCommand()
+
 	default:
 		return fmt.Errorf("unknown global command: %s", cmd.Global)
 	}
@@ -180,6 +183,7 @@ func showHelp() {
 
 	// Global Commands section
 	globalCmds := `  saul version              Show version information
+  saul update               Check for updates
   saul ls [options]         List presets directory (system ls command)
   saul rm [preset...]       Delete one or more presets
   saul help                 Show this help`

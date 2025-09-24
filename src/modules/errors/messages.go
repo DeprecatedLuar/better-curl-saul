@@ -34,8 +34,23 @@ const (
 
 const (
 	// Warning Messages
-	WarnNoFiltersMatch = "Heads up champ - no fields matched filters %v, might wanna check that syntax"
-	WarnPresetExists   = "Just so we're clear, pal - preset '%s' already exists! No harm, no foul!"
-	WarnResponseLarge  = "That response is huge (%d bytes), even 'loco' maybe - giving you raw JSON instead of TOML! That's just good business!"
-	WarnHistoryFailed  = "Listen, buddy - couldn't save that response to history! No biggie, but thought you should know!"
+	WarnNoFiltersMatch    = "Heads up champ - no fields matched filters %v, might wanna check that syntax"
+	WarnPresetExists      = "Just so we're clear, pal - preset '%s' already exists! No harm, no foul!"
+	WarnResponseLarge     = "That response is huge (%d bytes), even 'loco' maybe - giving you raw JSON instead of TOML! That's just good business!"
+	WarnHistoryFailed     = "Listen, buddy - couldn't save that response to history! No biggie, but thought you should know!"
+	WarnUpdateCheckFailed = "Listen friend, couldn't check for updates right now - network's being difficult! Try again later, no big deal!"
+)
+
+const (
+	// Update Messages
+	InfoUpdateAvailable = `Well well well, look what we got here - version %s is available! Time for an upgrade, champ!
+Current: %s
+Latest:  %s
+
+Pick your poison based on how you installed Saul:
+  curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh | bash
+  eget DeprecatedLuar/better-curl-saul
+  brew upgrade saul  # (Probably was not from here yet)`
+
+	InfoUpToDate = "You're golden, amigo! Already running the latest and greatest version."
 )
