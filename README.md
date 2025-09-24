@@ -23,11 +23,14 @@
   <img src="other/assets/saul-catboy-final.png" width="700"/>
 </p>
 
-## Live Demo
+
 
 <p align="center">
   <img src="other/assets/demo.gif" alt="Better-Curl Demo" width="800"/>
 </p>
+
+
+---
 
 ## The Problem
 
@@ -45,7 +48,7 @@ curl -X POST https://api.github.com/repos/owner/repo/issues \
   }'
 ```
 
-## **Try this instead:**
+### **Try this instead:**
 
 ```bash
 saul github set url https://api.github.com/repos/{?repo_owner}/{?repo_name}/{@endpoint}
@@ -54,6 +57,8 @@ saul set header Authorization="Bearer {@token}" #Btw this {@} prompts you the fi
 saul set body title="Bug Report" body="Something is broken" labels=[bug,priority-high] assignees=[developer1,developer2]
 saul call
 ```
+---
+
 
 ## The cool stuff you've never seen before
 
@@ -65,41 +70,51 @@ saul call
 
 <img src="other/assets/saul-hd-wide.png" width="1000"/>
 
-## 📦 Installation
+
+<h1 align="center">─── Installation ───</h1 align="center">
 
 **Supports:** Linux, macOS, Windows (I hope)
 
-### One-Line Install (Easiest)
+### One-Liner
 ```bash
 curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh | bash
 ```
 
-### Manual Install
+<details>
+<summary>Other Install Methods</summary>
+
+<br>
+
+**Manual Install** (boring)
 1. Download binary for your OS from [releases](https://github.com/DeprecatedLuar/better-curl-saul/releases)
-2. Make executable: `chmod +x saul-*` 
+2. Make executable: `chmod +x saul-*`
 3. Move to PATH: `sudo mv saul-* /usr/local/bin/saul`
 
->[!NOTE]
-> I have no idea how to use a windows shell so I expect you to have bash 👍
-
-### From Source (Try-Harders)
+**From Source** (for try-harders)
 ```bash
 git clone https://github.com/DeprecatedLuar/better-curl-saul.git
 cd better-curl-saul
 ./other/install-local.sh  # Local development build
 ```
 
->[!NOTE]
-> One-line install automatically downloads pre-built binaries or builds from source as fallback so you don't get sad :(
-
-### If you already have saul installed try:
+**In case you already have Saul** (hardcore)
 ```bash
-saul set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh && saul call --raw | bash # (Maybe works, who knows)
+saul set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh && saul call --raw | bash #(maybe works, who knows)
 ```
+>[!NOTE]
+> Quick install auto-detects your system and downloads binaries or builds from source as fallback. 
+> Windows users: I don't know powershell I expect, just have bash 👍
 
-<h1 align=center> Quick Start </h1 align=center>
+</details>
 
 
+---
+
+
+## Tutorials
+
+<details>
+<summary>Quick Start</summary>
 
 ```bash
 # Create a test workspace
@@ -116,13 +131,22 @@ saul api call
 # Oh... yeah, for nesting just use dot notation like obj.field=idk
 ```
 
-## 📖 Core Commands
+</details>
+
+
+<details><summary>Core Commands</summary>
+<br>
 
 Alright so you can:
 
 ```set```, ```check```(will become get), ```edit```, ```rm``` your
 ```body```, ```header```, ```query```, ```request```, ```history``` or maybe even
 ```response```, also ```url```, ```method```, ```timeout```, ```history``` 
+
+</details>
+
+<details><summary>Example</summary>
+<br>
 
 ```bash
 # Configure your API workspace (or preset, same thing)
@@ -143,12 +167,17 @@ saul check body
 # View response history
 saul check history
 ```
-Important note about variables mechanics:
+</details>
 
-There are 2 variable types
-- soft variables {?} prompt you at EVERY call
-- hard variables {@} require manual update by running a flag (not yet added sorry) or running ```saul set variable varname value``` 
+<br>
 
+> [!NOTE]
+> There are 2 variable types
+> - soft variables {?} prompt you at EVERY call
+> - hard variables {@} require manual update by running the flag -v or running 
+```saul set variable varname value``` 
+
+---
 
 ## 🗺️ Roadmap
 
