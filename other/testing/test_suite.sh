@@ -315,42 +315,42 @@ else
     exit 1
 fi
 
-echo "2.6 Testing check command..."
-# Reset for clean check testing
+echo "2.6 Testing get command..."
+# Reset for clean get testing
 reset_preset
 ./saul_test "$TEST_PRESET" set url https://httpbin.org/post >/dev/null
 ./saul_test "$TEST_PRESET" set method POST >/dev/null
 ./saul_test "$TEST_PRESET" set body pokemon.stats.hp=100 >/dev/null
 ./saul_test "$TEST_PRESET" set body tags=red,blue,green >/dev/null
 
-# Test smart check for request fields
-if ./saul_test "$TEST_PRESET" check url | grep -q "https://httpbin.org/post"; then
-    echo "✓ Check URL command works (smart routing)"
+# Test smart get for request fields
+if ./saul_test "$TEST_PRESET" get url | grep -q "https://httpbin.org/post"; then
+    echo "✓ Get URL command works (smart routing)"
 else
-    echo "✗ Check URL command failed"
+    echo "✗ Get URL command failed"
     exit 1
 fi
 
-if ./saul_test "$TEST_PRESET" check method | grep -q "POST"; then
-    echo "✓ Check method command works"
+if ./saul_test "$TEST_PRESET" get method | grep -q "POST"; then
+    echo "✓ Get method command works"
 else
-    echo "✗ Check method command failed"
+    echo "✗ Get method command failed"
     exit 1
 fi
 
-# Test check for body fields
-if ./saul_test "$TEST_PRESET" check body pokemon.stats.hp | grep -q "100"; then
-    echo "✓ Check body field works"
+# Test get for body fields
+if ./saul_test "$TEST_PRESET" get body pokemon.stats.hp | grep -q "100"; then
+    echo "✓ Get body field works"
 else
-    echo "✗ Check body field failed"
+    echo "✗ Get body field failed"
     exit 1
 fi
 
-# Test check for arrays
-if ./saul_test "$TEST_PRESET" check body tags | grep -q '\["red", "blue", "green"\]'; then
-    echo "✓ Check array display works"
+# Test get for arrays
+if ./saul_test "$TEST_PRESET" get body tags | grep -q '\["red", "blue", "green"\]'; then
+    echo "✓ Get array display works"
 else
-    echo "✗ Check array display failed"
+    echo "✗ Get array display failed"
     exit 1
 fi
 
@@ -400,7 +400,7 @@ else
     echo "✓ Correctly rejects invalid target"
 fi
 
-echo "✓ Phase 2 Core TOML Operations & Check Command: PASSED"
+echo "✓ Phase 2 Core TOML Operations & Get Command: PASSED"
 echo
 
 # ===== PHASE 3: HTTP Execution Engine =====

@@ -51,6 +51,13 @@ This document archives the technical evolution of Better-Curl (Saul) from initia
 - **System Command Delegation**: Whitelist-based security for `saul ls`, `saul tree` etc.
 - **Package Documentation**: Go-style documentation for all 8 core packages
 
+### Phase 6A-Post: Command Naming Refinement (2025-09-24)
+**Why**: Improve semantic clarity and align with industry standards
+- **`check` → `get` Rename**: Changed primary display command to match standard CLI conventions (kubectl get, git config --get)
+- **Dead Code Removal**: Eliminated incomplete `get.go` (debugging function never documented/tested)
+- **Zero Breaking Changes**: Original `get` command was internal-only, never exposed to users
+- **Improved UX**: `saul get url` more intuitive than `saul check url` for retrieval operations
+
 ## Key Technical Patterns Established
 
 ### TOML Manipulation Engine

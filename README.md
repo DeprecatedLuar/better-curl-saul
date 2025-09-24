@@ -137,11 +137,11 @@ saul call
 # Check your configuration, note that preset/workspace name keeps
 # stored in memory after first mention on syntax
 
-saul [anoter_workspace] check url
-saul check body
+saul [anoter_workspace] get url
+saul get body
 
 # View response history
-saul check history
+saul get history
 ```
 Important note about variables mechanics:
 
