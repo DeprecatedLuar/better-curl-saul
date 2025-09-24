@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 )
 
 type Command struct {
@@ -31,7 +31,7 @@ func ParseCommand(args []string) (Command, error) {
 	var cmd Command
 
 	if len(args) < 1 {
-		return cmd, fmt.Errorf(errors.ErrArgumentsNeeded)
+		return cmd, fmt.Errorf(display.ErrArgumentsNeeded)
 	}
 
 	// Check for system commands FIRST - skip flag parsing for them
@@ -150,7 +150,7 @@ func ParseCommand(args []string) (Command, error) {
 			// Parse space-separated key=value pairs for other targets
 			pairs, err := parseSpaceSeparatedKeyValues(keyValueArgs)
 			if err != nil {
-				return cmd, fmt.Errorf(errors.ErrInvalidKeyValue)
+				return cmd, fmt.Errorf(display.ErrInvalidKeyValue)
 			}
 			cmd.KeyValuePairs = pairs
 		}
@@ -179,7 +179,7 @@ func parseSpaceSeparatedKeyValues(args []string) ([]KeyValuePair, error) {
 	for _, arg := range args {
 		parts := strings.SplitN(arg, "=", 2)
 		if len(parts) != 2 {
-			return nil, fmt.Errorf(errors.ErrInvalidKeyValue)
+			return nil, fmt.Errorf(display.ErrInvalidKeyValue)
 		}
 
 		key := strings.TrimSpace(parts[0])

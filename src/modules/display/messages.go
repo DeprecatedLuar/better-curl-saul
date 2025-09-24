@@ -1,7 +1,7 @@
-// Package errors provides centralized error message constants with consistent casual tone.
-// All error messages in Better-Curl-Saul use these constants to maintain the
+// Package display provides centralized message constants and console output functions.
+// All messages in Better-Curl-Saul use these constants to maintain the
 // characteristic "Saul Goodman" personality throughout the application.
-package errors
+package display
 
 const (
 	// Error Messages - Casual tone throughout

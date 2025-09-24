@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers/commands"
@@ -43,7 +42,7 @@ func main() {
 			args = append([]string{sessionManager.GetCurrentPreset()}, args...)
 		} else {
 			// Error: action command but no current preset
-			display.Error(errors.ErrNoCurrentPreset)
+			display.Error(display.ErrNoCurrentPreset)
 			return
 		}
 	}
