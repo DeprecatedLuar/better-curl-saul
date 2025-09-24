@@ -27,3 +27,10 @@ Thumbs.db
 # Purpose files
 *.purpose.md
 readme.reference.md
+README-draft.md
+
+# Documentation idea folder
+other/documentation/idea/
+
+# Assets folder
+other/assets/
