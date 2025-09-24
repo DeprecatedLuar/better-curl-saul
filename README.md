@@ -124,9 +124,12 @@ saul api call
 
 Alright so you can:
 
-```set```, ```check```(will become get), ```edit```, ```rm``` your
+```set```, ```get```, ```edit```, ```rm``` 
+your
 ```body```, ```header```, ```query```, ```request```, ```history``` or maybe even
-```response```, also ```url```, ```method```, ```timeout```, ```history``` 
+```response```
+also 
+```url```, ```method```, ```timeout```, ```history``` 
 
 </details>
 
