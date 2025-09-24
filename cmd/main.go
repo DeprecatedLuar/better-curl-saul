@@ -10,11 +10,12 @@ import (
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers/commands"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
 )
 
 // isActionCommand checks if a command is a preset action command
 func isActionCommand(cmd string) bool {
-	return cmd == "set" || cmd == "get" || cmd == "check" || cmd == "edit" || cmd == "call"
+	return cmd == "set" || cmd == "get" || cmd == "edit" || cmd == "call"
 }
 
 
@@ -91,7 +92,7 @@ func executeCommand(cmd core.Command, sessionManager *core.SessionManager) error
 func executeGlobalCommand(cmd core.Command) error {
 	switch cmd.Global {
 	case "version":
-		display.Info("Better-Curl (Saul) v0.1.0")
+		display.Info(utils.GetVersionInfo())
 		display.Plain("'When http gets complicated, Better Curl Saul'")
 		return nil
 
@@ -154,15 +155,7 @@ func executePresetCommand(cmd core.Command) error {
 		return commands.Set(cmd)
 
 	case "get":
-		value, err := commands.Get(cmd)
-		if err != nil {
-			return err
-		}
-		display.Plain(fmt.Sprintf("Value: %v", value))
-		return nil
-
-	case "check":
-		return commands.Check(cmd)
+		return commands.Get(cmd)
 
 	case "edit":
 		return commands.Edit(cmd)

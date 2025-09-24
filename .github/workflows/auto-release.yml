@@ -1,0 +1,82 @@
+name: Auto Release
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  check-and-release:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Get full history for version calculation
+
+    - name: Check commit message and determine version bump
+      id: version_check
+      run: |
+        COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+        echo "Commit message: $COMMIT_MESSAGE"
+
+        # Get current version from latest tag
+        CURRENT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+        echo "Current version: $CURRENT_TAG"
+
+        # Extract version numbers (remove 'v' prefix)
+        VERSION=${CURRENT_TAG#v}
+        IFS='.' read -r major minor patch <<< "$VERSION"
+
+        # Default: no release
+        SHOULD_RELEASE=false
+        NEW_VERSION=""
+
+        # Check for release patterns
+        if [[ $COMMIT_MESSAGE =~ ^fix[[:space:]]*-[[:space:]]* ]]; then
+          # PATCH: fix - something
+          NEW_VERSION="v$major.$minor.$((patch + 1))"
+          SHOULD_RELEASE=true
+          echo "Detected FIX: patch release $NEW_VERSION"
+        elif [[ $COMMIT_MESSAGE =~ ^drop[[:space:]]*-[[:space:]]* ]]; then
+          # MINOR: drop - something
+          NEW_VERSION="v$major.$((minor + 1)).0"
+          SHOULD_RELEASE=true
+          echo "Detected DROP: minor release $NEW_VERSION"
+        elif [[ $COMMIT_MESSAGE =~ ^EVA[[:space:]]+Launch[[:space:]]*-[[:space:]]* ]]; then
+          # MAJOR: EVA Launch - something
+          NEW_VERSION="v$((major + 1)).0.0"
+          SHOULD_RELEASE=true
+          echo "Detected EVA LAUNCH: major release $NEW_VERSION"
+        else
+          echo "No release pattern found in commit message"
+        fi
+
+        echo "should_release=$SHOULD_RELEASE" >> $GITHUB_OUTPUT
+        echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
+
+    - name: Create release tag
+      if: steps.version_check.outputs.should_release == 'true'
+      run: |
+        NEW_VERSION="${{ steps.version_check.outputs.new_version }}"
+        COMMIT_MESSAGE=$(git log -1 --pretty=%B)
+
+        echo "Creating tag: $NEW_VERSION"
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Create annotated tag with commit message
+        git tag -a "$NEW_VERSION" -m "$COMMIT_MESSAGE"
+        git push origin "$NEW_VERSION"
+
+        echo "Auto-release tag $NEW_VERSION created and pushed!"
+
+    - name: Log result
+      run: |
+        if [[ "${{ steps.version_check.outputs.should_release }}" == "true" ]]; then
+          echo "Auto-release triggered: ${{ steps.version_check.outputs.new_version }}"
+          echo "This will trigger the existing release.yml workflow"
+        else
+          echo "No auto-release pattern found - skipping"
+        fi
