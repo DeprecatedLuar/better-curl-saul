@@ -1,4 +1,7 @@
-# Better-Curl (Saul) - Implementation History
+# Implementation History
+
+<!-- Completed phases moved from implementation-plan.md in chronological order.
+Use this to understand the evolution and building blocks of this project. -->
 
 ## Architecture Evolution Summary
 

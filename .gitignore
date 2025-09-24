@@ -1,3 +1,29 @@
-# Ignore purpose files
-*.purpose.md
+# Build artifacts
+saul
 main
+*.exe
+dist/
+build/
+
+# Go build cache
+*.sum
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Purpose files
+*.purpose.md
+readme.reference.md

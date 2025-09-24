@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers/http"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
 )
@@ -117,7 +118,7 @@ func DisplayHistoryResponse(preset string, number int, rawOutput bool) error {
 
 	// Get JSON data and format for display
 	jsonStr := response.Body.(string)
-	content := formatHistoryContent([]byte(jsonStr), rawOutput)
+	content := http.FormatResponseContent([]byte(jsonStr), preset, rawOutput)
 
 	if rawOutput {
 		fmt.Print(content)
@@ -218,25 +219,3 @@ func ParseResponseNumber(numberStr string, preset string) (int, error) {
 	return number, nil
 }
 
-// formatHistoryContent formats JSON content for history display
-func formatHistoryContent(jsonData []byte, rawMode bool) string {
-	if rawMode {
-		// Raw mode: just pretty-print JSON
-		var jsonObj interface{}
-		if json.Unmarshal(jsonData, &jsonObj) == nil {
-			if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
-				return string(prettyJSON)
-			}
-		}
-		return string(jsonData)
-	}
-
-	// Non-raw mode: pretty-print JSON (simplified version without TOML conversion)
-	var jsonObj interface{}
-	if json.Unmarshal(jsonData, &jsonObj) == nil {
-		if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
-			return string(prettyJSON)
-		}
-	}
-	return string(jsonData)
-}
