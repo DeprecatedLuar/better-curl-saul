@@ -194,7 +194,6 @@ saul check history
 - [ ] GET specific response stuff from history (aka Headers/Body...)
 - [ ] Flags, we've got none basically
 - [ ] Stateless command support
-- [ ] Flag to change hard variables on the fly (I forgot)
 - [ ] Support pasting raw JSON template
 - [ ] User config system using the super cool github.com/DeprecatedLuar/toml-vars-letsgooo library
 - [ ] Add the eastereggs
