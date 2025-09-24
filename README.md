@@ -125,10 +125,10 @@ saul api call
 Alright so you can:
 
 ```set```, ```get```, ```edit```, ```rm``` 
-your
+ <br>your<br>
 ```body```, ```header```, ```query```, ```request```, ```history``` or maybe even
 ```response```
-also 
+<br>also<br> 
 ```url```, ```method```, ```timeout```, ```history``` 
 
 </details>
