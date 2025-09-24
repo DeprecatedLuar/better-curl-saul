@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 )
 
 // Version information - these variables are set at build time via ldflags
@@ -56,14 +55,14 @@ func CheckForUpdates() (bool, string, error) {
 func HandleUpdateCommand() error {
 	hasUpdate, latestVersion, err := CheckForUpdates()
 	if err != nil {
-		display.Warning(errors.WarnUpdateCheckFailed)
+		display.Warning(display.WarnUpdateCheckFailed)
 		return nil
 	}
 
 	if hasUpdate {
-		display.Info(fmt.Sprintf(errors.InfoUpdateAvailable, latestVersion, Version, latestVersion))
+		display.Info(fmt.Sprintf(display.InfoUpdateAvailable, latestVersion, Version, latestVersion))
 	} else {
-		display.Info(errors.InfoUpToDate)
+		display.Info(display.InfoUpToDate)
 	}
 	return nil
 }

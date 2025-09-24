@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 )
@@ -13,10 +13,10 @@ import (
 // Get displays TOML file contents in a clean, readable format
 func Get(cmd core.Command) error {
 	if cmd.Preset == "" {
-		return fmt.Errorf(errors.ErrPresetNameRequired)
+		return fmt.Errorf(display.ErrPresetNameRequired)
 	}
 	if cmd.Target == "" {
-		return fmt.Errorf(errors.ErrTargetRequired)
+		return fmt.Errorf(display.ErrTargetRequired)
 	}
 
 	// Special handling for history and response targets
@@ -30,14 +30,14 @@ func Get(cmd core.Command) error {
 	// Normalize target aliases
 	normalizedTarget := NormalizeTarget(cmd.Target)
 	if normalizedTarget == "" {
-		return fmt.Errorf(errors.ErrInvalidTarget, cmd.Target)
+		return fmt.Errorf(display.ErrInvalidTarget, cmd.Target)
 	}
 	cmd.Target = normalizedTarget
 
 	// Load the TOML file for the target
 	handler, err := presets.LoadPresetFile(cmd.Preset, cmd.Target)
 	if err != nil {
-		return fmt.Errorf(errors.ErrFileLoadFailed, cmd.Target+".toml")
+		return fmt.Errorf(display.ErrFileLoadFailed, cmd.Target+".toml")
 	}
 
 	// Special handling for request fields (single values)
@@ -51,7 +51,7 @@ func Get(cmd core.Command) error {
 
 		value := handler.Get(key)
 		if value == nil {
-			return fmt.Errorf(errors.ErrKeyNotFound, cmd.KeyValuePairs[0].Key, cmd.Target)
+			return fmt.Errorf(display.ErrKeyNotFound, cmd.KeyValuePairs[0].Key, cmd.Target)
 		}
 
 		// Always print raw value (Unix philosophy)
@@ -64,7 +64,7 @@ func Get(cmd core.Command) error {
 		key := cmd.KeyValuePairs[0].Key
 		value := handler.Get(key)
 		if value == nil {
-			return fmt.Errorf(errors.ErrKeyNotFound, key, cmd.Target)
+			return fmt.Errorf(display.ErrKeyNotFound, key, cmd.Target)
 		}
 
 		// Always print raw value (Unix philosophy)

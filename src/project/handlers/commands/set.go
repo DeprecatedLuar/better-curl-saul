@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
@@ -16,19 +16,19 @@ import (
 // Set handles set operations for TOML files
 func Set(cmd core.Command) error {
 	if cmd.Preset == "" {
-		return fmt.Errorf(errors.ErrPresetNameRequired)
+		return fmt.Errorf(display.ErrPresetNameRequired)
 	}
 	if cmd.Target == "" {
-		return fmt.Errorf(errors.ErrTargetRequired)
+		return fmt.Errorf(display.ErrTargetRequired)
 	}
 	if len(cmd.KeyValuePairs) == 0 {
-		return fmt.Errorf(errors.ErrKeyValueRequired)
+		return fmt.Errorf(display.ErrKeyValueRequired)
 	}
 
 	// Normalize target aliases for better UX
 	normalizedTarget := NormalizeTarget(cmd.Target)
 	if normalizedTarget == "" {
-		return fmt.Errorf(errors.ErrInvalidTarget, cmd.Target)
+		return fmt.Errorf(display.ErrInvalidTarget, cmd.Target)
 	}
 
 	// Use normalized target for file operations
@@ -37,7 +37,7 @@ func Set(cmd core.Command) error {
 	// Load the TOML file for the target
 	handler, err := presets.LoadPresetFile(cmd.Preset, cmd.Target)
 	if err != nil {
-		return fmt.Errorf(errors.ErrFileLoadFailed, cmd.Target+".toml")
+		return fmt.Errorf(display.ErrFileLoadFailed, cmd.Target+".toml")
 	}
 
 	// Special handling for filters target - store values as array
@@ -63,7 +63,7 @@ func Set(cmd core.Command) error {
 				// Store variable info in config.toml for later resolution
 				err := handlers.StoreVariableInfo(cmd.Preset, kvp.Key, varType, varName)
 				if err != nil {
-					return fmt.Errorf(errors.ErrVariableSaveFailed)
+					return fmt.Errorf(display.ErrVariableSaveFailed)
 				}
 
 				// Set the raw variable in the target file for now
@@ -92,7 +92,7 @@ func Set(cmd core.Command) error {
 	// Save the updated TOML file (once after all operations)
 	err = presets.SavePresetFile(cmd.Preset, cmd.Target, handler)
 	if err != nil {
-		return fmt.Errorf(errors.ErrFileSaveFailed, cmd.Target+".toml")
+		return fmt.Errorf(display.ErrFileSaveFailed, cmd.Target+".toml")
 	}
 
 	// Silent success - Unix philosophy

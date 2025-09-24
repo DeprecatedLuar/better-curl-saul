@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/config"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
 )
@@ -22,7 +22,7 @@ func LoadPresetFile(preset, fileType string) (*toml.TomlHandler, error) {
 	// Ensure preset directory exists
 	err = os.MkdirAll(presetPath, config.DirPermissions)
 	if err != nil {
-		return nil, fmt.Errorf(errors.ErrDirectoryFailed)
+		return nil, fmt.Errorf(display.ErrDirectoryFailed)
 	}
 
 	filePath := filepath.Join(presetPath, fileType+".toml")
@@ -31,7 +31,7 @@ func LoadPresetFile(preset, fileType string) (*toml.TomlHandler, error) {
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		err := os.WriteFile(filePath, []byte(""), config.FilePermissions)
 		if err != nil {
-			return nil, fmt.Errorf(errors.ErrFileSaveFailed, filePath)
+			return nil, fmt.Errorf(display.ErrFileSaveFailed, filePath)
 		}
 	}
 

@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/config"
 )
 
@@ -22,7 +22,7 @@ func getPresetsDir() (string, error) {
 	// Build full path relative to home directory
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
-		return "", fmt.Errorf(errors.ErrDirectoryFailed)
+		return "", fmt.Errorf(display.ErrDirectoryFailed)
 	}
 
 	return filepath.Join(homeDir, configDirPath, appDirName, presetsDirName), nil
@@ -60,7 +60,7 @@ func CreatePresetDirectory(name string) error {
 	// Create preset directory
 	err = os.MkdirAll(presetPath, config.DirPermissions)
 	if err != nil {
-		return fmt.Errorf(errors.ErrDirectoryFailed)
+		return fmt.Errorf(display.ErrDirectoryFailed)
 	}
 
 	// Don't create any TOML files initially
@@ -79,12 +79,12 @@ func ListPresets() ([]string, error) {
 	// Create presets directory if it doesn't exist
 	err = os.MkdirAll(presetsDir, config.DirPermissions)
 	if err != nil {
-		return nil, fmt.Errorf(errors.ErrDirectoryFailed)
+		return nil, fmt.Errorf(display.ErrDirectoryFailed)
 	}
 
 	entries, err := os.ReadDir(presetsDir)
 	if err != nil {
-		return nil, fmt.Errorf(errors.ErrDirectoryFailed)
+		return nil, fmt.Errorf(display.ErrDirectoryFailed)
 	}
 
 	var presets []string
@@ -106,13 +106,13 @@ func DeletePreset(name string) error {
 
 	// Check if preset exists
 	if _, err := os.Stat(presetPath); os.IsNotExist(err) {
-		return fmt.Errorf(errors.ErrPresetNotFound, name)
+		return fmt.Errorf(display.ErrPresetNotFound, name)
 	}
 
 	// Remove the entire preset directory
 	err = os.RemoveAll(presetPath)
 	if err != nil {
-		return fmt.Errorf(errors.ErrDirectoryFailed)
+		return fmt.Errorf(display.ErrDirectoryFailed)
 	}
 
 	return nil
