@@ -83,8 +83,8 @@ func ParseCommand(args []string) (Command, error) {
 		}
 	}
 
-	// Handle check command (special syntax: check target [key])
-	if cmd.Command == "check" {
+	// Handle get command (special syntax: get target [key])
+	if cmd.Command == "get" {
 		if len(args) > 2 {
 			// Special cases: "history" and "response" as targets should not be treated as request fields
 			if strings.ToLower(args[2]) == "history" || strings.ToLower(args[2]) == "response" {
