@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/go-resty/resty/v2"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
+	"github.com/go-resty/resty/v2"
 )
 
 // Version information - these variables are set at build time via ldflags
 var (
-	Version = "dev"
+	Version = "secretDevBuild"
 )
 
 // GitHubRelease represents the GitHub API response for a release
@@ -22,7 +22,7 @@ type GitHubRelease struct {
 
 // GetVersionInfo returns formatted version information
 func GetVersionInfo() string {
-	return "Better-Curl (Saul) " + "Beta " + Version
+	return "Better-Curl (Saul) - " + "Beta " + Version
 }
 
 // CheckForUpdates checks GitHub for the latest release and compares with current version

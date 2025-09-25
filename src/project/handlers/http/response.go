@@ -51,7 +51,7 @@ func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
 					}
 				} else {
 					// Default: Try TOML formatting for JSON responses
-					if tomlFormatted := formatAsToml(filteredBody); tomlFormatted != "" {
+					if tomlFormatted := FormatAsToml(filteredBody); tomlFormatted != "" {
 						content = tomlFormatted
 					} else {
 						// Fallback to pretty JSON if TOML conversion fails
@@ -115,8 +115,8 @@ func isJSONContent(contentType string, body []byte) bool {
 	return json.Unmarshal(body, &jsonObj) == nil
 }
 
-// formatAsToml converts JSON response to TOML format for readability
-func formatAsToml(jsonData []byte) string {
+// FormatAsToml converts JSON response to TOML format for readability
+func FormatAsToml(jsonData []byte) string {
 	// Use our new TomlHandler FromJSON capability
 	handler, err := toml.NewTomlHandlerFromJSON(jsonData)
 	if err != nil {
@@ -217,7 +217,7 @@ func FormatResponseContent(jsonData []byte, preset string, rawMode bool) string 
 		return string(filteredBody)
 	}
 
-	if tomlFormatted := formatAsToml(filteredBody); tomlFormatted != "" {
+	if tomlFormatted := FormatAsToml(filteredBody); tomlFormatted != "" {
 		return tomlFormatted
 	}
 
