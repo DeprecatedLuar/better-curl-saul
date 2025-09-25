@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/go-resty/resty/v2"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
@@ -34,7 +35,15 @@ func ExecuteCallCommand(cmd core.Command) error {
 	rawMode := cmd.RawOutput
 
 	// Prompt for variables and get substitution map
-	substitutions, err := PromptForVariables(cmd.Preset, persist)
+	var substitutions map[string]string
+
+	if cmd.VariableFlags != nil {
+		// -v flag was used (either with args or without)
+		substitutions, err = PromptForSpecificVariables(cmd.Preset, cmd.VariableFlags, persist)
+	} else {
+		// No -v flag used = normal variable prompting
+		substitutions, err = PromptForVariables(cmd.Preset, persist)
+	}
 	if err != nil {
 		return fmt.Errorf(display.ErrVariableLoadFailed)
 	}
@@ -69,7 +78,12 @@ func ExecuteCallCommand(cmd core.Command) error {
 		return fmt.Errorf(display.ErrRequestBuildFailed)
 	}
 
-	// Execute the HTTP request
+	// Handle dry-run mode
+	if cmd.DryRun {
+		return displayDryRunRequest(request)
+	}
+
+	// Execute the HTTP request (only if not dry-run)
 	response, err := http.ExecuteHTTPRequest(request)
 	if err != nil {
 		return fmt.Errorf(display.ErrHTTPRequestFailed)
@@ -83,7 +97,7 @@ func ExecuteCallCommand(cmd core.Command) error {
 	}
 
 	// Display response with filtering support
-	http.DisplayResponse(response, rawMode, cmd.Preset)
+	http.DisplayResponse(response, rawMode, cmd.Preset, cmd.ResponseFormat)
 
 	return nil
 }
@@ -155,5 +169,32 @@ func storeResponseHistory(preset string, request *http.HTTPRequestConfig, respon
 	}
 
 	return presets.StoreResponse(preset, responseData, historyCount)
+}
+
+// displayDryRunRequest shows request details without executing
+func displayDryRunRequest(request *http.HTTPRequestConfig) error {
+	fmt.Printf("%s %s\n", request.Method, request.URL)
+
+	if len(request.Headers) > 0 {
+		fmt.Println("Headers:")
+		for key, value := range request.Headers {
+			fmt.Printf("  %s: %s\n", key, value)
+		}
+	}
+
+	if request.Body != nil && len(request.Body) > 0 {
+		fmt.Println("Body:")
+		fmt.Println("  " + strings.Replace(string(request.Body), "\n", "\n  ", -1))
+	}
+
+	if len(request.Query) > 0 {
+		fmt.Println("Query Parameters:")
+		for key, value := range request.Query {
+			fmt.Printf("  %s: %s\n", key, value)
+		}
+	}
+
+	fmt.Println("\n(Request not sent - dry run mode)")
+	return nil
 }
 
