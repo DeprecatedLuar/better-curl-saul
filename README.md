@@ -189,12 +189,14 @@ saul check history
 - [x] Response history
 - [x] Terminal session memory
 - [x] Bulk operations
-- [ ] Fix history response parsing and filtering
-- [ ] GET specific response stuff from history (aka Headers/Body...)
+- [x] Fix history response parsing and filtering
 - [ ] Flags, we've got none basically
-- [ ] Stateless command support
+- [ ] Proper Windows support 
+- [ ] GET specific response stuff from history (aka Headers/Body...)
+- [ ] Stateless command support with HttPie syntax
 - [ ] Support pasting raw JSON template
 - [ ] User config system using the super cool github.com/DeprecatedLuar/toml-vars-letsgooo library
+- [ ] curl command exportation/generation feature
 - [ ] Add the eastereggs
 - [ ] Polish code
 - [ ] Actual Documentation
