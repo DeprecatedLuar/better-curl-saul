@@ -13,6 +13,9 @@
   <a href="https://github.com/DeprecatedLuar/better-curl-saul/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/DeprecatedLuar/better-curl-saul?style=for-the-badge&color=green&labelColor=black"/>
   </a>
+  <a href="https://deprecatedluar.github.io/better-curl-saul/">
+    <img src="https://img.shields.io/badge/Leave_a_Comment-💬-orange?style=for-the-badge&logo=github&logoColor=white&labelColor=black"/>
+  </a>
 </p>
 
 ---
@@ -102,6 +105,10 @@ saul set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/m
 > Windows users: I don't know powershell I expect, just have bash 👍
 
 </details>
+
+<br>
+
+<a href="https://deprecatedluar.github.io/better-curl-saul/"><img src="other/assets/comments.png" width="800"/></a>
 
 
 ---
