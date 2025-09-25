@@ -47,12 +47,15 @@ curl -X POST https://api.github.com/repos/owner/repo/issues \
 
 ## The cool stuff you've never seen before
 
-- **Workspace-based** - Each API gets its own organized folder
+- **Workspace-based** - Each API gets its own organized folder (reusable)
+- **Inline editor** - the `edit` command for any given field also supports `$EDITOR`
 - **Smart variables** - `{@token}` persists,`{?name}` prompts every time
 - **Response filtering** - Show only the fields you care about
 - **Git-friendly** - TOML files version control beautifully
 - **Unix composable** - Script it, pipe it, shell it
-
+- **TOML converter** - JSON gets reorganized into TOML for readability
+- **Saul Goodman** - Saul Goodman
+  
 <img src="other/assets/saul-hd-wide.png" width="1000"/>
 
 
