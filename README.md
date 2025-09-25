@@ -223,11 +223,10 @@ Bug or feedback? I will be very, very, very happy if you let me know your though
   ## Leave a comment :D
 
 <script src="https://utteranc.es/client.js"
-        repo="your-username/your-repo-name"
+        repo="DeprecatedLuar/better-curl-saul"
         issue-term="pathname"
-        theme="github-light"
+        theme="github-dark-orange"
         crossorigin="anonymous"
         async>
-</script>   
-</p>
+</script>
 
