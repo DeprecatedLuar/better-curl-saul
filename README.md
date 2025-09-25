@@ -25,15 +25,23 @@
 
 ## **In a nutshell,** this is disgusting:
 ```bash
-curl -X POST https://api.github.com/repos/owner/repo/issues \
-  -H "Authorization: Bearer ghp_token123" \
+curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
+  -H "Authorization: Basic $(echo -n 'user@company.com:api-token-here' | base64)" \
   -H "Content-Type: application/json" \
-  -H "Accept: application/vnd.github.v3+json" \
+  -H "Accept: application/json" \
+  -H "X-Atlassian-Token: no-check" \
   -d '{
-    "title": "Bug Report",
-    "body": "Something is broken",
-    "labels": ["bug", "priority-high"],
-    "assignees": ["developer1", "developer2"]
+    "fields": {
+      "project": {"key": "PROJ"},
+      "summary": "API Bug: Users can'\''t login after deployment",
+      "description": "Steps:\n1. Deploy v2.1.0\n2. Try login\n3. Gets 500 error\n\nExpected: Login works\nActual: Server error",
+      "issuetype": {"name": "Bug"},
+      "priority": {"name": "High"},
+      "assignee": {"accountId": "123456:abcd-efgh-ijkl"},
+      "labels": ["api", "login", "production"],
+      "customfield_10001": "2024-01-15",
+      "customfield_10002": {"value": "Backend Team"}
+    }
   }'
 ```
 
