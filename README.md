@@ -45,7 +45,7 @@ curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
   }'
 ```
 
-<h1 align="center">─── Try this instead ───</h1 align="center">
+<h1 align="center">── Try this instead ──</h1 align="center">
 
 <p align="center">
   <img src="other/assets/demo.gif" alt="Better-Curl Demo" width="800"/>
