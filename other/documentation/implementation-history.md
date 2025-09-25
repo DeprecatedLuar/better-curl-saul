@@ -94,6 +94,21 @@ This document archives the technical evolution of Better-Curl (Saul) from initia
 - **Critical Fix**: Body filtering now uses exact same `http.FormatResponseContent()` as live API (stored string → bytes → applyFiltering → TOML)
 - **Zero Breaking Changes**: All existing functionality preserved, error messages remain format-agnostic
 
+### Phase 7A: Variable Prompting UX Enhancement (2025-09-25)
+**Why**: Eliminate user frustration from having to retype entire variable values during editing
+- **Problem Identified**: Variable prompting used `bufio.Scanner` forcing users to retype complete values instead of editing existing ones
+- **Solution**: Upgraded to `readline` library with pre-filled prompt functionality
+- **Technical Implementation**:
+  - **File**: `src/project/handlers/variables/prompting.go`
+  - **Pattern Reuse**: Leveraged exact same logic as edit command (`github.com/chzyer/readline` + `WriteStdin()`)
+  - **Behavior Preservation**: Hard variables (`{@name}`) pre-fill with stored values, soft variables (`{?name}`) remain empty
+  - **Error Handling**: Maintained existing error patterns using display messages
+- **User Experience Improvement**:
+  - **Before**: `token [abc123]: _` (empty input, must retype everything)
+  - **After**: `token: abc123_` (can edit existing value directly)
+- **Zero Breaking Changes**: All variable prompting behavior preserved, only improved editing experience
+- **Implementation Quality**: Clean import changes, removed unused `bufio` and `os` imports, proper readline lifecycle management
+
 ## Key Technical Patterns Established
 
 ### TOML Manipulation Engine

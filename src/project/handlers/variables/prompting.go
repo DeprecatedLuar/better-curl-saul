@@ -1,11 +1,10 @@
 package variables
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"strings"
 
+	"github.com/chzyer/readline"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 )
@@ -19,7 +18,6 @@ type Variable struct {
 
 // PromptForVariables prompts user for variable values and returns substitution map
 func PromptForVariables(preset string, persist bool) (map[string]string, error) {
-	scanner := bufio.NewScanner(os.Stdin)
 	substitutions := make(map[string]string)
 
 	// Load variables.toml to get hard variables
@@ -63,30 +61,41 @@ func PromptForVariables(preset string, persist bool) (map[string]string, error) 
 			}
 		}
 
-		fmt.Print(prompt)
-		if scanner.Scan() {
-			userInput := strings.TrimSpace(scanner.Text())
+		// Create readline instance for this prompt
+		rl, err := readline.New(prompt)
+		if err != nil {
+			return nil, fmt.Errorf(display.ErrReadlineSetup)
+		}
 
-			if variable.Type == "hard" && userInput == "" && currentValue != "" {
-				// Keep existing value for hard variables if user presses Enter
-				substitutions[variable.Key] = currentValue
-			} else if userInput != "" {
-				substitutions[variable.Key] = userInput
+		// Pre-fill with current value for better UX
+		if currentValue != "" {
+			rl.WriteStdin([]byte(currentValue))
+		}
 
-				// Save hard variables to variables.toml
-				if variable.Type == "hard" {
-					variablesHandler.Set(variable.Key, userInput)
-					err := presets.SavePresetFile(preset, "variables", variablesHandler)
-					if err != nil {
-						return nil, fmt.Errorf(display.ErrVariableSaveFailed)
-					}
+		userInput, err := rl.Readline()
+		rl.Close()
+
+		if err != nil {
+			return nil, fmt.Errorf(display.ErrInputRead)
+		}
+
+		userInput = strings.TrimSpace(userInput)
+
+		if variable.Type == "hard" && userInput == "" && currentValue != "" {
+			// Keep existing value for hard variables if user presses Enter
+			substitutions[variable.Key] = currentValue
+		} else if userInput != "" {
+			substitutions[variable.Key] = userInput
+
+			// Save hard variables to variables.toml
+			if variable.Type == "hard" {
+				variablesHandler.Set(variable.Key, userInput)
+				err := presets.SavePresetFile(preset, "variables", variablesHandler)
+				if err != nil {
+					return nil, fmt.Errorf(display.ErrVariableSaveFailed)
 				}
 			}
 		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf(display.ErrVariableLoadFailed)
 	}
 
 	return substitutions, nil
