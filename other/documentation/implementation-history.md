@@ -58,6 +58,27 @@ This document archives the technical evolution of Better-Curl (Saul) from initia
 - **Zero Breaking Changes**: Original `get` command was internal-only, never exposed to users
 - **Improved UX**: `saul get url` more intuitive than `saul check url` for retrieval operations
 
+### Phase 5B.1: Get Command Field-Specific Behavior (2025-09-25)
+**Why**: Improve Unix composability by returning raw values for specific field queries
+- **Field-Specific Returns**: `saul api get body pokemon.name` returns just "pikachu" instead of entire TOML file
+- **Raw Value Output**: Individual field queries output raw values using `fmt.Println(value)` (lines 63-85 in get.go)
+- **Preserved Functionality**: Full file display unchanged when no specific field requested
+- **Unix Philosophy**: Enhanced command composition and piping capabilities
+
+### Phase 6.1: File Editing Integration (2025-09-25)
+**Why**: Direct TOML file editing eliminates intermediate command sequences
+- **Container-Level Editing**: `saul api edit body` opens body.toml directly in $EDITOR
+- **Editor Detection**: Automatic detection of $EDITOR with fallback to nano/vim/vi/emacs (edit.go:140-155)
+- **File Creation**: Automatic creation of empty TOML files if they don't exist
+- **Dual Edit Modes**: Field-level editing (existing functionality) vs container-level editing (new)
+
+### Phase 6.3: Production Distribution Readiness (2025-09-25)
+**Why**: Enable wide distribution and easy installation across platforms
+- **Cross-Platform Install Script**: Auto-detects OS/architecture and downloads appropriate binaries
+- **GitHub Release Automation**: Automated release workflows with cross-platform binary builds
+- **Fallback Build System**: Local source build when binaries unavailable
+- **Installation Pipeline**: Complete end-to-end installation from curl one-liner to working binary
+
 ## Key Technical Patterns Established
 
 ### TOML Manipulation Engine
