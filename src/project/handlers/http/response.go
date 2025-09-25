@@ -23,7 +23,7 @@ func DisplayResponse(response *resty.Response, rawMode bool, preset string, resp
 
 	// Handle response format overrides
 	if responseFormat != "" {
-		displayFormattedResponse(response, responseFormat)
+		displayFormattedResponse(response, responseFormat, rawMode, preset)
 		return
 	}
 
@@ -98,7 +98,7 @@ func DisplayResponse(response *resty.Response, rawMode bool, preset string, resp
 }
 
 // displayFormattedResponse handles specific response format requests
-func displayFormattedResponse(response *resty.Response, format string) {
+func displayFormattedResponse(response *resty.Response, format string, rawMode bool, preset string) {
 	switch format {
 	case "headers-only":
 		for key, values := range response.Header() {
@@ -107,7 +107,7 @@ func displayFormattedResponse(response *resty.Response, format string) {
 			}
 		}
 	case "body-only":
-		fmt.Print(response.String())
+		fmt.Print(FormatResponseContent(response.Body(), preset, rawMode))
 	case "status-only":
 		fmt.Println(response.Status())
 	}
@@ -227,17 +227,13 @@ func applyFiltering(jsonData []byte, preset string) []byte {
 
 // FormatResponseContent applies same filtering/formatting as DisplayResponse
 func FormatResponseContent(jsonData []byte, preset string, rawMode bool) string {
-	filteredBody := applyFiltering(jsonData, preset)
-
+	// In raw mode, skip filtering entirely and return completely raw data
 	if rawMode {
-		var jsonObj interface{}
-		if json.Unmarshal(filteredBody, &jsonObj) == nil {
-			if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
-				return string(prettyJSON)
-			}
-		}
-		return string(filteredBody)
+		return string(jsonData)
 	}
+
+	// Normal mode: apply filtering
+	filteredBody := applyFiltering(jsonData, preset)
 
 	if tomlFormatted := FormatAsToml(filteredBody); tomlFormatted != "" {
 		return tomlFormatted

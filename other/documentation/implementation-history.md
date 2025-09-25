@@ -109,6 +109,31 @@ This document archives the technical evolution of Better-Curl (Saul) from initia
 - **Zero Breaking Changes**: All variable prompting behavior preserved, only improved editing experience
 - **Implementation Quality**: Clean import changes, removed unused `bufio` and `os` imports, proper readline lifecycle management
 
+### Phase 8: Advanced Flag System (2025-09-25)
+**Why**: Complete HTTP client flag ecosystem for advanced workflow optimization
+- **Strategic Decision**: Full flag infrastructure implementation providing comprehensive request manipulation and response filtering capabilities
+- **Phase 8A - Flag Infrastructure**: Extended Command struct with new flag fields (VariableFlags, ResponseFormat, DryRun) and comprehensive flag parser supporting both long (`--dry-run`, `--headers-only`) and short (`-v`) flags
+- **Phase 8B - Dry-Run Feature**: Added request preview functionality showing complete HTTP request details without execution for workflow validation
+- **Phase 8C - Variable Management**: Implemented selective variable prompting with `-v` flag supporting both specific variable lists (`-v token username`) and all-variables mode (`-v`)
+- **Phase 8D - Response Formatting**: Complete response format system with `--headers-only`, `--body-only`, `--status-only` flags providing targeted output for scripting and debugging
+- **Critical Enhancement**: Fixed `--raw` consistency ensuring truly raw output (no filtering, no pretty printing) across all response formats
+- **Technical Implementation**:
+  - **File**: `src/project/core/parser.go` - Extended flag parsing with robust error handling
+  - **File**: `src/project/handlers/http.go` - Integrated dry-run logic and variable flag handling
+  - **File**: `src/project/handlers/http/response.go` - Enhanced response formatting with consistent raw mode behavior
+  - **File**: `src/project/handlers/variables/prompting.go` - Added `PromptForSpecificVariables()` function
+  - **File**: `src/project/handlers/variables.go` - Exported new function for handler integration
+- **Key Features Delivered**:
+  - `saul call --dry-run` - Request preview without execution
+  - `saul call -v token` - Prompt for specific variables only
+  - `saul call -v` - Prompt for all variables
+  - `saul call --body-only` - Filtered body with TOML formatting
+  - `saul call --body-only --raw` - Unfiltered body with raw JSON
+  - `saul call --headers-only` - Raw HTTP headers
+  - `saul call --status-only` - Status code only
+- **Consistency Achievement**: `--raw` now means "completely raw" across all output modes - no filtering, no pretty printing, perfect for Unix toolchain integration and scripting workflows
+- **Zero Breaking Changes**: All existing functionality preserved while adding comprehensive flag ecosystem
+
 ## Key Technical Patterns Established
 
 ### TOML Manipulation Engine
