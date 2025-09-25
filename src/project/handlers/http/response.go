@@ -14,13 +14,19 @@ import (
 
 
 // DisplayResponse formats and displays the HTTP response with optional filtering
-func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
+func DisplayResponse(response *resty.Response, rawMode bool, preset string, responseFormat string) {
 	// Format response size
 	size := formatBytes(len(response.Body()))
 	
 	// Get content type for metadata
 	contentType := response.Header().Get("Content-Type")
-	
+
+	// Handle response format overrides
+	if responseFormat != "" {
+		displayFormattedResponse(response, responseFormat)
+		return
+	}
+
 	// Prepare response content
 	body := response.String()
 	var content string
@@ -88,6 +94,22 @@ func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
 		)
 		
 		display.Plain(formatted)
+	}
+}
+
+// displayFormattedResponse handles specific response format requests
+func displayFormattedResponse(response *resty.Response, format string) {
+	switch format {
+	case "headers-only":
+		for key, values := range response.Header() {
+			if len(values) > 0 {
+				fmt.Printf("%s: %s\n", key, values[0])
+			}
+		}
+	case "body-only":
+		fmt.Print(response.String())
+	case "status-only":
+		fmt.Println(response.Status())
 	}
 }
 

@@ -3,7 +3,7 @@
 <!-- WORKFLOW IMPLEMENTATION GUIDE:
 - This file contains active phases for implementation (completed phases moved to implementation-history.md)
 - Each phase = one focused session until stable git commit, follow top-to-bottom order
-- SPLIT complex phases (>5 steps) into subphases for safety, testing, and incremental value
+- SPLIT complex phases into subphases for safety, testing, and incremental value
 - Avoid verbose explanations - just implement what's specified and valuable
 - Focus on actionable steps: "Update file X, add function Y"
 - Success criteria must be testable
