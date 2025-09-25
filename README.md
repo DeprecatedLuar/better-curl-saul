@@ -219,14 +219,3 @@ Bug or feedback? I will be very, very, very happy if you let me know your though
   <a href="https://github.com/DeprecatedLuar/better-curl-saul/issues">
     <img src="https://img.shields.io/badge/Found%20a%20bug%3F-Report%20it!-red?style=for-the-badge&logo=github&logoColor=white&labelColor=black"/>
   </a>
-
-  ## Leave a comment :D
-
-<script src="https://utteranc.es/client.js"
-        repo="DeprecatedLuar/better-curl-saul"
-        issue-term="pathname"
-        theme="github-dark-orange"
-        crossorigin="anonymous"
-        async>
-</script>
-
