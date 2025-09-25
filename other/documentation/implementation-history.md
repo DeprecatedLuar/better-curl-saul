@@ -79,6 +79,21 @@ This document archives the technical evolution of Better-Curl (Saul) from initia
 - **Fallback Build System**: Local source build when binaries unavailable
 - **Installation Pipeline**: Complete end-to-end installation from curl one-liner to working binary
 
+### Phase 7A: Response Field Extraction Feature (2025-09-25)
+**Why**: Enable granular inspection of stored HTTP response history for debugging and analysis workflows
+- **Objective**: Implement field extraction from HTTP response history (`saul get response1 body`, `saul get response headers`)
+- **Strategic Decision**: Response Field Extraction chosen over Flag System (90% existing infrastructure reuse, minimal risk, quick user value)
+- **Single-Line Format**: Standardized on compact format (`response1`, `response2`) eliminating dual-format confusion
+- **Exact Filtering Logic**: Uses identical data pipeline as live API calls - stored response body converted to bytes then filtered/formatted
+- **Architecture Improvements**: Removed space-separated format support, unified parsing logic with number-first fallback-to-field detection
+- **Key Features Delivered**:
+  - `saul get response1 body` - Extract body from specific response with filtering applied
+  - `saul get response headers` - Extract headers from most recent response (no filtering)
+  - `saul get response1` - Show whole response (single-line support)
+  - `saul get response status/url/method/duration` - Simple field extraction for metadata
+- **Critical Fix**: Body filtering now uses exact same `http.FormatResponseContent()` as live API (stored string → bytes → applyFiltering → TOML)
+- **Zero Breaking Changes**: All existing functionality preserved, error messages remain format-agnostic
+
 ## Key Technical Patterns Established
 
 ### TOML Manipulation Engine
