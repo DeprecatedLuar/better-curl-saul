@@ -198,11 +198,11 @@ saul check history
 - [x] Bulk operations
 - [x] Fix history response parsing and filtering
 - [ ] Flags, we've got none basically
-- [ ] Proper Windows support 
 - [ ] GET specific response stuff from history (aka Headers/Body...)
+- [ ] Proper Windows support
+- [ ] Support pasting raw JSON template
 - [ ] Stateless command support with HttPie syntax
 - [ ] Homebrew and Scoop releases
-- [ ] Support pasting raw JSON template
 - [ ] User config system using the super cool github.com/DeprecatedLuar/toml-vars-letsgooo library
 - [ ] curl command exportation/generation feature
 - [ ] Add the eastereggs
