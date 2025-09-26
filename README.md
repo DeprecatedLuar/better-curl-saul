@@ -197,9 +197,9 @@ saul check history
 - [x] Terminal session memory
 - [x] Bulk operations
 - [x] Fix history response parsing and filtering
-- [ ] Flags, we've got none basically
-- [ ] GET specific response stuff from history (aka Headers/Body...)
-- [ ] Proper Windows support
+- [x] Flags, we've got none basically
+- [x] GET specific response stuff from history (aka Headers/Body...)
+- [x] 'Proper' Windows support
 - [ ] Support pasting raw JSON template
 - [ ] Stateless command support with HttPie syntax
 - [ ] Homebrew and Scoop releases
