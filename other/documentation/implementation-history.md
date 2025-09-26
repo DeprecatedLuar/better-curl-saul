@@ -58,6 +58,82 @@ This document archives the technical evolution of Better-Curl (Saul) from initia
 - **Zero Breaking Changes**: Original `get` command was internal-only, never exposed to users
 - **Improved UX**: `saul get url` more intuitive than `saul check url` for retrieval operations
 
+### Phase 5B.1: Get Command Field-Specific Behavior (2025-09-25)
+**Why**: Improve Unix composability by returning raw values for specific field queries
+- **Field-Specific Returns**: `saul api get body pokemon.name` returns just "pikachu" instead of entire TOML file
+- **Raw Value Output**: Individual field queries output raw values using `fmt.Println(value)` (lines 63-85 in get.go)
+- **Preserved Functionality**: Full file display unchanged when no specific field requested
+- **Unix Philosophy**: Enhanced command composition and piping capabilities
+
+### Phase 6.1: File Editing Integration (2025-09-25)
+**Why**: Direct TOML file editing eliminates intermediate command sequences
+- **Container-Level Editing**: `saul api edit body` opens body.toml directly in $EDITOR
+- **Editor Detection**: Automatic detection of $EDITOR with fallback to nano/vim/vi/emacs (edit.go:140-155)
+- **File Creation**: Automatic creation of empty TOML files if they don't exist
+- **Dual Edit Modes**: Field-level editing (existing functionality) vs container-level editing (new)
+
+### Phase 6.3: Production Distribution Readiness (2025-09-25)
+**Why**: Enable wide distribution and easy installation across platforms
+- **Cross-Platform Install Script**: Auto-detects OS/architecture and downloads appropriate binaries
+- **GitHub Release Automation**: Automated release workflows with cross-platform binary builds
+- **Fallback Build System**: Local source build when binaries unavailable
+- **Installation Pipeline**: Complete end-to-end installation from curl one-liner to working binary
+
+### Phase 7A: Response Field Extraction Feature (2025-09-25)
+**Why**: Enable granular inspection of stored HTTP response history for debugging and analysis workflows
+- **Objective**: Implement field extraction from HTTP response history (`saul get response1 body`, `saul get response headers`)
+- **Strategic Decision**: Response Field Extraction chosen over Flag System (90% existing infrastructure reuse, minimal risk, quick user value)
+- **Single-Line Format**: Standardized on compact format (`response1`, `response2`) eliminating dual-format confusion
+- **Exact Filtering Logic**: Uses identical data pipeline as live API calls - stored response body converted to bytes then filtered/formatted
+- **Architecture Improvements**: Removed space-separated format support, unified parsing logic with number-first fallback-to-field detection
+- **Key Features Delivered**:
+  - `saul get response1 body` - Extract body from specific response with filtering applied
+  - `saul get response headers` - Extract headers from most recent response (no filtering)
+  - `saul get response1` - Show whole response (single-line support)
+  - `saul get response status/url/method/duration` - Simple field extraction for metadata
+- **Critical Fix**: Body filtering now uses exact same `http.FormatResponseContent()` as live API (stored string → bytes → applyFiltering → TOML)
+- **Zero Breaking Changes**: All existing functionality preserved, error messages remain format-agnostic
+
+### Phase 7A: Variable Prompting UX Enhancement (2025-09-25)
+**Why**: Eliminate user frustration from having to retype entire variable values during editing
+- **Problem Identified**: Variable prompting used `bufio.Scanner` forcing users to retype complete values instead of editing existing ones
+- **Solution**: Upgraded to `readline` library with pre-filled prompt functionality
+- **Technical Implementation**:
+  - **File**: `src/project/handlers/variables/prompting.go`
+  - **Pattern Reuse**: Leveraged exact same logic as edit command (`github.com/chzyer/readline` + `WriteStdin()`)
+  - **Behavior Preservation**: Hard variables (`{@name}`) pre-fill with stored values, soft variables (`{?name}`) remain empty
+  - **Error Handling**: Maintained existing error patterns using display messages
+- **User Experience Improvement**:
+  - **Before**: `token [abc123]: _` (empty input, must retype everything)
+  - **After**: `token: abc123_` (can edit existing value directly)
+- **Zero Breaking Changes**: All variable prompting behavior preserved, only improved editing experience
+- **Implementation Quality**: Clean import changes, removed unused `bufio` and `os` imports, proper readline lifecycle management
+
+### Phase 8: Advanced Flag System (2025-09-25)
+**Why**: Complete HTTP client flag ecosystem for advanced workflow optimization
+- **Strategic Decision**: Full flag infrastructure implementation providing comprehensive request manipulation and response filtering capabilities
+- **Phase 8A - Flag Infrastructure**: Extended Command struct with new flag fields (VariableFlags, ResponseFormat, DryRun) and comprehensive flag parser supporting both long (`--dry-run`, `--headers-only`) and short (`-v`) flags
+- **Phase 8B - Dry-Run Feature**: Added request preview functionality showing complete HTTP request details without execution for workflow validation
+- **Phase 8C - Variable Management**: Implemented selective variable prompting with `-v` flag supporting both specific variable lists (`-v token username`) and all-variables mode (`-v`)
+- **Phase 8D - Response Formatting**: Complete response format system with `--headers-only`, `--body-only`, `--status-only` flags providing targeted output for scripting and debugging
+- **Critical Enhancement**: Fixed `--raw` consistency ensuring truly raw output (no filtering, no pretty printing) across all response formats
+- **Technical Implementation**:
+  - **File**: `src/project/core/parser.go` - Extended flag parsing with robust error handling
+  - **File**: `src/project/handlers/http.go` - Integrated dry-run logic and variable flag handling
+  - **File**: `src/project/handlers/http/response.go` - Enhanced response formatting with consistent raw mode behavior
+  - **File**: `src/project/handlers/variables/prompting.go` - Added `PromptForSpecificVariables()` function
+  - **File**: `src/project/handlers/variables.go` - Exported new function for handler integration
+- **Key Features Delivered**:
+  - `saul call --dry-run` - Request preview without execution
+  - `saul call -v token` - Prompt for specific variables only
+  - `saul call -v` - Prompt for all variables
+  - `saul call --body-only` - Filtered body with TOML formatting
+  - `saul call --body-only --raw` - Unfiltered body with raw JSON
+  - `saul call --headers-only` - Raw HTTP headers
+  - `saul call --status-only` - Status code only
+- **Consistency Achievement**: `--raw` now means "completely raw" across all output modes - no filtering, no pretty printing, perfect for Unix toolchain integration and scripting workflows
+- **Zero Breaking Changes**: All existing functionality preserved while adding comprehensive flag ecosystem
+
 ## Key Technical Patterns Established
 
 ### TOML Manipulation Engine
@@ -140,3 +216,27 @@ src/
 - **Phase 6A** (System Commands): Unix integration
 - **Phase 3.5** (Architecture Fix): Critical debugging phase
 All phases achieved their success criteria with zero regression and established a solid foundation for future enhancements.
+
+### Phase 9: Cross-Platform Configuration Cleanup (2025-09-26)
+**Why**: Remove broken Windows functions and consolidate path handling
+- **Removed**: `GetConfigBase()` (broken Windows function), `getEnvOrDefault()` (unused), duplicate `GetPresetsPath()` in settings.go
+- **Centralized**: All path operations use `config/dirpaths.go` with `os.UserHomeDir()` + `filepath.Join()` for proper cross-platform support
+- **Fixed**: Updated all references in manager.go, session.go, delegation.go to use centralized functions
+- **Result**: Windows compatibility restored, build successful, zero breaking changes
+
+### Phase 10: Single-Line Execution Flag (2025-09-26)
+**Why**: Foundation for stateless operation and workflow optimization
+- **Strategic Goal**: Enable single-line execution patterns (`saul preset set field=value --call`) as stepping stone to full stateless support
+- **Technical Implementation**:
+  - **File**: `src/project/core/parser.go` - Added `Call bool` flag to Command struct and `--call` parsing
+  - **File**: `cmd/main.go` - Modified `executePresetCommand()` to trigger call execution after successful command completion
+  - **Pattern**: Fail-fast execution (only call if main command succeeds), exact same HTTP logic as standalone call
+- **Key Features Delivered**:
+  - `saul preset set body field=value --call` - Set configuration and execute HTTP request in single command
+  - `saul preset set url https://api.com --call` - Works with all command types (set, edit, etc.)
+  - `saul preset set headers Accept=json --call --raw` - Compatible with all existing flags
+  - `saul preset set body test=1 --call --dry-run` - Works with dry-run for request preview
+- **Workflow Enhancement**: Eliminates need for separate `saul call` command in rapid development/testing scenarios
+- **Architecture Foundation**: Clean flag-based approach prepares for future single-line stateless commands
+- **Zero Breaking Changes**: All existing functionality preserved, purely additive feature
+- **Error Handling**: Clean separation between configuration errors and HTTP execution errors

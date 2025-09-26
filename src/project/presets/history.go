@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/config"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
 )
@@ -44,7 +44,7 @@ func CreateHistoryDirectory(preset string) error {
 	// Create history directory
 	err = os.MkdirAll(historyPath, config.DirPermissions)
 	if err != nil {
-		return fmt.Errorf(errors.ErrDirectoryFailed)
+		return fmt.Errorf(display.ErrDirectoryFailed)
 	}
 
 	return nil

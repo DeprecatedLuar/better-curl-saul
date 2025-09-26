@@ -11,6 +11,7 @@ type VariableInfo = variables.VariableInfo
 // Re-export functions for backward compatibility
 var DetectVariableType = variables.DetectVariableType
 var PromptForVariables = variables.PromptForVariables
+var PromptForSpecificVariables = variables.PromptForSpecificVariables
 var SubstituteVariables = variables.SubstituteVariables
 var StoreVariableInfo = variables.StoreVariableInfo
 

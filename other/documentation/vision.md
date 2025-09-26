@@ -233,23 +233,23 @@ Creates:
 tags = ["red", "blue", "green"]
 ```
 
-### Dual Command Modes
+### Command Modes
 
-**Single-line Mode (Primary):**
+**Single-line Mode:**
 ```bash
 saul pokeapi set header Content-Type=application/json
 saul pokeapi set body pokemon.name=pikachu
 saul pokeapi call
 ```
 
-**Interactive Mode (Secondary):**
+<!-- **Interactive Mode (Secondary):** [ARCHIVED - Moved to archive folder as discarded idea]
 ```bash
 saul pokeapi          # Enter preset mode
 > set header Content-Type=application/json
 > set body pokemon.name=pikachu
 > call                # Execute request
 > exit                # Exit preset mode
-```
+``` -->
 
 ### Core Commands
 
@@ -283,13 +283,13 @@ saul pokeapi          # Enter preset mode
 - `call preset` - Execute HTTP request (prompts for soft variables only)
 - `call preset --persist` - Execute with prompting for both soft and hard variables
 
-**Variable Prompting Flow:**
+<!-- **Variable Prompting Flow:** [ARCHIVED - Interactive mode discarded]
 ```bash
 > call pokeapi --persist
 name: ____                    # Soft variable (always empty)
 attack: 80_                   # Hard variable (shows current value)
 trainer_id: ash123_           # Hard variable (shows current value)
-```
+``` -->
 
 **Editing Commands:**
 - `edit url` - Pre-filled prompt for quick URL edits (ideal for variable syntax changes)
@@ -403,8 +403,8 @@ TOML files → Parse-merge-write → Variable resolution → JSON conversion →
 4. **HTTP execution engine** (using go-resty) ✅ **COMPLETED**
 5. **Single-line commands** (primary interface) ✅ **COMPLETED**
 6. **Response filtering system** (whitelist field extraction) ✅ **Phase 4C - COMPLETED**
-7. **Response history system** ⏳ **Phase 4D - PENDING**
-8. **Interactive mode** (secondary interface built on single-line) ⏳ **Phase 5 - PENDING**
+7. **Response history system** ✅ **Phase 4D - COMPLETED**
+<!-- 8. **Interactive mode** (secondary interface built on single-line) ❌ **ARCHIVED - Moved to archive folder as discarded idea** -->
 
 ### Libraries and Dependencies
 - `github.com/pelletier/go-toml/v1` - TOML parsing and manipulation
@@ -433,7 +433,7 @@ TOML files → Parse-merge-write → Variable resolution → JSON conversion →
 - **KISS Principles:** Simple, intelligent, self-maintained, resilient code
 - **AI-Assisted Development:** Leverage AI for rapid iteration and learning
 - **Parse-merge-write:** Reliable over fast for file operations
-- **Single-line first:** Build interactive mode on proven single-line foundation
+<!-- - **Single-line first:** Build interactive mode on proven single-line foundation [ARCHIVED - Interactive mode discarded] -->
 - **Unix Philosophy:** Each file has one purpose, commands are composable
 
 ## Final Polish & Easter Eggs

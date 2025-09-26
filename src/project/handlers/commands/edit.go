@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/chzyer/readline"
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
@@ -17,16 +17,16 @@ import (
 // Edit handles both field-level and container-level editing
 func Edit(cmd core.Command) error {
 	if cmd.Preset == "" {
-		return fmt.Errorf(errors.ErrPresetNameRequired)
+		return fmt.Errorf(display.ErrPresetNameRequired)
 	}
 	if cmd.Target == "" {
-		return fmt.Errorf(errors.ErrTargetRequired)
+		return fmt.Errorf(display.ErrTargetRequired)
 	}
 
 	// Normalize target aliases
 	normalizedTarget := NormalizeTarget(cmd.Target)
 	if normalizedTarget == "" {
-		return fmt.Errorf(errors.ErrInvalidTarget, cmd.Target)
+		return fmt.Errorf(display.ErrInvalidTarget, cmd.Target)
 	}
 	cmd.Target = normalizedTarget
 
@@ -48,7 +48,7 @@ func executeFieldEdit(cmd core.Command) error {
 	// Load current value using existing patterns
 	handler, err := presets.LoadPresetFile(cmd.Preset, cmd.Target)
 	if err != nil {
-		return fmt.Errorf(errors.ErrFileLoadFailed, cmd.Target+".toml")
+		return fmt.Errorf(display.ErrFileLoadFailed, cmd.Target+".toml")
 	}
 
 	// Get current value (empty string if doesn't exist)
@@ -57,7 +57,7 @@ func executeFieldEdit(cmd core.Command) error {
 	// Pre-filled interactive editing with readline
 	rl, err := readline.New(fmt.Sprintf("%s: ", key))
 	if err != nil {
-		return fmt.Errorf(errors.ErrReadlineSetup)
+		return fmt.Errorf(display.ErrReadlineSetup)
 	}
 	defer rl.Close()
 
@@ -67,7 +67,7 @@ func executeFieldEdit(cmd core.Command) error {
 	// Get new value from user
 	newValue, err := rl.Readline()
 	if err != nil {
-		return fmt.Errorf(errors.ErrInputRead)
+		return fmt.Errorf(display.ErrInputRead)
 	}
 
 	// Special validation for request fields
@@ -88,7 +88,7 @@ func executeFieldEdit(cmd core.Command) error {
 
 	err = presets.SavePresetFile(cmd.Preset, cmd.Target, handler)
 	if err != nil {
-		return fmt.Errorf(errors.ErrFileSaveFailed, cmd.Target+".toml")
+		return fmt.Errorf(display.ErrFileSaveFailed, cmd.Target+".toml")
 	}
 
 	// Silent success - Unix philosophy
@@ -100,7 +100,7 @@ func executeContainerEdit(cmd core.Command) error {
 	// Get the file path for the target
 	presetPath, err := presets.GetPresetPath(cmd.Preset)
 	if err != nil {
-		return fmt.Errorf(errors.ErrDirectoryFailed)
+		return fmt.Errorf(display.ErrDirectoryFailed)
 	}
 
 	filePath := filepath.Join(presetPath, cmd.Target+".toml")
@@ -110,7 +110,7 @@ func executeContainerEdit(cmd core.Command) error {
 		// Create empty TOML file
 		file, err := os.Create(filePath)
 		if err != nil {
-			return fmt.Errorf(errors.ErrFileSaveFailed, cmd.Target+".toml")
+			return fmt.Errorf(display.ErrFileSaveFailed, cmd.Target+".toml")
 		}
 		file.Close()
 	}
@@ -118,7 +118,7 @@ func executeContainerEdit(cmd core.Command) error {
 	// Detect and launch editor
 	editor := detectEditor()
 	if editor == "" {
-		return fmt.Errorf(errors.ErrEditorNotFound)
+		return fmt.Errorf(display.ErrEditorNotFound)
 	}
 
 	// Launch editor with the file
@@ -129,7 +129,7 @@ func executeContainerEdit(cmd core.Command) error {
 
 	err = editorCmd.Run()
 	if err != nil {
-		return fmt.Errorf(errors.ErrEditorFailed, err)
+		return fmt.Errorf(display.ErrEditorFailed, err)
 	}
 
 	// Silent success - Unix philosophy
