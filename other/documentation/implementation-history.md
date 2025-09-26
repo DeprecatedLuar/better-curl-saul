@@ -216,3 +216,10 @@ src/
 - **Phase 6A** (System Commands): Unix integration
 - **Phase 3.5** (Architecture Fix): Critical debugging phase
 All phases achieved their success criteria with zero regression and established a solid foundation for future enhancements.
+
+### Phase 9: Cross-Platform Configuration Cleanup (2025-09-26)
+**Why**: Remove broken Windows functions and consolidate path handling
+- **Removed**: `GetConfigBase()` (broken Windows function), `getEnvOrDefault()` (unused), duplicate `GetPresetsPath()` in settings.go
+- **Centralized**: All path operations use `config/dirpaths.go` with `os.UserHomeDir()` + `filepath.Join()` for proper cross-platform support
+- **Fixed**: Updated all references in manager.go, session.go, delegation.go to use centralized functions
+- **Result**: Windows compatibility restored, build successful, zero breaking changes
