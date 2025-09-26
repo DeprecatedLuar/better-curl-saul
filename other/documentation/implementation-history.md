@@ -223,3 +223,20 @@ All phases achieved their success criteria with zero regression and established 
 - **Centralized**: All path operations use `config/dirpaths.go` with `os.UserHomeDir()` + `filepath.Join()` for proper cross-platform support
 - **Fixed**: Updated all references in manager.go, session.go, delegation.go to use centralized functions
 - **Result**: Windows compatibility restored, build successful, zero breaking changes
+
+### Phase 10: Single-Line Execution Flag (2025-09-26)
+**Why**: Foundation for stateless operation and workflow optimization
+- **Strategic Goal**: Enable single-line execution patterns (`saul preset set field=value --call`) as stepping stone to full stateless support
+- **Technical Implementation**:
+  - **File**: `src/project/core/parser.go` - Added `Call bool` flag to Command struct and `--call` parsing
+  - **File**: `cmd/main.go` - Modified `executePresetCommand()` to trigger call execution after successful command completion
+  - **Pattern**: Fail-fast execution (only call if main command succeeds), exact same HTTP logic as standalone call
+- **Key Features Delivered**:
+  - `saul preset set body field=value --call` - Set configuration and execute HTTP request in single command
+  - `saul preset set url https://api.com --call` - Works with all command types (set, edit, etc.)
+  - `saul preset set headers Accept=json --call --raw` - Compatible with all existing flags
+  - `saul preset set body test=1 --call --dry-run` - Works with dry-run for request preview
+- **Workflow Enhancement**: Eliminates need for separate `saul call` command in rapid development/testing scenarios
+- **Architecture Foundation**: Clean flag-based approach prepares for future single-line stateless commands
+- **Zero Breaking Changes**: All existing functionality preserved, purely additive feature
+- **Error Handling**: Clean separation between configuration errors and HTTP execution errors

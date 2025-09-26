@@ -6,7 +6,7 @@ const (
 	FilePermissions = 0644
 
 	// Directory configuration (hardcoded until library ready)
-	ConfigDirPath   = ".config"
+	ParentDirPath   = ".config"
 	AppDirName      = "saul"
 	PresetsDirName  = "presets"
 

@@ -24,7 +24,6 @@ func IsSystemCommand(command string) bool {
 // DelegateToSystem executes a system command in the presets directory
 func DelegateToSystem(command string, args []string) error {
 	// Set working directory to presets folder
-	config := config.LoadConfig()
 	presetsDir, err := config.GetPresetsPath()
 	if err != nil {
 		return fmt.Errorf("failed to get presets path: %v", err)

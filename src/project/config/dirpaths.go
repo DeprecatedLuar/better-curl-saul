@@ -11,7 +11,7 @@ func GetConfigPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ConfigDirPath, AppDirName), nil
+	return filepath.Join(home, ParentDirPath, AppDirName), nil
 }
 
 func GetPresetsPath() (string, error) {

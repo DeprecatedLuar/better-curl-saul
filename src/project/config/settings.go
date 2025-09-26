@@ -8,7 +8,7 @@ package config
 // This is temporary until toml-vars-letsgooo library is ready
 func LoadConfig() *Config {
 	return &Config{
-		ConfigDirPath:  ConfigDirPath,
+		ParentDirPath:  ParentDirPath,
 		AppDirName:     AppDirName,
 		PresetsDirName: PresetsDirName,
 		TimeoutSeconds: DefaultTimeoutSeconds,
@@ -18,7 +18,7 @@ func LoadConfig() *Config {
 }
 
 type Config struct {
-	ConfigDirPath  string
+	ParentDirPath  string
 	AppDirName     string
 	PresetsDirName string
 	TimeoutSeconds int
