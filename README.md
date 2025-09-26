@@ -20,7 +20,7 @@
 
 ---
 
-
+**v0.2.1 Try out the new flags**: `--call`, `--body-only`/`--headers-only`, `--dry-run` 
 
 <p align="center">
   <img src="other/assets/saul-catboy-final.png" width="700"/>
@@ -128,10 +128,10 @@ saul demo call
 # Try with variables
 saul api set url https://httpbin.org/post
 saul api set method POST
-saul api set body name={?your_name} message="Hello from Saul"
-saul api call
+saul api set body name={@your_name} message="{?message}" --call
 
 # Oh... yeah, for nesting just use dot notation like obj.field=idk
+# Changing hard-variables try the flag -v upon call or set variables name=value
 ```
 
 </details>
@@ -179,8 +179,8 @@ saul check history
 
 > [!NOTE]
 > There are 2 variable types
-> - soft variables {?} prompt you at EVERY call
-> - hard variables {@} require manual update by running the flag -v or running 
+> - soft-variables {?} prompt you at EVERY call
+> - hard-variables {@} require manual update by running the flag -v or running 
 ```saul set variable varname value``` 
 
 ---
