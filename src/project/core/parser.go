@@ -26,6 +26,7 @@ type Command struct {
 	VariableFlags    []string // -v var1 var2 var3 (space-separated variables to prompt)
 	ResponseFormat   string   // --headers-only, --body-only, --status-only
 	DryRun          bool     // --dry-run
+	Call            bool     // --call
 }
 
 type KeyValuePair struct {
@@ -226,6 +227,8 @@ func parseFlags(args []string, cmd *Command) ([]string, error) {
 				cmd.ResponseFormat = "status-only"
 			case "--dry-run":
 				cmd.DryRun = true
+			case "--call":
+				cmd.Call = true
 			default:
 				return nil, fmt.Errorf("unknown flag: %s", arg)
 			}

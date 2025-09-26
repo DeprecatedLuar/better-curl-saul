@@ -152,22 +152,30 @@ func executePresetCommand(cmd core.Command) error {
 	}
 
 	// Route preset commands
+	var err error
 	switch cmd.Command {
 	case "set":
-		return commands.Set(cmd)
+		err = commands.Set(cmd)
 
 	case "get":
-		return commands.Get(cmd)
+		err = commands.Get(cmd)
 
 	case "edit":
-		return commands.Edit(cmd)
+		err = commands.Edit(cmd)
 
 	case "call":
-		return handlers.ExecuteCallCommand(cmd)
+		err = handlers.ExecuteCallCommand(cmd)
 
 	default:
 		return fmt.Errorf("unknown preset command: %s", cmd.Command)
 	}
+
+	// If main command succeeded and --call flag is set, execute call
+	if err == nil && cmd.Call {
+		return handlers.ExecuteCallCommand(cmd)
+	}
+
+	return err
 }
 
 // showHelp displays usage information
