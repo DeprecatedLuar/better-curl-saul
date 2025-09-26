@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
 )
 
@@ -42,17 +42,17 @@ func validateHTTPMethod(method string) error {
 		}
 	}
 
-	return fmt.Errorf(errors.ErrInvalidMethod, method)
+	return fmt.Errorf(display.ErrInvalidMethod, method)
 }
 
 // validateURL performs basic URL validation
 func validateURL(url string) error {
 	if url == "" {
-		return fmt.Errorf(errors.ErrMissingURL)
+		return fmt.Errorf(display.ErrMissingURL)
 	}
 	// Basic check - should start with http:// or https://
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		return fmt.Errorf(errors.ErrInvalidURL)
+		return fmt.Errorf(display.ErrInvalidURL)
 	}
 	return nil
 }
@@ -60,7 +60,7 @@ func validateURL(url string) error {
 // validateTimeout validates timeout value
 func validateTimeout(timeout string) error {
 	if _, err := strconv.Atoi(timeout); err != nil {
-		return fmt.Errorf(errors.ErrInvalidTimeout)
+		return fmt.Errorf(display.ErrInvalidTimeout)
 	}
 	return nil
 }

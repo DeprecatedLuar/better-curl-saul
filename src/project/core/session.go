@@ -108,10 +108,5 @@ func getTTYID() (string, error) {
 
 // getConfigPath returns the saul configuration directory path using centralized config
 func getConfigPath() (string, error) {
-	cfg := config.LoadConfig()
-	base, err := config.GetConfigBase()
-	if err != nil {
-		return "", fmt.Errorf("failed to get config base: %v", err)
-	}
-	return filepath.Join(base, cfg.ConfigDirPath, cfg.AppDirName), nil
+	return config.GetConfigPath()
 }

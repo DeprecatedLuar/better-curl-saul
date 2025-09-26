@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 )
 
 type Command struct {
+	// Core command parsing
 	Global        string
 	Preset        string
 	Command       string
@@ -19,7 +20,13 @@ type Command struct {
 	ValueType     string
 	Mode          string
 	KeyValuePairs []KeyValuePair
-	RawOutput     bool          // For --raw flag
+
+	// Flags
+	RawOutput        bool     // For --raw flag
+	VariableFlags    []string // -v var1 var2 var3 (space-separated variables to prompt)
+	ResponseFormat   string   // --headers-only, --body-only, --status-only
+	DryRun          bool     // --dry-run
+	Call            bool     // --call
 }
 
 type KeyValuePair struct {
@@ -31,7 +38,7 @@ func ParseCommand(args []string) (Command, error) {
 	var cmd Command
 
 	if len(args) < 1 {
-		return cmd, fmt.Errorf(errors.ErrArgumentsNeeded)
+		return cmd, fmt.Errorf(display.ErrArgumentsNeeded)
 	}
 
 	// Check for system commands FIRST - skip flag parsing for them
@@ -57,7 +64,7 @@ func ParseCommand(args []string) (Command, error) {
 			cmd.Preset = args[1]
 		}
 		return cmd, nil
-	case "version", "help":
+	case "version", "help", "update":
 		cmd.Global = args[0]
 		if len(args) >= 2 {
 			cmd.Preset = args[1]
@@ -150,7 +157,7 @@ func ParseCommand(args []string) (Command, error) {
 			// Parse space-separated key=value pairs for other targets
 			pairs, err := parseSpaceSeparatedKeyValues(keyValueArgs)
 			if err != nil {
-				return cmd, fmt.Errorf(errors.ErrInvalidKeyValue)
+				return cmd, fmt.Errorf(display.ErrInvalidKeyValue)
 			}
 			cmd.KeyValuePairs = pairs
 		}
@@ -179,7 +186,7 @@ func parseSpaceSeparatedKeyValues(args []string) ([]KeyValuePair, error) {
 	for _, arg := range args {
 		parts := strings.SplitN(arg, "=", 2)
 		if len(parts) != 2 {
-			return nil, fmt.Errorf(errors.ErrInvalidKeyValue)
+			return nil, fmt.Errorf(display.ErrInvalidKeyValue)
 		}
 
 		key := strings.TrimSpace(parts[0])
@@ -199,14 +206,51 @@ func parseSpaceSeparatedKeyValues(args []string) ([]KeyValuePair, error) {
 // parseFlags extracts flags from args and sets them in cmd, returning filtered args
 func parseFlags(args []string, cmd *Command) ([]string, error) {
 	var filteredArgs []string
+	skip := 0
 
-	for _, arg := range args {
+	for i, arg := range args {
+		if skip > 0 {
+			skip--
+			continue
+		}
+
 		if strings.HasPrefix(arg, "--") {
 			// Handle long flags
 			switch arg {
 			case "--raw":
 				cmd.RawOutput = true
+			case "--headers-only":
+				cmd.ResponseFormat = "headers-only"
+			case "--body-only":
+				cmd.ResponseFormat = "body-only"
+			case "--status-only":
+				cmd.ResponseFormat = "status-only"
+			case "--dry-run":
+				cmd.DryRun = true
+			case "--call":
+				cmd.Call = true
 			default:
+				return nil, fmt.Errorf("unknown flag: %s", arg)
+			}
+		} else if strings.HasPrefix(arg, "-") && len(arg) > 1 && !strings.HasPrefix(arg, "--") {
+			// Handle short flags
+			flagPart := arg[1:] // Remove leading -
+			if flagPart == "v" {
+				// -v flag: collect all following non-flag arguments as variable names
+				varCount := 0
+				for j := i + 1; j < len(args); j++ {
+					if strings.HasPrefix(args[j], "-") {
+						break // Stop at next flag
+					}
+					cmd.VariableFlags = append(cmd.VariableFlags, args[j])
+					varCount++
+				}
+				skip = varCount // Skip these args in main loop
+				// If no variables specified, empty slice signals "all variables"
+				if len(cmd.VariableFlags) == 0 {
+					cmd.VariableFlags = []string{}
+				}
+			} else {
 				return nil, fmt.Errorf("unknown flag: %s", arg)
 			}
 		} else {

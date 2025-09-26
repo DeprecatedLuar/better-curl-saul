@@ -14,13 +14,19 @@ import (
 
 
 // DisplayResponse formats and displays the HTTP response with optional filtering
-func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
+func DisplayResponse(response *resty.Response, rawMode bool, preset string, responseFormat string) {
 	// Format response size
 	size := formatBytes(len(response.Body()))
 	
 	// Get content type for metadata
 	contentType := response.Header().Get("Content-Type")
-	
+
+	// Handle response format overrides
+	if responseFormat != "" {
+		displayFormattedResponse(response, responseFormat, rawMode, preset)
+		return
+	}
+
 	// Prepare response content
 	body := response.String()
 	var content string
@@ -51,7 +57,7 @@ func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
 					}
 				} else {
 					// Default: Try TOML formatting for JSON responses
-					if tomlFormatted := formatAsToml(filteredBody); tomlFormatted != "" {
+					if tomlFormatted := FormatAsToml(filteredBody); tomlFormatted != "" {
 						content = tomlFormatted
 					} else {
 						// Fallback to pretty JSON if TOML conversion fails
@@ -91,6 +97,22 @@ func DisplayResponse(response *resty.Response, rawMode bool, preset string) {
 	}
 }
 
+// displayFormattedResponse handles specific response format requests
+func displayFormattedResponse(response *resty.Response, format string, rawMode bool, preset string) {
+	switch format {
+	case "headers-only":
+		for key, values := range response.Header() {
+			if len(values) > 0 {
+				fmt.Printf("%s: %s\n", key, values[0])
+			}
+		}
+	case "body-only":
+		fmt.Print(FormatResponseContent(response.Body(), preset, rawMode))
+	case "status-only":
+		fmt.Println(response.Status())
+	}
+}
+
 // formatBytes converts byte count to human-readable format
 func formatBytes(bytes int) string {
 	if bytes < 1024 {
@@ -115,8 +137,8 @@ func isJSONContent(contentType string, body []byte) bool {
 	return json.Unmarshal(body, &jsonObj) == nil
 }
 
-// formatAsToml converts JSON response to TOML format for readability
-func formatAsToml(jsonData []byte) string {
+// FormatAsToml converts JSON response to TOML format for readability
+func FormatAsToml(jsonData []byte) string {
 	// Use our new TomlHandler FromJSON capability
 	handler, err := toml.NewTomlHandlerFromJSON(jsonData)
 	if err != nil {
@@ -205,19 +227,15 @@ func applyFiltering(jsonData []byte, preset string) []byte {
 
 // FormatResponseContent applies same filtering/formatting as DisplayResponse
 func FormatResponseContent(jsonData []byte, preset string, rawMode bool) string {
-	filteredBody := applyFiltering(jsonData, preset)
-
+	// In raw mode, skip filtering entirely and return completely raw data
 	if rawMode {
-		var jsonObj interface{}
-		if json.Unmarshal(filteredBody, &jsonObj) == nil {
-			if prettyJSON, err := json.MarshalIndent(jsonObj, "", "  "); err == nil {
-				return string(prettyJSON)
-			}
-		}
-		return string(filteredBody)
+		return string(jsonData)
 	}
 
-	if tomlFormatted := formatAsToml(filteredBody); tomlFormatted != "" {
+	// Normal mode: apply filtering
+	filteredBody := applyFiltering(jsonData, preset)
+
+	if tomlFormatted := FormatAsToml(filteredBody); tomlFormatted != "" {
 		return tomlFormatted
 	}
 

@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers/commands"
@@ -43,7 +42,7 @@ func main() {
 			args = append([]string{sessionManager.GetCurrentPreset()}, args...)
 		} else {
 			// Error: action command but no current preset
-			display.Error(errors.ErrNoCurrentPreset)
+			display.Error(display.ErrNoCurrentPreset)
 			return
 		}
 	}
@@ -128,6 +127,9 @@ func executeGlobalCommand(cmd core.Command) error {
 		showHelp()
 		return nil
 
+	case "update":
+		return utils.HandleUpdateCommand()
+
 	default:
 		return fmt.Errorf("unknown global command: %s", cmd.Global)
 	}
@@ -150,22 +152,30 @@ func executePresetCommand(cmd core.Command) error {
 	}
 
 	// Route preset commands
+	var err error
 	switch cmd.Command {
 	case "set":
-		return commands.Set(cmd)
+		err = commands.Set(cmd)
 
 	case "get":
-		return commands.Get(cmd)
+		err = commands.Get(cmd)
 
 	case "edit":
-		return commands.Edit(cmd)
+		err = commands.Edit(cmd)
 
 	case "call":
-		return handlers.ExecuteCallCommand(cmd)
+		err = handlers.ExecuteCallCommand(cmd)
 
 	default:
 		return fmt.Errorf("unknown preset command: %s", cmd.Command)
 	}
+
+	// If main command succeeded and --call flag is set, execute call
+	if err == nil && cmd.Call {
+		return handlers.ExecuteCallCommand(cmd)
+	}
+
+	return err
 }
 
 // showHelp displays usage information
@@ -180,6 +190,7 @@ func showHelp() {
 
 	// Global Commands section
 	globalCmds := `  saul version              Show version information
+  saul update               Check for updates
   saul ls [options]         List presets directory (system ls command)
   saul rm [preset...]       Delete one or more presets
   saul help                 Show this help`

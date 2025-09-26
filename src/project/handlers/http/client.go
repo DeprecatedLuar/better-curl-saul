@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/errors"
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
 )
@@ -71,7 +71,7 @@ func BuildHTTPRequestFromHandlers(requestHandler, headersHandler, bodyHandler, q
 
 	config.URL = requestHandler.GetAsString("url")
 	if config.URL == "" {
-		return nil, fmt.Errorf(errors.ErrMissingURL)
+		return nil, fmt.Errorf(display.ErrMissingURL)
 	}
 
 	// Parse timeout from request handler
@@ -106,7 +106,7 @@ func BuildHTTPRequestFromHandlers(requestHandler, headersHandler, bodyHandler, q
 		// Convert entire body handler to JSON
 		bodyJSON, err := bodyHandler.ToJSON()
 		if err != nil {
-			return nil, fmt.Errorf(errors.ErrRequestBuildFailed)
+			return nil, fmt.Errorf(display.ErrRequestBuildFailed)
 		}
 		config.Body = []byte(bodyJSON)
 
@@ -158,6 +158,6 @@ func ExecuteHTTPRequest(config *HTTPRequestConfig) (*resty.Response, error) {
 	case "OPTIONS":
 		return request.Options(config.URL)
 	default:
-		return nil, fmt.Errorf(errors.ErrUnsupportedMethod, config.Method)
+		return nil, fmt.Errorf(display.ErrUnsupportedMethod, config.Method)
 	}
 }
