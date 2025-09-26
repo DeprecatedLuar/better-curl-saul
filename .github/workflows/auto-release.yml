@@ -72,11 +72,63 @@ jobs:
 
         echo "Auto-release tag $NEW_VERSION created and pushed!"
 
+    - name: Set up Go
+      if: steps.version_check.outputs.should_release == 'true'
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.21'
+
+    - name: Build binaries
+      if: steps.version_check.outputs.should_release == 'true'
+      run: |
+        # Extract version from new version output
+        VERSION="${{ steps.version_check.outputs.new_version }}"
+
+        # Build flags
+        LDFLAGS="-X github.com/DeprecatedLuar/better-curl-saul/src/project/utils.Version=${VERSION}"
+
+        # Linux
+        GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o saul-linux-amd64 cmd/main.go
+        GOOS=linux GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o saul-linux-arm64 cmd/main.go
+
+        # macOS
+        GOOS=darwin GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o saul-darwin-amd64 cmd/main.go
+        GOOS=darwin GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o saul-darwin-arm64 cmd/main.go
+
+        # Windows
+        GOOS=windows GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o saul-windows-amd64.exe cmd/main.go
+        GOOS=windows GOARCH=arm64 go build -ldflags="${LDFLAGS}" -o saul-windows-arm64.exe cmd/main.go
+
+    - name: Create GitHub Release
+      if: steps.version_check.outputs.should_release == 'true'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ steps.version_check.outputs.new_version }}
+        name: ${{ steps.version_check.outputs.new_version }}
+        body: |
+          ${{ github.event.head_commit.message }}
+
+          ## Binaries
+          - **Linux**: saul-linux-amd64, saul-linux-arm64
+          - **macOS**: saul-darwin-amd64, saul-darwin-arm64
+          - **Windows**: saul-windows-amd64.exe, saul-windows-arm64.exe
+        files: |
+          saul-linux-amd64
+          saul-linux-arm64
+          saul-darwin-amd64
+          saul-darwin-arm64
+          saul-windows-amd64.exe
+          saul-windows-arm64.exe
+        generate_release_notes: true
+        prerelease: ${{ contains(steps.version_check.outputs.new_version, 'beta') || contains(steps.version_check.outputs.new_version, 'alpha') || contains(steps.version_check.outputs.new_version, 'rc') }}
+
     - name: Log result
       run: |
         if [[ "${{ steps.version_check.outputs.should_release }}" == "true" ]]; then
-          echo "Auto-release triggered: ${{ steps.version_check.outputs.new_version }}"
-          echo "This will trigger the existing release.yml workflow"
+          echo "Auto-release completed: ${{ steps.version_check.outputs.new_version }}"
+          echo "✅ Tag created and pushed"
+          echo "✅ Binaries built for all platforms"
+          echo "✅ GitHub release created with assets"
         else
           echo "No auto-release pattern found - skipping"
         fi
