@@ -206,6 +206,7 @@ saul check history
 - [ ] User config system using the super cool github.com/DeprecatedLuar/toml-vars-letsgooo library
 - [ ] curl command exportation/generation feature
 - [ ] Add the eastereggs
+- [ ] Forward responses to another workspace
 - [ ] Polish code
 - [ ] Actual Documentation
 - [ ] Touch Grass (not a priority)
