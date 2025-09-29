@@ -20,7 +20,7 @@
 
 ---
 
-**v0.2.1 Try out the new flags**: `--call`, `--body-only`/`--headers-only`, `--dry-run` 
+**v0.3.0 Try out the new curl import/exporting**: `saul myapi set --raw` and `saul myapi get --raw` 
 
 <p align="center">
   <img src="other/assets/saul-catboy-final.png" width="700"/>
@@ -197,7 +197,7 @@ saul check history
 - [x] Terminal session memory
 - [x] Bulk operations
 - [x] Fix history response parsing and filtering
-- [x] Flags (--raw, --body-only, --header-only, --status-only, --dry-run) 
+- [x] Flags (--raw, --body-only, --header-only, --status-only, --dry-run, --call) 
 - [x] GET specific response stuff from history (aka Headers/Body...)
 - [x] 'Proper' Windows support
 - [x]  curl command exportation/generation feature
