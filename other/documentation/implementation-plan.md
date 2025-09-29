@@ -61,30 +61,26 @@ New features should be implemented as new phases in this file following the esta
 
 ---
 
-## 7.2 - Core Import Function
+## 7.2 - Core Import Function ✅
 **Goal**: Create curl → TOML conversion logic (no editor yet)
 
-**Tasks**:
-1. Create file: `src/project/handlers/commands/curl_import.go`
-2. Implement `ImportCurlString(preset string, curlCmd string) error`:
+**Completed Tasks**:
+1. Created file: `src/project/workspace/curl_import.go` (placed in workspace/ for better architectural fit)
+2. Implemented `ImportCurlString(preset string, curlCmd string) error`:
    - Parse curl using `core.ParseCurl()`
    - Validate URL exists
-   - Convert body: `toml.NewTomlHandlerFromJSON([]byte(result.Body))`
+   - Convert body: `workspace.NewTomlHandlerFromJSON([]byte(result.Body))`
    - Convert headers: iterate `result.Headers`, use `Set(key, val)`
    - Convert query params: iterate `result.Query`, write to query.toml
    - Convert request: use `result.BaseURL` (not full URL with query string)
-   - Save all files: `presets.SavePresetFile(preset, target, handler)`
-3. Add integration test:
-```go
-func TestImportCurlString(t *testing.T) {
-    preset := setupTestPreset(t, "curltest")
-    curlCmd := `curl -X POST 'https://api.com?foo=bar' -d '{"name":"test"}'`
-    err := ImportCurlString(preset, curlCmd)
-    // Assert: request.toml has method/url, body.toml has name="test", query.toml has foo="bar"
-}
-```
+   - Save all files: `workspace.SavePresetFile(preset, target, handler)`
+   - Auto-create preset directory if it doesn't exist
+3. Added integration tests in `src/project/integration_test.go`:
+   - Test: Basic POST with JSON body
+   - Test: GET with query params and headers
+   - All assertions validate correct TOML file creation
 
-**Success Criteria**:
+**Success Criteria**: ✅
 - Test creates correct TOML files (body, headers, query, request)
 - Body JSON → TOML conversion works
 - Headers map → TOML works

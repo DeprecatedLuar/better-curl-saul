@@ -51,17 +51,20 @@ src/
 ├── modules/          # Reusable infrastructure (framework-level)
 │   ├── display/      # Output formatting and user messages
 │   └── logging/      # Logging utilities
-└── project/          # Application-specific business logic
-    ├── core/         # Command parsing and session management
-    ├── handlers/     # HTTP execution and command routing
-    ├── presets/      # Workspace/preset management
-    ├── toml/         # TOML file operations for configuration
-    └── utils/        # Project utilities and version management
+├── project/          # Application-specific business logic
+│   ├── commands/     # Command implementations (set, get, edit, history)
+│   ├── config/       # Configuration constants and paths
+│   ├── core/         # Command parsing, curl parsing, and session management
+│   ├── http/         # HTTP client, execution, and response handling
+│   ├── utils/        # Project utilities, types, and version management
+│   ├── variables/    # Variable detection, prompting, and storage
+│   └── workspace/    # Preset management and TOML file operations
+└── settings/         # Global settings configuration
 ```
 
 ### Architecture Flow
 ```
-User Input → core.ParseCommand() → handlers/commands/ → toml/ operations → HTTP execution
+User Input → core.ParseCommand() → commands/ → workspace/ TOML operations → http/ execution
 ```
 
 ### Key Design Patterns
@@ -89,10 +92,10 @@ User Input → core.ParseCommand() → handlers/commands/ → toml/ operations �
 - All source files must follow 250-line limits and single responsibility principle
 
 ### Command Processing
-1. **main.go**: Entry point, session initialization, command injection for current presets
+1. **cmd/main.go**: Entry point, session initialization, command injection for current presets
 2. **core.ParseCommand()**: Command parsing and validation
-3. **handlers/**: Command execution (set, get, edit, call)
-4. **toml/**: TOML file operations for configuration persistence
+3. **commands/**: Command execution (set, get, edit, history)
+4. **workspace/**: TOML file operations for configuration persistence
 
 ### HTTP Execution
 - Built on `go-resty/resty/v2` for HTTP client functionality
