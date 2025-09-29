@@ -3,7 +3,10 @@ package workspace
 import (
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 
+	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
 )
 
@@ -12,12 +15,12 @@ func ImportCurlString(preset string, curlCmd string) error {
 	// Parse curl command
 	result, err := core.ParseCurl(curlCmd)
 	if err != nil {
-		return fmt.Errorf("failed to parse curl command: %v", err)
+		return fmt.Errorf(display.ErrCurlParseFailed, err)
 	}
 
 	// Validate URL exists
 	if result.URL == "" {
-		return fmt.Errorf("no URL found in curl command")
+		return fmt.Errorf(display.ErrNoCurlURL)
 	}
 
 	// Ensure preset directory exists
@@ -81,4 +84,48 @@ func ImportCurlString(preset string, curlCmd string) error {
 	}
 
 	return nil
+}
+
+// ImportCurlViaEditor opens an editor for user to paste curl command, then imports it
+func ImportCurlViaEditor(preset string) error {
+	// Create temp file with clear naming convention
+	tempFile, err := os.CreateTemp("", fmt.Sprintf("saul-%s-*.txt", preset))
+	if err != nil {
+		return fmt.Errorf(display.ErrTempFileCreate)
+	}
+	tempPath := tempFile.Name()
+	tempFile.Close()
+	defer os.Remove(tempPath)
+
+	// Get editor from environment or use nano as fallback
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = "nano"
+	}
+
+	// Open editor for user to paste curl command
+	cmd := exec.Command(editor, tempPath)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf(display.ErrEditorFailed, err)
+	}
+
+	// Read content from temp file
+	content, err := os.ReadFile(tempPath)
+	if err != nil {
+		return fmt.Errorf(display.ErrTempFileRead)
+	}
+
+	// Validate content is not empty
+	curlCmd := strings.TrimSpace(string(content))
+	if curlCmd == "" {
+		return fmt.Errorf(display.ErrEmptyCurlCommand)
+	}
+
+	// Import using existing function
+	return ImportCurlString(preset, curlCmd)
 }

@@ -15,6 +15,14 @@ import (
 
 // Set handles set operations for TOML files
 func Set(cmd core.Command) error {
+	// Handle --raw flag for curl import via editor
+	if cmd.RawOutput {
+		if cmd.Preset == "" {
+			return fmt.Errorf(display.ErrPresetNameRequired)
+		}
+		return workspace.ImportCurlViaEditor(cmd.Preset)
+	}
+
 	if cmd.Preset == "" {
 		return fmt.Errorf(display.ErrPresetNameRequired)
 	}
