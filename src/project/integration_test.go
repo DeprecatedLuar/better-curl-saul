@@ -444,3 +444,96 @@ func TestTOMLHandlerBasics(t *testing.T) {
 		t.Errorf("user.active = %v, want true", val)
 	}
 }
+
+func TestImportCurlString(t *testing.T) {
+	preset, cleanup := setupTestPreset(t, "curltest")
+	defer cleanup()
+
+	tests := []struct {
+		name     string
+		curlCmd  string
+		validate func(t *testing.T, preset string)
+	}{
+		{
+			name:    "basic POST with JSON body",
+			curlCmd: `curl -X POST 'https://api.example.com/users' -d '{"name":"test","age":25}'`,
+			validate: func(t *testing.T, preset string) {
+				// Check request file
+				reqHandler, err := workspace.LoadPresetFile(preset, "request")
+				if err != nil {
+					t.Fatalf("LoadPresetFile request failed: %v", err)
+				}
+				if method := reqHandler.Get("method"); method != "POST" {
+					t.Errorf("method = %v, want POST", method)
+				}
+				if url := reqHandler.Get("url"); url != "https://api.example.com/users" {
+					t.Errorf("url = %v, want https://api.example.com/users", url)
+				}
+
+				// Check body file
+				bodyHandler, err := workspace.LoadPresetFile(preset, "body")
+				if err != nil {
+					t.Fatalf("LoadPresetFile body failed: %v", err)
+				}
+				if name := bodyHandler.Get("name"); name != "test" {
+					t.Errorf("body.name = %v, want test", name)
+				}
+				if age := bodyHandler.Get("age"); age != float64(25) {
+					t.Errorf("body.age = %v, want 25", age)
+				}
+			},
+		},
+		{
+			name:    "GET with query params and headers",
+			curlCmd: `curl -X GET 'https://api.example.com/search?q=golang&limit=10' -H 'Authorization: Bearer token123' -H 'Accept: application/json'`,
+			validate: func(t *testing.T, preset string) {
+				// Check request file
+				reqHandler, err := workspace.LoadPresetFile(preset, "request")
+				if err != nil {
+					t.Fatalf("LoadPresetFile request failed: %v", err)
+				}
+				if method := reqHandler.Get("method"); method != "GET" {
+					t.Errorf("method = %v, want GET", method)
+				}
+				if url := reqHandler.Get("url"); url != "https://api.example.com/search" {
+					t.Errorf("url = %v, want https://api.example.com/search (without query)", url)
+				}
+
+				// Check query params file
+				queryHandler, err := workspace.LoadPresetFile(preset, "query")
+				if err != nil {
+					t.Fatalf("LoadPresetFile query failed: %v", err)
+				}
+				if q := queryHandler.Get("q"); q != "golang" {
+					t.Errorf("query.q = %v, want golang", q)
+				}
+				if limit := queryHandler.Get("limit"); limit != "10" {
+					t.Errorf("query.limit = %v, want 10", limit)
+				}
+
+				// Check headers file
+				headersHandler, err := workspace.LoadPresetFile(preset, "headers")
+				if err != nil {
+					t.Fatalf("LoadPresetFile headers failed: %v", err)
+				}
+				if auth := headersHandler.Get("Authorization"); auth != "Bearer token123" {
+					t.Errorf("headers.Authorization = %v, want Bearer token123", auth)
+				}
+				if accept := headersHandler.Get("Accept"); accept != "application/json" {
+					t.Errorf("headers.Accept = %v, want application/json", accept)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := workspace.ImportCurlString(preset, tt.curlCmd)
+			if err != nil {
+				t.Fatalf("ImportCurlString failed: %v", err)
+			}
+
+			tt.validate(t, preset)
+		})
+	}
+}
