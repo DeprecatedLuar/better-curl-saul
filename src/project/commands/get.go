@@ -17,6 +17,17 @@ func Get(cmd core.Command) error {
 	if cmd.Preset == "" {
 		return fmt.Errorf(display.ErrPresetNameRequired)
 	}
+
+	// Early return for curl export: --raw flag with no target
+	if cmd.RawOutput && cmd.Target == "" {
+		curlCmd, err := workspace.ExportToCurl(cmd.Preset)
+		if err != nil {
+			return err
+		}
+		fmt.Print(curlCmd)
+		return nil
+	}
+
 	if cmd.Target == "" {
 		return fmt.Errorf(display.ErrTargetRequired)
 	}

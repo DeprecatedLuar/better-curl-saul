@@ -215,6 +215,10 @@ src/
 - **Phase 5A** (Flag System): Production polish
 - **Phase 6A** (System Commands): Unix integration
 - **Phase 3.5** (Architecture Fix): Critical debugging phase
+- **Phase 7** (Curl Import): September 29, 2025
+- **Phase 9** (Cross-Platform Cleanup): September 26, 2025
+- **Phase 10** (Single-Line Execution): September 26, 2025
+
 All phases achieved their success criteria with zero regression and established a solid foundation for future enhancements.
 
 ### Phase 9: Cross-Platform Configuration Cleanup (2025-09-26)
@@ -240,3 +244,91 @@ All phases achieved their success criteria with zero regression and established 
 - **Architecture Foundation**: Clean flag-based approach prepares for future single-line stateless commands
 - **Zero Breaking Changes**: All existing functionality preserved, purely additive feature
 - **Error Handling**: Clean separation between configuration errors and HTTP execution errors
+
+### Phase 7: Curl Import Feature (2025-09-29)
+**Why**: Eliminate manual curl command → TOML conversion friction
+- **Strategic Goal**: Transform complex curl commands into organized workspace configurations with single command
+- **Phase 7.1 - Curl Parser Implementation**: Built custom curl parser in `src/project/core/curl_parser.go` (zero external dependencies)
+  - Extracts method, URL, headers, body from curl commands
+  - Separates query params from URL into structured map
+  - Handles multiline JSON bodies and multiple header flags
+  - Works with both quoted and unquoted URLs
+  - Comprehensive test suite validates real-world examples (Instantly.ai API)
+  - Refactored project structure: `parser.go` → `command_parser.go`, `delegation.go` → `command_delegation.go`
+- **Phase 7.2 - Core Import Function**: Implemented curl → TOML conversion in `src/project/workspace/curl_import.go`
+  - `ImportCurlString()` converts parsed curl to 5-file TOML structure
+  - Body JSON → TOML using `NewTomlHandlerFromJSON()`
+  - Headers and query params → separate TOML files
+  - Base URL extraction (query params removed from URL field)
+  - Auto-creates preset directory if needed
+  - Integration tests validate all conversion paths
+- **Phase 7.3 - Editor Integration**: Added interactive curl paste workflow
+  - `ImportCurlViaEditor()` creates temp files in OS temp directory with pattern `saul-<preset>-*.txt`
+  - Reads `$EDITOR` environment variable, falls back to `nano`
+  - Proper stdin/stdout/stderr handling for editor process
+  - Validates content not empty before processing
+  - Automatic temp file cleanup with `defer os.Remove()`
+- **Phase 7.4 - Command Integration**: Wired up `saul set --raw` command
+  - Modified `src/project/commands/set.go` with early return for `cmd.RawOutput` flag
+  - Calls `workspace.ImportCurlViaEditor()` for editor workflow
+  - Preserves existing set command logic (zero regression)
+  - Real-world validation with Instantly.ai API curl command
+- **Phase 7.5 - Edge Cases & Production Testing**: Comprehensive edge case validation
+  - **Test**: POST with multiple headers (4 headers correctly captured)
+  - **Test**: Nested JSON body (3-level deep: `settings.metadata.source`)
+  - **Test**: Array of objects (`recipients` → TOML `[[recipients]]` table arrays)
+  - **Test**: Mixed data types (strings, numbers, booleans, arrays)
+  - **Test**: Query parameter merging (new params added, old params preserved)
+  - **Result**: All edge cases handled perfectly with proper TOML formatting
+- **Centralized Error System Integration**:
+  - Added 5 new error constants to `src/modules/display/messages.go` following Saul's personality style
+  - `ErrTempFileCreate`, `ErrTempFileRead`, `ErrEmptyCurlCommand`, `ErrCurlParseFailed`, `ErrNoCurlURL`
+  - Consistent error messaging across all curl import operations
+- **Key Features Delivered**:
+  - `saul myapi set --raw` - Opens editor to paste curl command
+  - Automatic extraction: method, URL, headers, query params, JSON body
+  - Intelligent TOML conversion: nested objects, arrays, mixed types
+  - Query parameter merging (preserves existing params)
+  - Production-ready with comprehensive edge case handling
+- **Technical Implementation**:
+  - **File**: `src/project/core/curl_parser.go` - Custom curl parser (zero dependencies)
+  - **File**: `src/project/workspace/curl_import.go` - Conversion and editor workflow
+  - **File**: `src/project/commands/set.go` - Command integration
+  - **File**: `src/modules/display/messages.go` - Centralized error messages
+- **Zero Breaking Changes**: All existing functionality preserved, purely additive feature
+- **Unix Philosophy**: Temp files in OS temp directory, respects `$EDITOR`, clean process management
+
+### Phase 7.7: Curl Export Feature (2025-09-29)
+**Why**: Complete bidirectional curl ↔ TOML workflow, enable sharing and documentation
+- **Strategic Goal**: Export TOML presets as curl commands for universal sharing, documentation, and tool integration
+- **Core Implementation**: Created `src/project/workspace/curl_export.go` with `ExportToCurl()` function
+  - Loads all 5 TOML files (request, headers, query, body, variables)
+  - Builds valid multiline curl command with backslash continuation
+  - GET requests: `-G` flag with `--data-urlencode` for query params (modern curl standard)
+  - POST requests: Query params appended directly to URL (standard behavior)
+  - Compact JSON body format (shell-compatible, single-line)
+  - Variables preserved as placeholders (`{@token}`, `{?username}`) for documentation/sharing
+  - Empty sections automatically omitted (no `-d` if no body, no `-G` if no query params)
+  - Shell-safe escaping for single quotes in headers and body
+- **Command Integration**: Modified `src/project/commands/get.go`
+  - Early return pattern: `--raw` flag with no target triggers curl export
+  - Logic: `saul [preset] get --raw` → `workspace.ExportToCurl()` → `fmt.Print(curlCmd)`
+  - Zero regression on existing get command functionality
+- **Key Features Delivered**:
+  - `saul [preset] get --raw` - Export preset as curl command
+  - Multiline format with backslash continuation for readability
+  - Copy-paste ready for terminal execution
+  - Variables preserved for documentation (not substituted)
+  - Handles all edge cases: minimal GET, POST with body, complex nested JSON, arrays
+- **Technical Implementation**:
+  - **File**: `src/project/workspace/curl_export.go` - Export function and formatting
+  - **File**: `src/project/commands/get.go` - Command integration (lines 21-29)
+  - **Format**: Compact JSON (not pretty-printed) for shell compatibility
+  - **URL Encoding**: Query params properly encoded and positioned based on HTTP method
+- **Bidirectional Workflow Complete**: curl → saul (import via `set --raw`) ↔ saul → curl (export via `get --raw`)
+- **Value Delivered**:
+  - Share API configs with teammates (curl is universal)
+  - Copy into documentation/README files
+  - Export to other tools (Postman, Insomnia, etc.)
+  - Document API workflows with variables intact
+- **Zero Breaking Changes**: All existing functionality preserved, purely additive feature

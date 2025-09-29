@@ -24,12 +24,19 @@ Thumbs.db
 *.temp
 *.log
 
-# Purpose files
+# Purpose and planning files
 *.purpose.md
+.purpose.md
 readme.reference.md
 README-draft.md
+implementation-history.md
+implementation-plan.md
+vision.md
 
-# Documentation idea folder
-other/documentation/idea/
+# Documentation folder
+other/documentation/
+
+# Gitignore itself
+.gitignore
 
 
