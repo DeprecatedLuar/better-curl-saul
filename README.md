@@ -26,7 +26,7 @@
   <img src="other/assets/saul-catboy-final.png" width="700"/>
 </p>
 
-## **In a nutshell,** this is disgusting:
+## **In a nutshell,** this is... not my favorite UX:
 ```bash
 curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
   -H "Authorization: Basic $(echo -n 'user@company.com:api-token-here' | base64)" \
@@ -56,7 +56,7 @@ curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
 
 ---
 
-## The cool stuff you've never seen before
+## The nice features you've never seen before
 
 - **Workspace-based** - Each API gets its own organized folder (reusable)
 - **Inline editor** - the `edit` command for any given field also supports `$EDITOR`
@@ -65,7 +65,7 @@ curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
 - **Git-friendly** - TOML files version control beautifully
 - **Unix composable** - Script it, pipe it, shell it
 - **TOML converter** - JSON gets reorganized into TOML for readability
-- **Saul Goodman** - Saul Goodman
+- **Saul Goodman** - It has Saul Goodman on it.
   
 <img src="other/assets/saul-hd-wide.png" width="1000"/>
 
@@ -74,7 +74,7 @@ curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
 
 **Supports:** Linux, macOS, Windows (I hope)
 
-### One-Liner
+### One-Liner (if you have bash)
 ```bash
 curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh | bash
 ```
@@ -84,7 +84,7 @@ curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main
 
 <br>
 
-**Manual Install** (boring)
+**Manual Install**
 1. Download binary for your OS from [releases](https://github.com/DeprecatedLuar/better-curl-saul/releases)
 2. Make executable: `chmod +x saul-*`
 3. Move to PATH: `sudo mv saul-* /usr/local/bin/saul`
@@ -96,13 +96,13 @@ cd better-curl-saul
 ./other/install-local.sh  # Local development build
 ```
 
-**In case you already have Saul** (hardcore)
+**In case you already have Saul** (basically gambling at this point)
 ```bash
 saul set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh && saul call --raw | bash #(maybe works, who knows)
 ```
 >[!NOTE]
 > Quick install auto-detects your system and downloads binaries or builds from source as fallback. 
-> Windows users: I don't know powershell I expect, just have bash 👍
+> Windows users: I don't know powershell I expect you to have bash 👍
 
 </details>
 
@@ -197,14 +197,14 @@ saul check history
 - [x] Terminal session memory
 - [x] Bulk operations
 - [x] Fix history response parsing and filtering
-- [x] Flags, we've got none basically
+- [x] Flags (--raw, --body-only, --header-only, --status-only, --dry-run) 
 - [x] GET specific response stuff from history (aka Headers/Body...)
 - [x] 'Proper' Windows support
+- [x]  curl command exportation/generation feature
 - [ ] Support pasting raw JSON template
 - [ ] Stateless command support with HttPie syntax
 - [ ] Homebrew and Scoop releases
-- [ ] User config system using the super cool github.com/DeprecatedLuar/toml-vars-letsgooo library
-- [ ] curl command exportation/generation feature
+- [ ] User config system using github.com/DeprecatedLuar/toml-vars-letsgooo library
 - [ ] Add the eastereggs
 - [ ] Forward responses to another workspace
 - [ ] Polish code
