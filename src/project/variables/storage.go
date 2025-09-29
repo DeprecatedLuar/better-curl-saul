@@ -4,13 +4,12 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
 )
 
 // SubstituteVariables replaces variables in TOML handler with actual values using simple regex
-func SubstituteVariables(handler *toml.TomlHandler, substitutions map[string]string) error {
+func SubstituteVariables(handler *workspace.TomlHandler, substitutions map[string]string) error {
 	for _, key := range handler.Keys() {
 		value := handler.Get(key)
 		if value == nil {
@@ -69,7 +68,7 @@ func StoreVariableInfo(preset, key, varType, varName string) error {
 	}
 
 	// Load variables.toml
-	handler, err := presets.LoadPresetFile(preset, "variables")
+	handler, err := workspace.LoadPresetFile(preset, "variables")
 	if err != nil {
 		return err
 	}
@@ -80,6 +79,6 @@ func StoreVariableInfo(preset, key, varType, varName string) error {
 	handler.Set(key, "") // Empty value initially
 
 	// Save variables.toml
-	return presets.SavePresetFile(preset, "variables", handler)
+	return workspace.SavePresetFile(preset, "variables", handler)
 }
 

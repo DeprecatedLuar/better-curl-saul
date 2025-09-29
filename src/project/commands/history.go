@@ -11,15 +11,14 @@ import (
 	"time"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers/http"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/http"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
 )
 
 // DisplayTOMLFile shows the entire TOML file in a clean format
-func DisplayTOMLFile(handler *toml.TomlHandler, target string, preset string, rawOutput bool) error {
+func DisplayTOMLFile(handler *workspace.TomlHandler, target string, preset string, rawOutput bool) error {
 	// Get the file path and read raw contents
-	presetPath, err := presets.GetPresetPath(preset)
+	presetPath, err := workspace.GetPresetPath(preset)
 	if err != nil {
 		// Silent failure - no file exists (Unix philosophy)
 		return nil
@@ -40,7 +39,7 @@ func DisplayTOMLFile(handler *toml.TomlHandler, target string, preset string, ra
 
 // ListHistoryResponses shows all available history responses
 func ListHistoryResponses(preset string, rawOutput bool) error {
-	responses, err := presets.ListHistoryResponses(preset)
+	responses, err := workspace.ListHistoryResponses(preset)
 	if err != nil {
 		return fmt.Errorf("failed to load history: %v", err)
 	}
@@ -95,7 +94,7 @@ func ListHistoryResponses(preset string, rawOutput bool) error {
 
 // DisplayHistoryResponse shows a specific history response with formatting
 func DisplayHistoryResponse(preset string, number int, rawOutput bool) error {
-	response, err := presets.LoadHistoryResponse(preset, number)
+	response, err := workspace.LoadHistoryResponse(preset, number)
 	if err != nil {
 		return err
 	}
@@ -195,7 +194,7 @@ func FormatRelativeTime(timestamp string) string {
 
 // GetMostRecentResponseNumber returns the number of the most recent response
 func GetMostRecentResponseNumber(preset string) (int, error) {
-	responses, err := presets.ListHistoryResponses(preset)
+	responses, err := workspace.ListHistoryResponses(preset)
 	if err != nil {
 		return 0, fmt.Errorf("failed to load history: %v", err)
 	}

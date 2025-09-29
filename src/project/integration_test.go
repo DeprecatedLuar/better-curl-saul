@@ -5,11 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/commands"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers/commands"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers/variables"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/variables"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
 )
 
 func setupTestPreset(t *testing.T, name string) (string, func()) {
@@ -22,7 +21,7 @@ func setupTestPreset(t *testing.T, name string) (string, func()) {
 	os.Setenv("SAUL_APP_DIR_NAME", "saul")
 	os.Setenv("SAUL_PRESETS_DIR_NAME", "presets")
 
-	err = presets.CreatePresetDirectory(name)
+	err = workspace.CreatePresetDirectory(name)
 	if err != nil {
 		t.Fatalf("failed to create preset: %v", err)
 	}
@@ -91,7 +90,7 @@ func TestSetAndGetFlow(t *testing.T) {
 				t.Fatalf("Set failed: %v", err)
 			}
 
-			handler, err := presets.LoadPresetFile(preset, tt.setCmd.Target)
+			handler, err := workspace.LoadPresetFile(preset, tt.setCmd.Target)
 			if err != nil {
 				t.Fatalf("LoadPresetFile failed: %v", err)
 			}
@@ -191,7 +190,7 @@ func TestMethodValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := handlers.ValidateRequestField("method", tt.method)
+			err := commands.ValidateRequestField("method", tt.method)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ValidateRequestField() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -248,7 +247,7 @@ func TestLazyFileCreation(t *testing.T) {
 	preset, cleanup := setupTestPreset(t, "lazy")
 	defer cleanup()
 
-	presetPath, _ := presets.GetPresetPath(preset)
+	presetPath, _ := workspace.GetPresetPath(preset)
 
 	files := []string{"body.toml", "headers.toml", "query.toml", "request.toml", "variables.toml"}
 	for _, file := range files {
@@ -336,7 +335,7 @@ func TestArrayInference(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := handlers.InferValueType(tt.value)
+			result := commands.InferValueType(tt.value)
 
 			switch expected := tt.want.(type) {
 			case []string:
@@ -414,7 +413,7 @@ func TestTOMLHandlerBasics(t *testing.T) {
 	preset, cleanup := setupTestPreset(t, "tomltest")
 	defer cleanup()
 
-	handler, err := presets.LoadPresetFile(preset, "body")
+	handler, err := workspace.LoadPresetFile(preset, "body")
 	if err != nil {
 		t.Fatalf("LoadPresetFile failed: %v", err)
 	}
@@ -424,11 +423,11 @@ func TestTOMLHandlerBasics(t *testing.T) {
 	handler.Set("user.active", true)
 	handler.Set("tags", []string{"admin", "developer"})
 
-	if err := presets.SavePresetFile(preset, "body", handler); err != nil {
+	if err := workspace.SavePresetFile(preset, "body", handler); err != nil {
 		t.Fatalf("SavePresetFile failed: %v", err)
 	}
 
-	loadedHandler, err := presets.LoadPresetFile(preset, "body")
+	loadedHandler, err := workspace.LoadPresetFile(preset, "body")
 	if err != nil {
 		t.Fatalf("LoadPresetFile after save failed: %v", err)
 	}

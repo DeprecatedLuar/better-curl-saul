@@ -4,7 +4,7 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
 )
 
 // VariableInfo holds information about a detected variable
@@ -42,7 +42,7 @@ func FindAllVariables(preset string) ([]VariableInfo, error) {
 	targets := []string{"body", "headers", "query", "request"}
 
 	// Get preset path
-	presetPath, err := presets.GetPresetPath(preset)
+	presetPath, err := workspace.GetPresetPath(preset)
 	if err != nil {
 		return variables, err
 	}

@@ -8,9 +8,9 @@ import (
 	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/variables"
 )
 
 // Set handles set operations for TOML files
@@ -35,7 +35,7 @@ func Set(cmd core.Command) error {
 	cmd.Target = normalizedTarget
 
 	// Load the TOML file for the target
-	handler, err := presets.LoadPresetFile(cmd.Preset, cmd.Target)
+	handler, err := workspace.LoadPresetFile(cmd.Preset, cmd.Target)
 	if err != nil {
 		return fmt.Errorf(display.ErrFileLoadFailed, cmd.Target+".toml")
 	}
@@ -52,16 +52,16 @@ func Set(cmd core.Command) error {
 		for _, kvp := range cmd.KeyValuePairs {
 			// Special validation for request fields
 			if cmd.Target == "request" {
-				if err := handlers.ValidateRequestField(kvp.Key, kvp.Value); err != nil {
+				if err := ValidateRequestField(kvp.Key, kvp.Value); err != nil {
 					return err
 				}
 			}
 
 			// Detect if value is a variable
-			isVar, varType, varName := handlers.DetectVariableType(kvp.Value)
+			isVar, varType, varName := variables.DetectVariableType(kvp.Value)
 			if isVar {
 				// Store variable info in config.toml for later resolution
-				err := handlers.StoreVariableInfo(cmd.Preset, kvp.Key, varType, varName)
+				err := variables.StoreVariableInfo(cmd.Preset, kvp.Key, varType, varName)
 				if err != nil {
 					return fmt.Errorf(display.ErrVariableSaveFailed)
 				}
@@ -83,14 +83,14 @@ func Set(cmd core.Command) error {
 					}
 				}
 
-				inferredValue := handlers.InferValueType(valueToStore)
+				inferredValue := InferValueType(valueToStore)
 				handler.Set(keyToStore, inferredValue)
 			}
 		}
 	}
 
 	// Save the updated TOML file (once after all operations)
-	err = presets.SavePresetFile(cmd.Preset, cmd.Target, handler)
+	err = workspace.SavePresetFile(cmd.Preset, cmd.Target, handler)
 	if err != nil {
 		return fmt.Errorf(display.ErrFileSaveFailed, cmd.Target+".toml")
 	}
