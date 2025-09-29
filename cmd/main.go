@@ -6,9 +6,9 @@ import (
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers/commands"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/http"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/commands"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
 )
 
@@ -106,7 +106,7 @@ func executeGlobalCommand(cmd core.Command) error {
 		deletedCount := 0
 
 		for _, presetName := range cmd.Targets {
-			err := presets.DeletePreset(presetName)
+			err := workspace.DeletePreset(presetName)
 			if err != nil {
 				// Collect warnings for non-existent presets, continue processing
 				warnings = append(warnings, fmt.Sprintf("Warning: preset '%s' does not exist", presetName))
@@ -143,7 +143,7 @@ func executePresetCommand(cmd core.Command) error {
 
 	// If no command specified, create the preset if it doesn't exist
 	if cmd.Command == "" {
-		err := presets.CreatePresetDirectory(cmd.Preset)
+		err := workspace.CreatePresetDirectory(cmd.Preset)
 		if err != nil {
 			return fmt.Errorf("failed to create preset '%s': %v", cmd.Preset, err)
 		}
@@ -164,7 +164,7 @@ func executePresetCommand(cmd core.Command) error {
 		err = commands.Edit(cmd)
 
 	case "call":
-		err = handlers.ExecuteCallCommand(cmd)
+		err = http.ExecuteCallCommand(cmd)
 
 	default:
 		return fmt.Errorf("unknown preset command: %s", cmd.Command)
@@ -172,7 +172,7 @@ func executePresetCommand(cmd core.Command) error {
 
 	// If main command succeeded and --call flag is set, execute call
 	if err == nil && cmd.Call {
-		return handlers.ExecuteCallCommand(cmd)
+		return http.ExecuteCallCommand(cmd)
 	}
 
 	return err

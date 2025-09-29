@@ -7,8 +7,8 @@ import (
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers/http"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/http"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
 )
 
 
@@ -56,7 +56,7 @@ func Get(cmd core.Command) error {
 	cmd.Target = normalizedTarget
 
 	// Load the TOML file for the target
-	handler, err := presets.LoadPresetFile(cmd.Preset, cmd.Target)
+	handler, err := workspace.LoadPresetFile(cmd.Preset, cmd.Target)
 	if err != nil {
 		return fmt.Errorf(display.ErrFileLoadFailed, cmd.Target+".toml")
 	}
@@ -148,7 +148,7 @@ func getResponseWithField(cmd core.Command) error {
 	fieldName := strings.ToLower(cmd.KeyValuePairs[0].Key)
 
 	// Load the response
-	response, err := presets.LoadHistoryResponse(cmd.Preset, number)
+	response, err := workspace.LoadHistoryResponse(cmd.Preset, number)
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func getResponseWithField(cmd core.Command) error {
 }
 
 // displayResponseField extracts and displays a specific field from response
-func displayResponseField(response *presets.HistoryResponse, fieldName string, rawOutput bool, preset string) error {
+func displayResponseField(response *workspace.HistoryResponse, fieldName string, rawOutput bool, preset string) error {
 	switch fieldName {
 	case "body":
 		// Use EXACT same filtering logic as live API calls
@@ -252,7 +252,7 @@ func getResponseFieldMostRecent(cmd core.Command) error {
 	fieldName := strings.ToLower(cmd.KeyValuePairs[0].Key)
 
 	// Load the response
-	response, err := presets.LoadHistoryResponse(cmd.Preset, number)
+	response, err := workspace.LoadHistoryResponse(cmd.Preset, number)
 	if err != nil {
 		return err
 	}

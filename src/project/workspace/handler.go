@@ -1,7 +1,7 @@
-// Package toml provides TOML file manipulation capabilities with dot notation support.
-// This package handles TOML parsing, modification, JSON conversion, and file I/O operations
-// for Better-Curl-Saul's configuration management system.
-package toml
+// Package workspace provides workspace and TOML file management for Better-Curl-Saul.
+// This package handles TOML parsing, modification, JSON conversion, preset directories,
+// and history management for the 5-file structure (body, headers, query, request, variables).
+package workspace
 
 import (
 	"fmt"

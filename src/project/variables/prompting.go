@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
 	"github.com/chzyer/readline"
 )
 
@@ -21,7 +21,7 @@ func PromptForVariables(preset string, persist bool) (map[string]string, error) 
 	substitutions := make(map[string]string)
 
 	// Load variables.toml to get hard variables
-	variablesHandler, err := presets.LoadPresetFile(preset, "variables")
+	variablesHandler, err := workspace.LoadPresetFile(preset, "variables")
 	if err != nil {
 		return nil, fmt.Errorf(display.ErrVariableLoadFailed)
 	}
@@ -90,7 +90,7 @@ func PromptForVariables(preset string, persist bool) (map[string]string, error) 
 			// Save hard variables to variables.toml
 			if variable.Type == "hard" {
 				variablesHandler.Set(variable.Key, userInput)
-				err := presets.SavePresetFile(preset, "variables", variablesHandler)
+				err := workspace.SavePresetFile(preset, "variables", variablesHandler)
 				if err != nil {
 					return nil, fmt.Errorf(display.ErrVariableSaveFailed)
 				}
@@ -106,7 +106,7 @@ func PromptForSpecificVariables(preset string, variableNames []string, persist b
 	substitutions := make(map[string]string)
 
 	// Load variables.toml to get hard variables
-	variablesHandler, err := presets.LoadPresetFile(preset, "variables")
+	variablesHandler, err := workspace.LoadPresetFile(preset, "variables")
 	if err != nil {
 		return nil, fmt.Errorf(display.ErrVariableLoadFailed)
 	}
@@ -185,7 +185,7 @@ func PromptForSpecificVariables(preset string, variableNames []string, persist b
 			// Save hard variables to variables.toml
 			if variable.Type == "hard" {
 				variablesHandler.Set(variable.Key, userInput)
-				err := presets.SavePresetFile(preset, "variables", variablesHandler)
+				err := workspace.SavePresetFile(preset, "variables", variablesHandler)
 				if err != nil {
 					return nil, fmt.Errorf(display.ErrVariableSaveFailed)
 				}

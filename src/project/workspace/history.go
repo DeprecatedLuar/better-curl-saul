@@ -1,4 +1,4 @@
-package presets
+package workspace
 
 import (
 	"encoding/json"

@@ -9,9 +9,8 @@ import (
 
 	"github.com/chzyer/readline"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/handlers"
 	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
 )
 
 // Edit handles both field-level and container-level editing
@@ -46,7 +45,7 @@ func executeFieldEdit(cmd core.Command) error {
 	key := cmd.KeyValuePairs[0].Key
 	
 	// Load current value using existing patterns
-	handler, err := presets.LoadPresetFile(cmd.Preset, cmd.Target)
+	handler, err := workspace.LoadPresetFile(cmd.Preset, cmd.Target)
 	if err != nil {
 		return fmt.Errorf(display.ErrFileLoadFailed, cmd.Target+".toml")
 	}
@@ -72,7 +71,7 @@ func executeFieldEdit(cmd core.Command) error {
 
 	// Special validation for request fields
 	if cmd.Target == "request" {
-		if err := handlers.ValidateRequestField(key, newValue); err != nil {
+		if err := ValidateRequestField(key, newValue); err != nil {
 			return err
 		}
 	}
@@ -83,10 +82,10 @@ func executeFieldEdit(cmd core.Command) error {
 		// Store HTTP methods in uppercase
 		valueToStore = strings.ToUpper(newValue)
 	}
-	inferredValue := handlers.InferValueType(valueToStore)
+	inferredValue := InferValueType(valueToStore)
 	handler.Set(key, inferredValue)
 
-	err = presets.SavePresetFile(cmd.Preset, cmd.Target, handler)
+	err = workspace.SavePresetFile(cmd.Preset, cmd.Target, handler)
 	if err != nil {
 		return fmt.Errorf(display.ErrFileSaveFailed, cmd.Target+".toml")
 	}
@@ -98,7 +97,7 @@ func executeFieldEdit(cmd core.Command) error {
 // executeContainerEdit handles container-level editing (open file in editor)
 func executeContainerEdit(cmd core.Command) error {
 	// Get the file path for the target
-	presetPath, err := presets.GetPresetPath(cmd.Preset)
+	presetPath, err := workspace.GetPresetPath(cmd.Preset)
 	if err != nil {
 		return fmt.Errorf(display.ErrDirectoryFailed)
 	}

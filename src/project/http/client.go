@@ -10,8 +10,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
 )
 
 // HTTPRequestConfig holds the components of an HTTP request
@@ -25,15 +24,15 @@ type HTTPRequestConfig struct {
 }
 
 // LoadPresetFile loads a single TOML file as a handler, returns empty handler if file doesn't exist
-func LoadPresetFile(preset, filename string) *toml.TomlHandler {
-	presetPath, err := presets.GetPresetPath(preset)
+func LoadPresetFile(preset, filename string) *workspace.TomlHandler {
+	presetPath, err := workspace.GetPresetPath(preset)
 	if err != nil {
 		// Return empty handler if preset path fails
 		return createEmptyHandler()
 	}
 
 	filePath := filepath.Join(presetPath, filename+".toml")
-	handler, err := toml.NewTomlHandler(filePath)
+	handler, err := workspace.NewTomlHandler(filePath)
 	if err != nil {
 		// Return empty handler if file doesn't exist or can't be loaded
 		return createEmptyHandler()
@@ -42,7 +41,7 @@ func LoadPresetFile(preset, filename string) *toml.TomlHandler {
 }
 
 // createEmptyHandler creates an empty TOML handler for missing files
-func createEmptyHandler() *toml.TomlHandler {
+func createEmptyHandler() *workspace.TomlHandler {
 	// Create a temporary file to initialize empty handler
 	tempFile, err := os.CreateTemp("", "empty*.toml")
 	if err != nil {
@@ -51,12 +50,12 @@ func createEmptyHandler() *toml.TomlHandler {
 	defer os.Remove(tempFile.Name())
 	tempFile.Close()
 
-	handler, _ := toml.NewTomlHandler(tempFile.Name())
+	handler, _ := workspace.NewTomlHandler(tempFile.Name())
 	return handler
 }
 
 // BuildHTTPRequestFromHandlers builds HTTP request from separate handlers - no guessing
-func BuildHTTPRequestFromHandlers(requestHandler, headersHandler, bodyHandler, queryHandler *toml.TomlHandler) (*HTTPRequestConfig, error) {
+func BuildHTTPRequestFromHandlers(requestHandler, headersHandler, bodyHandler, queryHandler *workspace.TomlHandler) (*HTTPRequestConfig, error) {
 	config := &HTTPRequestConfig{
 		Headers: make(map[string]string),
 		Query:   make(map[string]string),

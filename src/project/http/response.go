@@ -7,8 +7,7 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/tidwall/gjson"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/toml"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/presets"
+	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
 	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
 )
 
@@ -140,7 +139,7 @@ func isJSONContent(contentType string, body []byte) bool {
 // FormatAsToml converts JSON response to TOML format for readability
 func FormatAsToml(jsonData []byte) string {
 	// Use our new TomlHandler FromJSON capability
-	handler, err := toml.NewTomlHandlerFromJSON(jsonData)
+	handler, err := workspace.NewTomlHandlerFromJSON(jsonData)
 	if err != nil {
 		return "" // Fallback to other formatting
 	}
@@ -157,7 +156,7 @@ func FormatAsToml(jsonData []byte) string {
 // applyFiltering applies JSON filtering if filters are configured for the preset
 func applyFiltering(jsonData []byte, preset string) []byte {
 	// Load filters configuration
-	filtersHandler, err := presets.LoadPresetFile(preset, "filters")
+	filtersHandler, err := workspace.LoadPresetFile(preset, "filters")
 	if err != nil {
 		// No filters configured, return original data
 		return jsonData
