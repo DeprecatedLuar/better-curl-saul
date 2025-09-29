@@ -33,6 +33,11 @@ const (
 	ErrFieldNameRequired     = "Listen, counselor - need to specify what field you want! Options are: body, headers, status, url, method, duration"
 	ErrUnknownResponseField  = "That field '%s'? Not in my case files! Stick to the evidence: body, headers, status, url, method, duration"
 	ErrResponseProcessFailed = "Response processing went sideways - technical difficulties in the evidence room: %v"
+	ErrTempFileCreate        = "Can't create temporary file - system's not cooperating with me here! Technical difficulties!"
+	ErrTempFileRead          = "Temp file's playing hard to get - can't read it! Something went sideways!"
+	ErrEmptyCurlCommand      = "Come on now, friend - you gave me an empty file! I need an actual curl command to work with!"
+	ErrCurlParseFailed       = "That curl command's not holding up under scrutiny - syntax error, plain and simple: %v"
+	ErrNoCurlURL             = "Listen pal, that curl command's missing the most important part - the URL! Can't make a case without an address!"
 )
 
 const (
