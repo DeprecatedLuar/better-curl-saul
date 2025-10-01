@@ -201,7 +201,7 @@ saul check history
 - [x] GET specific response stuff from history (aka Headers/Body...)
 - [x] 'Proper' Windows support
 - [x]  curl command exportation/generation feature
-- [ ] Support pasting raw JSON template
+- [x] Support pasting raw JSON template
 - [ ] Stateless command support with HttPie syntax
 - [ ] Homebrew and Scoop releases
 - [ ] User config system using github.com/DeprecatedLuar/toml-vars-letsgooo library
