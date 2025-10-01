@@ -217,7 +217,7 @@ saul check history
 
 **Beta software** - Core features work, documentation in progress.
 
-Bug or feedback? I will be very, very, very happy if you let me know your thoughts.
+Bug or feedback? I will be very happy if you let me know your thoughts.
 
 <img src="other/assets/saul-pointing.png" width="800"/>
 
