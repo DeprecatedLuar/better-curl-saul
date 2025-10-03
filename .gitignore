@@ -1,9 +1,15 @@
 # Build artifacts
-saul
-main
 *.exe
 dist/
 build/
+
+# Ignore all files without extensions (catches all binaries)
+*
+!*/
+!*.*
+!Makefile
+!Dockerfile
+!LICENSE
 
 # Go build cache
 *.sum
