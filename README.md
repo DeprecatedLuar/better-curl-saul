@@ -18,15 +18,20 @@
   </a>
 </p>
 
----
+**v0.3.0 Try out the new curl import/exporting**: `saul myapi set --raw` and `saul myapi get --raw` 
 
+---
 
 
 <p align="center">
   <img src="other/assets/saul-catboy-final.png" width="700"/>
 </p>
 
-## **In a nutshell,** this is disgusting:
+<p align="center"> Better Curl Saul is a way to simplify and organize api re-callability (if that's a word)</p>
+ 
+ ---
+
+## **In a nutshell,** this is... not my favorite UX:
 ```bash
 curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
   -H "Authorization: Basic $(echo -n 'user@company.com:api-token-here' | base64)" \
@@ -48,15 +53,14 @@ curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
   }'
 ```
 
-<h1 align="center">── Try this instead ──</h1 align="center">
-
+# Try this instead
 <p align="center">
   <img src="other/assets/demo.gif" alt="Better-Curl Demo" width="800"/>
 </p>
 
 ---
 
-## The cool stuff you've never seen before
+## The nice features you've never seen before
 
 - **Workspace-based** - Each API gets its own organized folder (reusable)
 - **Inline editor** - the `edit` command for any given field also supports `$EDITOR`
@@ -65,16 +69,16 @@ curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
 - **Git-friendly** - TOML files version control beautifully
 - **Unix composable** - Script it, pipe it, shell it
 - **TOML converter** - JSON gets reorganized into TOML for readability
-- **Saul Goodman** - Saul Goodman
+- **Saul Goodman** - It has Saul Goodman on it.
   
 <img src="other/assets/saul-hd-wide.png" width="1000"/>
 
 
-<h1 align="center">─── Installation ───</h1 align="center">
+# Installation
 
 **Supports:** Linux, macOS, Windows (I hope)
 
-### One-Liner
+### One-Liner (if you have bash)
 ```bash
 curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh | bash
 ```
@@ -84,7 +88,7 @@ curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main
 
 <br>
 
-**Manual Install** (boring)
+**Manual Install**
 1. Download binary for your OS from [releases](https://github.com/DeprecatedLuar/better-curl-saul/releases)
 2. Make executable: `chmod +x saul-*`
 3. Move to PATH: `sudo mv saul-* /usr/local/bin/saul`
@@ -96,28 +100,47 @@ cd better-curl-saul
 ./other/install-local.sh  # Local development build
 ```
 
-**In case you already have Saul** (hardcore)
+**In case you already have Saul** (basically gambling at this point)
 ```bash
 saul set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh && saul call --raw | bash #(maybe works, who knows)
 ```
 >[!NOTE]
 > Quick install auto-detects your system and downloads binaries or builds from source as fallback. 
-> Windows users: I don't know powershell I expect, just have bash 👍
+> Windows users: I don't know powershell I expect you to have bash 👍
 
 </details>
 
 <br>
 
-<a href="https://deprecatedluar.github.io/better-curl-saul/"><img src="other/assets/comments.png" width="800"/></a>
 
 
----
+## Commands
 
+| Action | Targets                                                            | Description                              | Example                                    |
+|--------|--------------------------------------------------------------------|------------------------------------------|--------------------------------------------|
+| set    | `url`, `method`, `timeout`, `body`, `header`, `query`, `variables` | Configure request settings and data      | `saul api set url https://...`             |
+| edit   | `body`, `header`, `query`                                          | Edit inline or open in $EDITOR           | `saul edit body user.name` / `saul edit body` |
+| rm     | `body`, `header`, `query`                                          | Remove specific fields                   | `saul rm body user.email`                  |
+| call   | -                                                                  | Execute the configured request           | `saul call --dry-run`                      |
+| get    | `url`, `body`, `header`, `query`, `request`, `response`, `history` | View configuration or response data      | `saul get body --raw`                      |
 
-## Tutorials
+### Flags
+
+| Flag              | Description                                    | Example                                    |
+|-------------------|------------------------------------------------|--------------------------------------------|
+| --raw             | Input/output raw format (curl/JSON)            | `saul set --raw`                           |
+| --body-only       | Show only response body                        | `saul get response --body-only`            |
+| --header-only     | Show only response headers                     | `saul get response --header-only`          |
+| --status-only     | Show only response status                      | `saul get response --status-only`          |
+| --dry-run         | Preview request without executing              | `saul call --dry-run`                      |
+| --call            | Execute request immediately after set          | `saul set body user=john --call`           |
+| -v                | Prompt for specific variables on call          | `saul call -v token name email`            |
+
 
 <details>
 <summary>Quick Start</summary>
+
+<br>
 
 ```bash
 # Create a test workspace
@@ -128,66 +151,37 @@ saul demo call
 # Try with variables
 saul api set url https://httpbin.org/post
 saul api set method POST
-saul api set body name={?your_name} message="Hello from Saul"
-saul api call
+saul api set body name={@your_name} message="{?message}" --call
 
-# Oh... yeah, for nesting just use dot notation like obj.field=idk
-```
-
-</details>
-
-
-<details><summary>Core Commands</summary>
-<br>
-
-Alright so you can:
-
-```set```, ```get```, ```edit```, ```rm``` 
- <br>your<br>
-```body```, ```header```, ```query```, ```request```, ```history``` or maybe even
-```response```
-<br>also<br> 
-```url```, ```method```, ```timeout```, ```history``` 
-
-</details>
-
-<details><summary>Example</summary>
-<br>
-
-```bash
-# Configure your API workspace (or preset, same thing)
-saul [workspace] set url https://api.example.com
+# Change workspace on the fly:
+saul myapi set url https://api.example.com
 saul set method POST
 saul set header Authorization="Bearer {@token}"
 saul set body user.name={?username} user.email=john@test.com
+saul my_other_api call # Execute some other random request
 
-# Execute the request
-saul call
-
-# Check your configuration, note that preset/workspace name keeps
-# stored in memory after first mention on syntax
-
-saul [anoter_workspace] check url
-saul check body
-
-# View response history
-saul check history
+# View your configuration
+saul get body --raw
+saul get history # View response history
 ```
-</details>
-
-<br>
 
 > [!NOTE]
-> There are 2 variable types
-> - soft variables {?} prompt you at EVERY call
-> - hard variables {@} require manual update by running the flag -v or running 
-```saul set variable varname value``` 
+> **Variable types:**
+> - **soft-variables** `{?}` prompt you at EVERY call
+> - **hard-variables** `{@}` require manual update via `-v` flag or `saul set variables name value`
+>
+> **For nesting:** use dot notation like `obj.field=value`
+
+</details> 
 
 ---
 
-## 🗺️ Roadmap
+<details>
+<summary>🗺️ Roadmap</summary>
 
-- [x] Start watchin Better Call Saul
+<br>
+
+- [x] Start watching Better Call Saul
 - [x] Think of a bad joke
 - [x] Workspace-based configuration
 - [x] Smart variable system (`{@}` / `{?}`)
@@ -197,27 +191,29 @@ saul check history
 - [x] Terminal session memory
 - [x] Bulk operations
 - [x] Fix history response parsing and filtering
-- [ ] Flags, we've got none basically
-- [ ] GET specific response stuff from history (aka Headers/Body...)
-- [ ] Proper Windows support
-- [ ] Support pasting raw JSON template
+- [x] Flags (--raw, --body-only, --header-only, --status-only, --dry-run, --call)
+- [x] GET specific response stuff from history (aka Headers/Body...)
+- [x] 'Proper' Windows support
+- [x]  curl command exportation/generation feature
+- [x] Support pasting raw JSON template
 - [ ] Stateless command support with HttPie syntax
 - [ ] Homebrew and Scoop releases
-- [ ] User config system using the super cool github.com/DeprecatedLuar/toml-vars-letsgooo library
-- [ ] curl command exportation/generation feature
+- [ ] User config system using github.com/DeprecatedLuar/toml-vars-letsgooo library
 - [ ] Add the eastereggs
 - [ ] Forward responses to another workspace
 - [ ] Polish code
-- [ ] Actual Documentation
+- [x] Actual Documentation
 - [ ] Touch Grass (not a priority)
 - [ ] Think of more features
 - [ ] Think of even more features
+
+</details>
 
 ## Little Note
 
 **Beta software** - Core features work, documentation in progress.
 
-Bug or feedback? I will be very, very, very happy if you let me know your thoughts.
+Bug or feedback? I will be very happy if you let me know your thoughts.
 
 <img src="other/assets/saul-pointing.png" width="800"/>
 
