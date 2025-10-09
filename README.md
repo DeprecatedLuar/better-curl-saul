@@ -13,11 +13,11 @@
   <a href="https://github.com/DeprecatedLuar/homebrew-tap">
     <img src="https://img.shields.io/badge/Homebrew-tap-FBB040?style=for-the-badge&logo=homebrew&logoColor=white&labelColor=black"/>
   </a>
+  <a href="/nix-saul">
+    <img src="https://img.shields.io/badge/Nix-flake-5277C3?style=for-the-badge&logo=nixos&logoColor=white&labelColor=black"/>
+  </a>
   <a href="https://github.com/DeprecatedLuar/better-curl-saul/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/DeprecatedLuar/better-curl-saul?style=for-the-badge&color=green&labelColor=black"/>
-  </a>
-  <a href="https://deprecatedluar.github.io/better-curl-saul/">
-    <img src="https://img.shields.io/badge/Leave_a_Comment-💬-orange?style=for-the-badge&logo=github&logoColor=white&labelColor=black"/>
   </a>
 </p>
 
@@ -79,14 +79,21 @@ curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
 
 # Installation
 
-### macOS (Homebrew)
+![macOS](https://img.shields.io/badge/macOS-black?style=flat-square&logo=apple&logoColor=white) ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black) ![Windows](https://img.shields.io/badge/Windows-0078D4?style=flat-square&logo=windows11&logoColor=white) ![Nix](https://img.shields.io/badge/Nix-5277C3?style=flat-square&logo=nixos&logoColor=white)
+
+### Homebrew
 ```bash
 brew install deprecatedluar/tap/better-curl-saul
 ```
 
-### Linux / Universal
+### Universal
 ```bash
 curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh | bash
+```
+
+### NixOS
+```bash
+nix profile install github:DeprecatedLuar/better-curl-saul?dir=nix-saul
 ```
 
 <details>
@@ -110,11 +117,6 @@ cd better-curl-saul
 ```bash
 saul set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh && saul call --raw | bash #(maybe works, who knows)
 ```
-**Using Nix and Flakes**
-```bash
-nix profile install github:DeprecatedLuar/better-curl-saul?dir=nix-saul
-```
-The `saul` command will be available in your PATH
 
 >[!NOTE]
 > Quick install auto-detects your system and downloads binaries or builds from source as fallback.
@@ -124,7 +126,7 @@ The `saul` command will be available in your PATH
 
 <br>
 
-
+---
 
 ## Commands
 

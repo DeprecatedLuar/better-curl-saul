@@ -1,6 +1,11 @@
 # Using Nix BTW
 
-**TLDR**: install with `nix profile install github:DeprecatedLuar/better-curl-saul?dir=nix-saul`, `saul` command will be available in your shell
+### **TLDR**: 
+Just paste the command below, `saul` command will be available in your shell
+
+```bash
+nix profile install github:DeprecatedLuar/better-curl-saul?dir=nix-saul
+```
 
 ---
 
