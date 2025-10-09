@@ -110,6 +110,12 @@ cd better-curl-saul
 ```bash
 saul set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh && saul call --raw | bash #(maybe works, who knows)
 ```
+**Using Nix and Flakes**
+```bash
+nix profile install github:DeprecatedLuar/better-curl-saul?dir=nix-saul
+```
+The `saul` command will be available in your PATH
+
 >[!NOTE]
 > Quick install auto-detects your system and downloads binaries or builds from source as fallback.
 > Windows users: I don't know powershell I expect you to have bash 👍
