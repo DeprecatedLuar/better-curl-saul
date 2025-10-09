@@ -81,14 +81,14 @@ curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
 
 ![macOS](https://img.shields.io/badge/macOS-black?style=flat-square&logo=apple&logoColor=white) ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black) ![Windows](https://img.shields.io/badge/Windows-0078D4?style=flat-square&logo=windows11&logoColor=white) ![Nix](https://img.shields.io/badge/Nix-5277C3?style=flat-square&logo=nixos&logoColor=white)
 
-### Homebrew
-```bash
-brew install deprecatedluar/tap/better-curl-saul
-```
-
 ### Universal
 ```bash
 curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh | bash
+```
+
+### Homebrew
+```bash
+brew install deprecatedluar/tap/better-curl-saul
 ```
 
 ### NixOS
