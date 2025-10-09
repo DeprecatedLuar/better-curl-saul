@@ -106,6 +106,8 @@ nix profile install github:DeprecatedLuar/better-curl-saul?dir=nix-saul
 2. Make executable: `chmod +x saul-*`
 3. Move to PATH: `sudo mv saul-* /usr/local/bin/saul`
 
+---
+
 **From Source** (for try-harders)
 ```bash
 git clone https://github.com/DeprecatedLuar/better-curl-saul.git
@@ -113,9 +115,11 @@ cd better-curl-saul
 ./other/install-local.sh  # Local development build
 ```
 
+---
+
 **In case you already have Saul** (basically gambling at this point)
 ```bash
-saul set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh && saul call --raw | bash #(maybe works, who knows)
+saul temp set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh && saul temp call --raw | bash
 ```
 
 >[!NOTE]
