@@ -10,6 +10,9 @@
   <a href="https://github.com/DeprecatedLuar/better-curl-saul/releases">
     <img src="https://img.shields.io/github/v/release/DeprecatedLuar/better-curl-saul?style=for-the-badge&logo=go&color=00ADD8&logoColor=white&labelColor=black"/>
   </a>
+  <a href="https://github.com/DeprecatedLuar/homebrew-tap">
+    <img src="https://img.shields.io/badge/Homebrew-tap-FBB040?style=for-the-badge&logo=homebrew&logoColor=white&labelColor=black"/>
+  </a>
   <a href="https://github.com/DeprecatedLuar/better-curl-saul/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/DeprecatedLuar/better-curl-saul?style=for-the-badge&color=green&labelColor=black"/>
   </a>
@@ -76,9 +79,12 @@ curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
 
 # Installation
 
-**Supports:** Linux, macOS, Windows (I hope)
+### macOS (Homebrew)
+```bash
+brew install deprecatedluar/tap/better-curl-saul
+```
 
-### One-Liner (if you have bash)
+### Linux / Universal
 ```bash
 curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh | bash
 ```
@@ -105,7 +111,7 @@ cd better-curl-saul
 saul set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh && saul call --raw | bash #(maybe works, who knows)
 ```
 >[!NOTE]
-> Quick install auto-detects your system and downloads binaries or builds from source as fallback. 
+> Quick install auto-detects your system and downloads binaries or builds from source as fallback.
 > Windows users: I don't know powershell I expect you to have bash 👍
 
 </details>
@@ -197,7 +203,7 @@ saul get history # View response history
 - [x]  curl command exportation/generation feature
 - [x] Support pasting raw JSON template
 - [ ] Stateless command support with HttPie syntax
-- [ ] Homebrew and Scoop releases
+- [x] Homebrew and Scoop releases
 - [ ] User config system using github.com/DeprecatedLuar/toml-vars-letsgooo library
 - [ ] Add the eastereggs
 - [ ] Forward responses to another workspace
@@ -211,7 +217,7 @@ saul get history # View response history
 
 ## Little Note
 
-**Beta software** - Core features work, documentation in progress.
+**v1.0.0 Comming Soon** - Production ready, minor QOL improvements otw.
 
 Bug or feedback? I will be very happy if you let me know your thoughts.
 
