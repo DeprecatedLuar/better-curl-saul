@@ -7,12 +7,9 @@ build/
 *
 !*/
 !*.*
-!Makefile
-!Dockerfile
-!LICENSE
-
-# Go build cache
-*.sum
+*.exe
+dist/
+build/
 
 # IDE files
 .vscode/
@@ -36,11 +33,7 @@ Thumbs.db
 .purpose.md
 readme.reference.md
 README-draft.md
-implementation-history.md
-implementation-plan.md
 vision.md
 CLAUDE.md
-
-# Documentation folder
-other/documentation/
+other/blueprint/
 .env
