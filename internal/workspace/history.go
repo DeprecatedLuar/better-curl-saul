@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/config"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/config"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
 )
 
 // HistoryResponse represents a stored response with metadata

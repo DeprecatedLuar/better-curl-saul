@@ -6,8 +6,8 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/core"
 )
 
 // ImportCurlString converts a curl command string into TOML preset files

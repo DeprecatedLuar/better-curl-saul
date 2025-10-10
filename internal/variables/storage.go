@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
 )
 
 // SubstituteVariables replaces variables in TOML handler with actual values using simple regex

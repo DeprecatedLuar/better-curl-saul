@@ -37,3 +37,9 @@ vision.md
 CLAUDE.md
 other/blueprint/
 .env
+*doc.md
+doc.md
+
+# Whitelist
+!README.md
+!LICENSE

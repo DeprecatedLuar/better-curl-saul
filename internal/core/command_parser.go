@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 )
 
 type Command struct {

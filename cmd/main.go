@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/core"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/http"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/commands"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/core"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/http"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/commands"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
 )
 
 // isActionCommand checks if a command is a preset action command

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 	"github.com/go-resty/resty/v2"
 )
 

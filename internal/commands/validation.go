@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/modules/display"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
 )
 
 // ValidateRequestField validates special request field values

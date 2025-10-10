@@ -5,7 +5,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/config"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/config"
 )
 
 // allowedCommands defines the whitelist of safe system commands for delegation

@@ -4,7 +4,7 @@ import (
 	"os"
 	"regexp"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/workspace"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 )
 
 // VariableInfo holds information about a detected variable

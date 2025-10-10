@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/config"
-	"github.com/DeprecatedLuar/better-curl-saul/src/project/utils"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/config"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
 )
 
 // readFile reads the TOML file from disk
