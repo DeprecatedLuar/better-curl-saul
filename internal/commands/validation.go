@@ -1,0 +1,86 @@
+// Package handlers provides command execution logic and validation for Better-Curl-Saul.
+// This package orchestrates HTTP requests, variable processing, validation,
+// and integrates all components to execute user commands.
+package commands
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
+)
+
+// ValidateRequestField validates special request field values
+func ValidateRequestField(key, value string) error {
+	switch strings.ToLower(key) {
+	case "method":
+		return validateHTTPMethod(value)
+	case "url":
+		return validateURL(value)
+	case "timeout":
+		return validateTimeout(value)
+	case "history", "history_count":
+		return validateHistoryCount(value)
+	default:
+		return nil
+	}
+}
+
+// validateHTTPMethod checks if the HTTP method is valid
+func validateHTTPMethod(method string) error {
+	validMethods := []string{
+		"GET", "POST", "PUT", "DELETE", "PATCH",
+		"HEAD", "OPTIONS", "TRACE", "CONNECT",
+	}
+
+	methodUpper := strings.ToUpper(method)
+	for _, valid := range validMethods {
+		if methodUpper == valid {
+			return nil
+		}
+	}
+
+	return fmt.Errorf(display.ErrInvalidMethod, method)
+}
+
+// validateURL performs basic URL validation
+func validateURL(url string) error {
+	if url == "" {
+		return fmt.Errorf(display.ErrMissingURL)
+	}
+	// Basic check - should start with http:// or https://
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		return fmt.Errorf(display.ErrInvalidURL)
+	}
+	return nil
+}
+
+// validateTimeout validates timeout value
+func validateTimeout(timeout string) error {
+	if _, err := strconv.Atoi(timeout); err != nil {
+		return fmt.Errorf(display.ErrInvalidTimeout)
+	}
+	return nil
+}
+
+// validateHistoryCount validates history count value
+func validateHistoryCount(count string) error {
+	historyCount, err := strconv.Atoi(count)
+	if err != nil {
+		return fmt.Errorf("invalid history count: %s (must be a number)", count)
+	}
+	if historyCount < 0 {
+		return fmt.Errorf("history count cannot be negative: %d", historyCount)
+	}
+	if historyCount > 100 {
+		return fmt.Errorf("history count cannot exceed 100: %d", historyCount)
+	}
+	return nil
+}
+
+// InferValueType converts string values to appropriate Go types for TOML
+func InferValueType(value string) interface{} {
+	return utils.InferValueType(value)
+}

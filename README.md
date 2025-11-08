@@ -10,11 +10,14 @@
   <a href="https://github.com/DeprecatedLuar/better-curl-saul/releases">
     <img src="https://img.shields.io/github/v/release/DeprecatedLuar/better-curl-saul?style=for-the-badge&logo=go&color=00ADD8&logoColor=white&labelColor=black"/>
   </a>
+  <a href="https://github.com/DeprecatedLuar/homebrew-tap">
+    <img src="https://img.shields.io/badge/Homebrew-tap-FBB040?style=for-the-badge&logo=homebrew&logoColor=white&labelColor=black"/>
+  </a>
+  <a href="/nix-saul">
+    <img src="https://img.shields.io/badge/Nix-flake-5277C3?style=for-the-badge&logo=nixos&logoColor=white&labelColor=black"/>
+  </a>
   <a href="https://github.com/DeprecatedLuar/better-curl-saul/blob/main/LICENSE">
     <img src="https://img.shields.io/github/license/DeprecatedLuar/better-curl-saul?style=for-the-badge&color=green&labelColor=black"/>
-  </a>
-  <a href="https://deprecatedluar.github.io/better-curl-saul/">
-    <img src="https://img.shields.io/badge/Leave_a_Comment-💬-orange?style=for-the-badge&logo=github&logoColor=white&labelColor=black"/>
   </a>
 </p>
 
@@ -66,7 +69,7 @@ curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
 - **Inline editor** - the `edit` command for any given field also supports `$EDITOR`
 - **Smart variables** - `{@token}` persists,`{?name}` prompts every time
 - **Response filtering** - Show only the fields you care about
-- **Git-friendly** - TOML files version control beautifully
+- **Git-friendly** - Store the preset workspaces on git
 - **Unix composable** - Script it, pipe it, shell it
 - **TOML converter** - JSON gets reorganized into TOML for readability
 - **Saul Goodman** - It has Saul Goodman on it.
@@ -76,11 +79,21 @@ curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
 
 # Installation
 
-**Supports:** Linux, macOS, Windows (I hope)
+![macOS](https://img.shields.io/badge/macOS-black?style=flat-square&logo=apple&logoColor=white) ![Linux](https://img.shields.io/badge/Linux-FCC624?style=flat-square&logo=linux&logoColor=black) ![Windows](https://img.shields.io/badge/Windows-0078D4?style=flat-square&logo=windows11&logoColor=white) ![Nix](https://img.shields.io/badge/Nix-5277C3?style=flat-square&logo=nixos&logoColor=white)
 
-### One-Liner (if you have bash)
+### Universal
 ```bash
 curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh | bash
+```
+
+### Homebrew
+```bash
+brew install deprecatedluar/tap/better-curl-saul
+```
+
+### NixOS
+```bash
+nix profile install github:DeprecatedLuar/better-curl-saul?dir=nix-saul
 ```
 
 <details>
@@ -93,6 +106,8 @@ curl -sSL https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main
 2. Make executable: `chmod +x saul-*`
 3. Move to PATH: `sudo mv saul-* /usr/local/bin/saul`
 
+---
+
 **From Source** (for try-harders)
 ```bash
 git clone https://github.com/DeprecatedLuar/better-curl-saul.git
@@ -100,19 +115,22 @@ cd better-curl-saul
 ./other/install-local.sh  # Local development build
 ```
 
+---
+
 **In case you already have Saul** (basically gambling at this point)
 ```bash
-saul set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh && saul call --raw | bash #(maybe works, who knows)
+saul temp set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-saul/main/install.sh && saul temp call --raw | bash
 ```
+
 >[!NOTE]
-> Quick install auto-detects your system and downloads binaries or builds from source as fallback. 
+> Quick install auto-detects your system and downloads binaries or builds from source as fallback.
 > Windows users: I don't know powershell I expect you to have bash 👍
 
 </details>
 
 <br>
 
-
+---
 
 ## Commands
 
@@ -197,7 +215,7 @@ saul get history # View response history
 - [x]  curl command exportation/generation feature
 - [x] Support pasting raw JSON template
 - [ ] Stateless command support with HttPie syntax
-- [ ] Homebrew and Scoop releases
+- [x] Homebrew and Scoop releases
 - [ ] User config system using github.com/DeprecatedLuar/toml-vars-letsgooo library
 - [ ] Add the eastereggs
 - [ ] Forward responses to another workspace
@@ -211,7 +229,7 @@ saul get history # View response history
 
 ## Little Note
 
-**Beta software** - Core features work, documentation in progress.
+**v1.0.0 Comming Soon** - Production ready, minor QOL improvements otw.
 
 Bug or feedback? I will be very happy if you let me know your thoughts.
 

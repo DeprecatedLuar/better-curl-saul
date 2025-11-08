@@ -51,3 +51,80 @@ jobs:
           saul-windows-arm64.exe
         generate_release_notes: true
         prerelease: ${{ contains(github.ref, 'beta') || contains(github.ref, 'alpha') || contains(github.ref, 'rc') }}
+
+    - name: Update Homebrew tap
+      env:
+        GITHUB_TOKEN: ${{ secrets.TAP_UPDATE_TOKEN }}
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/}
+        VERSION_NO_V="${VERSION#v}"
+
+        # Calculate sha256 from already-built binaries
+        SHA_DARWIN_ARM64=$(shasum -a 256 saul-darwin-arm64 | cut -d' ' -f1)
+        SHA_DARWIN_AMD64=$(shasum -a 256 saul-darwin-amd64 | cut -d' ' -f1)
+        SHA_LINUX_ARM64=$(shasum -a 256 saul-linux-arm64 | cut -d' ' -f1)
+        SHA_LINUX_AMD64=$(shasum -a 256 saul-linux-amd64 | cut -d' ' -f1)
+
+        echo "Checksums calculated for ${VERSION}"
+
+        # Clone tap repo with authentication
+        git clone https://x-access-token:${GITHUB_TOKEN}@github.com/DeprecatedLuar/homebrew-tap.git
+        cd homebrew-tap/Formula
+
+        # Update formula
+        cat > better-curl-saul.rb <<'EOF'
+        class BetterCurlSaul < Formula
+          desc "Workspace-based HTTP client that eliminates curl complexity"
+          homepage "https://github.com/DeprecatedLuar/better-curl-saul"
+          version "VERSION_NO_V_PLACEHOLDER"
+          license "MIT"
+
+          on_macos do
+            if Hardware::CPU.arm?
+              url "https://github.com/DeprecatedLuar/better-curl-saul/releases/download/VERSION_PLACEHOLDER/saul-darwin-arm64"
+              sha256 "SHA_DARWIN_ARM64_PLACEHOLDER"
+            else
+              url "https://github.com/DeprecatedLuar/better-curl-saul/releases/download/VERSION_PLACEHOLDER/saul-darwin-amd64"
+              sha256 "SHA_DARWIN_AMD64_PLACEHOLDER"
+            end
+          end
+
+          on_linux do
+            if Hardware::CPU.arm?
+              url "https://github.com/DeprecatedLuar/better-curl-saul/releases/download/VERSION_PLACEHOLDER/saul-linux-arm64"
+              sha256 "SHA_LINUX_ARM64_PLACEHOLDER"
+            else
+              url "https://github.com/DeprecatedLuar/better-curl-saul/releases/download/VERSION_PLACEHOLDER/saul-linux-amd64"
+              sha256 "SHA_LINUX_AMD64_PLACEHOLDER"
+            end
+          end
+
+          def install
+            bin.install "saul-darwin-arm64" => "saul" if OS.mac? && Hardware::CPU.arm?
+            bin.install "saul-darwin-amd64" => "saul" if OS.mac? && Hardware::CPU.intel?
+            bin.install "saul-linux-arm64" => "saul" if OS.linux? && Hardware::CPU.arm?
+            bin.install "saul-linux-amd64" => "saul" if OS.linux? && Hardware::CPU.intel?
+          end
+
+          test do
+            assert_match "v#{version}", shell_output("#{bin}/saul version")
+          end
+        end
+        EOF
+
+        # Replace placeholders
+        sed -i "s/VERSION_NO_V_PLACEHOLDER/${VERSION_NO_V}/g" better-curl-saul.rb
+        sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" better-curl-saul.rb
+        sed -i "s/SHA_DARWIN_ARM64_PLACEHOLDER/${SHA_DARWIN_ARM64}/g" better-curl-saul.rb
+        sed -i "s/SHA_DARWIN_AMD64_PLACEHOLDER/${SHA_DARWIN_AMD64}/g" better-curl-saul.rb
+        sed -i "s/SHA_LINUX_ARM64_PLACEHOLDER/${SHA_LINUX_ARM64}/g" better-curl-saul.rb
+        sed -i "s/SHA_LINUX_AMD64_PLACEHOLDER/${SHA_LINUX_AMD64}/g" better-curl-saul.rb
+
+        # Commit and push
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+        git add better-curl-saul.rb
+        git commit -m "Auto-update formula to ${VERSION}" || exit 0
+        git push
+
+        echo "✅ Homebrew formula updated to ${VERSION}"
