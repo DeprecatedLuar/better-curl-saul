@@ -201,8 +201,6 @@ func showHelp() {
 	presetCmds := `  saul [preset]             Create or switch to preset
   saul [preset] set [target] [key=value]
                             Set value in target file
-  saul [preset] check [target] [key]
-                            Display target contents (clean format)
   saul [preset] get [target] [key]
                             Get value from target file
   saul [preset] call        Execute HTTP request
@@ -231,8 +229,8 @@ func showHelp() {
   saul pokeapi set body pokemon.level=@level
 
   # Check what's configured
-  saul pokeapi check url
-  saul pokeapi check body pokemon.name`
+  saul pokeapi get url
+  saul pokeapi get body pokemon.name`
 	formatted = display.FormatSimpleSection("Examples", examples)
 	display.Plain(formatted)
 }

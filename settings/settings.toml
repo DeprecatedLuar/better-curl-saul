@@ -1,9 +1,0 @@
-[directories]
-config_dir_path = ".config"
-app_dir_name = "saul"
-presets_dir_name = "presets"
-
-[defaults]
-timeout_seconds = 30
-max_retries = 3
-http_method = "GET"
