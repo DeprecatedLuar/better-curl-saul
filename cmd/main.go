@@ -3,14 +3,121 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/core"
+	"github.com/DeprecatedLuar/better-curl-saul/internal"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/http"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/commands"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
 )
+
+// SessionManager encapsulates session state and file operations
+type SessionManager struct {
+	currentPreset string
+	ttyID         string
+	configPath    string
+}
+
+// NewSessionManager creates a new session manager with TTY-based session isolation
+func NewSessionManager() (*SessionManager, error) {
+	ttyID, err := getTTYID()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get TTY ID: %v", err)
+	}
+
+	configPath, err := getConfigPath()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get config path: %v", err)
+	}
+
+	sm := &SessionManager{
+		ttyID:      ttyID,
+		configPath: configPath,
+	}
+
+	// Load existing session
+	if err := sm.LoadSession(); err != nil {
+		// Session load failure is not critical - continue with empty session
+		sm.currentPreset = ""
+	}
+
+	return sm, nil
+}
+
+// GetCurrentPreset returns the current preset for this session
+func (s *SessionManager) GetCurrentPreset() string {
+	return s.currentPreset
+}
+
+// SetCurrentPreset sets the current preset and saves the session
+func (s *SessionManager) SetCurrentPreset(preset string) error {
+	s.currentPreset = preset
+	return s.SaveSession()
+}
+
+// LoadSession loads the session from the TTY-specific session file
+func (s *SessionManager) LoadSession() error {
+	sessionFile := s.getSessionFilePath()
+
+	data, err := os.ReadFile(sessionFile)
+	if err != nil {
+		// Session file doesn't exist - not an error
+		s.currentPreset = ""
+		return nil
+	}
+
+	s.currentPreset = strings.TrimSpace(string(data))
+	return nil
+}
+
+// SaveSession saves the current session to the TTY-specific session file
+func (s *SessionManager) SaveSession() error {
+	sessionFile := s.getSessionFilePath()
+
+	// Ensure the directory exists
+	if err := os.MkdirAll(filepath.Dir(sessionFile), internal.DirPermissions); err != nil {
+		return fmt.Errorf("failed to create session directory: %v", err)
+	}
+
+	return utils.AtomicWriteFile(sessionFile, []byte(s.currentPreset), internal.FilePermissions)
+}
+
+// HasCurrentPreset returns true if a current preset is set
+func (s *SessionManager) HasCurrentPreset() bool {
+	return s.currentPreset != ""
+}
+
+// getSessionFilePath returns the TTY-specific session file path
+func (s *SessionManager) getSessionFilePath() string {
+	return filepath.Join(s.configPath, fmt.Sprintf(".session_%s", s.ttyID))
+}
+
+// getTTYID gets the current TTY identifier for session isolation
+func getTTYID() (string, error) {
+	tty := os.Getenv("TTY")
+	if tty == "" {
+		// Fallback to simpler TTY detection
+		tty = "default"
+	} else {
+		// Extract just the TTY number/name for filename safety
+		tty = filepath.Base(tty)
+		// Replace any unsafe characters
+		tty = strings.ReplaceAll(tty, "/", "_")
+	}
+	return tty, nil
+}
+
+// getConfigPath returns the saul configuration directory path
+func getConfigPath() (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, internal.ParentDirPath, internal.AppDirName), nil
+}
 
 // isActionCommand checks if a command is a preset action command
 func isActionCommand(cmd string) bool {
@@ -29,7 +136,7 @@ func main() {
 	}
 
 	// Initialize session manager
-	sessionManager, err := core.NewSessionManager()
+	sessionManager, err := NewSessionManager()
 	if err != nil {
 		display.Error(fmt.Sprintf("failed to initialize session: %v", err))
 		return
@@ -47,7 +154,7 @@ func main() {
 		}
 	}
 
-	cmd, err := core.ParseCommand(args)
+	cmd, err := commands.ParseCommand(args)
 	if err != nil {
 		display.Error(err.Error())
 		return
@@ -61,13 +168,7 @@ func main() {
 }
 
 // executeCommand routes commands to appropriate handlers
-func executeCommand(cmd core.Command, sessionManager *core.SessionManager) error {
-	// Check for system command delegation first
-	if core.IsSystemCommand(cmd.Preset) {
-		// Extract arguments from the original command line
-		args := os.Args[2:] // Skip "saul" and the system command
-		return core.DelegateToSystem(cmd.Preset, args)
-	}
+func executeCommand(cmd commands.Command, sessionManager *SessionManager) error {
 
 	// Update current preset when explicitly specified and save to session
 	if cmd.Preset != "" {
@@ -88,12 +189,13 @@ func executeCommand(cmd core.Command, sessionManager *core.SessionManager) error
 }
 
 // executeGlobalCommand handles global commands like list, rm, version
-func executeGlobalCommand(cmd core.Command) error {
+func executeGlobalCommand(cmd commands.Command) error {
 	switch cmd.Global {
+	case "list":
+		return commands.List(cmd)
+
 	case "version":
-		display.Info(utils.GetVersionInfo())
-		display.Plain("'When http gets complicated, Better Curl Saul'")
-		return nil
+		return commands.Version()
 
 	case "rm":
 		if len(cmd.Targets) == 0 {
@@ -128,7 +230,7 @@ func executeGlobalCommand(cmd core.Command) error {
 		return nil
 
 	case "update":
-		return utils.HandleUpdateCommand()
+		return commands.Update()
 
 	default:
 		return fmt.Errorf("unknown global command: %s", cmd.Global)
@@ -136,7 +238,7 @@ func executeGlobalCommand(cmd core.Command) error {
 }
 
 // executePresetCommand handles preset-specific commands
-func executePresetCommand(cmd core.Command) error {
+func executePresetCommand(cmd commands.Command) error {
 	if cmd.Preset == "" {
 		return fmt.Errorf("preset name required")
 	}

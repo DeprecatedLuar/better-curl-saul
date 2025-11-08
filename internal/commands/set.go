@@ -8,19 +8,19 @@ import (
 	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/core"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/variables"
 )
 
 // Set handles set operations for TOML files
-func Set(cmd core.Command) error {
+func Set(cmd Command) error {
 	// Handle --raw flag for curl import via editor
 	if cmd.RawOutput {
 		if cmd.Preset == "" {
 			return fmt.Errorf(display.ErrPresetNameRequired)
 		}
-		return workspace.ImportCurlViaEditor(cmd.Preset)
+		// Open editor to get curl command
+		return fmt.Errorf("curl import via editor not yet implemented in refactored code")
 	}
 
 	if cmd.Preset == "" {

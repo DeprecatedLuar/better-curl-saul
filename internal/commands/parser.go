@@ -1,7 +1,7 @@
-// Package core provides fundamental command parsing and session management for Better-Curl-Saul.
-// This package handles command line argument parsing, session state management,
-// and system command delegation following Unix philosophy principles.
-package core
+// Package commands provides command parsing, execution logic and validation for Better-Curl-Saul.
+// This package handles all command-related operations including argument parsing,
+// command execution, and request validation.
+package commands
 
 import (
 	"fmt"
@@ -10,6 +10,7 @@ import (
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 )
 
+// Command represents a parsed command with all its components
 type Command struct {
 	// Core command parsing
 	Global        string
@@ -29,6 +30,7 @@ type Command struct {
 	Call            bool     // --call
 }
 
+// KeyValuePair represents a key-value pair from command arguments
 type KeyValuePair struct {
 	Key   string
 	Value string
@@ -41,9 +43,10 @@ func ParseCommand(args []string) (Command, error) {
 		return cmd, fmt.Errorf(display.ErrArgumentsNeeded)
 	}
 
-	// Check for system commands FIRST - skip flag parsing for them
-	if IsSystemCommand(args[0]) {
-		cmd.Preset = args[0]  // Store system command in Preset field for delegation
+	// Check for list command aliases FIRST - skip flag parsing for them
+	if isListCommand(args[0]) {
+		cmd.Global = "list"
+		cmd.Preset = args[0]  // Store the actual command (ls/exa/etc) for delegation
 		return cmd, nil
 	}
 
@@ -262,4 +265,13 @@ func parseFlags(args []string, cmd *Command) ([]string, error) {
 	return filteredArgs, nil
 }
 
-
+// isListCommand checks if a command is a list command alias
+func isListCommand(command string) bool {
+	listCommands := []string{"list", "ls", "exa", "lsd", "tree", "dir"}
+	for _, cmd := range listCommands {
+		if command == cmd {
+			return true
+		}
+	}
+	return false
+}

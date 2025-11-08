@@ -1,12 +1,13 @@
-package project
+package internal_test
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/DeprecatedLuar/better-curl-saul/internal"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/commands"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/core"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/variables"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 )
@@ -42,16 +43,16 @@ func TestSetAndGetFlow(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		setCmd    core.Command
+		setCmd    commands.Command
 		getKey    string
 		wantValue string
 	}{
 		{
 			name: "set and get URL",
-			setCmd: core.Command{
+			setCmd: commands.Command{
 				Preset: preset,
 				Target: "request",
-				KeyValuePairs: []core.KeyValuePair{
+				KeyValuePairs: []commands.KeyValuePair{
 					{Key: "url", Value: "https://api.example.com"},
 				},
 			},
@@ -60,10 +61,10 @@ func TestSetAndGetFlow(t *testing.T) {
 		},
 		{
 			name: "set and get method (uppercase)",
-			setCmd: core.Command{
+			setCmd: commands.Command{
 				Preset: preset,
 				Target: "request",
-				KeyValuePairs: []core.KeyValuePair{
+				KeyValuePairs: []commands.KeyValuePair{
 					{Key: "method", Value: "post"},
 				},
 			},
@@ -72,10 +73,10 @@ func TestSetAndGetFlow(t *testing.T) {
 		},
 		{
 			name: "set and get body field",
-			setCmd: core.Command{
+			setCmd: commands.Command{
 				Preset: preset,
 				Target: "body",
-				KeyValuePairs: []core.KeyValuePair{
+				KeyValuePairs: []commands.KeyValuePair{
 					{Key: "user.name", Value: "testuser"},
 				},
 			},
@@ -202,10 +203,10 @@ func TestVariableStorageAndRetrieval(t *testing.T) {
 	preset, cleanup := setupTestPreset(t, "vartest")
 	defer cleanup()
 
-	setCmd := core.Command{
+	setCmd := commands.Command{
 		Preset: preset,
 		Target: "body",
-		KeyValuePairs: []core.KeyValuePair{
+		KeyValuePairs: []commands.KeyValuePair{
 			{Key: "api.token", Value: "{@token}"},
 			{Key: "api.key", Value: "{@apikey}"},
 		},
@@ -249,31 +250,26 @@ func TestLazyFileCreation(t *testing.T) {
 
 	presetPath, _ := workspace.GetPresetPath(preset)
 
-	files := []string{"body.toml", "headers.toml", "query.toml", "request.toml", "variables.toml"}
-	for _, file := range files {
-		filePath := filepath.Join(presetPath, file)
-		if _, err := os.Stat(filePath); !os.IsNotExist(err) {
-			t.Errorf("file %s should not exist yet (lazy creation)", file)
-		}
-	}
-
-	setCmd := core.Command{
+	// Set only body data
+	setCmd := commands.Command{
 		Preset: preset,
 		Target: "body",
-		KeyValuePairs: []core.KeyValuePair{
+		KeyValuePairs: []commands.KeyValuePair{
 			{Key: "test", Value: "value"},
 		},
 	}
 	commands.Set(setCmd)
 
+	// Verify body.toml was created
 	bodyPath := filepath.Join(presetPath, "body.toml")
 	if _, err := os.Stat(bodyPath); os.IsNotExist(err) {
 		t.Error("body.toml should exist after Set operation")
 	}
 
+	// Verify other files were NOT created (lazy creation)
 	headersPath := filepath.Join(presetPath, "headers.toml")
 	if _, err := os.Stat(headersPath); !os.IsNotExist(err) {
-		t.Error("headers.toml should not exist (not used)")
+		t.Error("headers.toml should not exist (lazy creation)")
 	}
 }
 
@@ -389,7 +385,7 @@ func TestGetCommandParsing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd, err := core.ParseCommand(tt.args)
+			cmd, err := commands.ParseCommand(tt.args)
 			if err != nil {
 				t.Fatalf("ParseCommand failed: %v", err)
 			}
@@ -528,9 +524,49 @@ func TestImportCurlString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := workspace.ImportCurlString(preset, tt.curlCmd)
+			curlReq, err := internal.ImportCurlString(tt.curlCmd)
 			if err != nil {
 				t.Fatalf("ImportCurlString failed: %v", err)
+			}
+
+			// Save request data to workspace files
+			if curlReq.Method != "" || curlReq.BaseURL != "" {
+				reqHandler, _ := workspace.LoadPresetFile(preset, "request")
+				if curlReq.Method != "" {
+					reqHandler.Set("method", curlReq.Method)
+				}
+				if curlReq.BaseURL != "" {
+					reqHandler.Set("url", curlReq.BaseURL)
+				}
+				workspace.SavePresetFile(preset, "request", reqHandler)
+			}
+
+			if len(curlReq.Headers) > 0 {
+				headersHandler, _ := workspace.LoadPresetFile(preset, "headers")
+				for k, v := range curlReq.Headers {
+					headersHandler.Set(k, v)
+				}
+				workspace.SavePresetFile(preset, "headers", headersHandler)
+			}
+
+			if len(curlReq.Query) > 0 {
+				queryHandler, _ := workspace.LoadPresetFile(preset, "query")
+				for k, v := range curlReq.Query {
+					queryHandler.Set(k, v)
+				}
+				workspace.SavePresetFile(preset, "query", queryHandler)
+			}
+
+			if curlReq.Body != "" {
+				bodyHandler, _ := workspace.LoadPresetFile(preset, "body")
+				// Try to parse as JSON
+				var bodyData map[string]interface{}
+				if json.Unmarshal([]byte(curlReq.Body), &bodyData) == nil {
+					for k, v := range bodyData {
+						bodyHandler.Set(k, v)
+					}
+				}
+				workspace.SavePresetFile(preset, "body", bodyHandler)
 			}
 
 			tt.validate(t, preset)

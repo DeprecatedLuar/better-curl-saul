@@ -25,7 +25,7 @@ jobs:
         VERSION=${GITHUB_REF#refs/tags/}
 
         # Build flags
-        LDFLAGS="-X github.com/DeprecatedLuar/better-curl-saul/src/project/utils.Version=${VERSION}"
+        LDFLAGS="-X github.com/DeprecatedLuar/better-curl-saul/internal/commands.VersionString=${VERSION}"
 
         # Linux
         GOOS=linux GOARCH=amd64 go build -ldflags="${LDFLAGS}" -o saul-linux-amd64 cmd/main.go

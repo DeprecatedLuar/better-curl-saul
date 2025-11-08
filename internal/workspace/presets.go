@@ -6,18 +6,22 @@ import (
 	"path/filepath"
 
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/config"
+	"github.com/DeprecatedLuar/better-curl-saul/internal"
 )
 
 
 // GetConfigDir returns the full configuration directory path
 func GetConfigDir() (string, error) {
-	return config.GetPresetsPath()
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(home, internal.ParentDirPath, internal.AppDirName, internal.PresetsDirName), nil
 }
 
 // GetPresetPath returns the full path to a specific preset directory
 func GetPresetPath(name string) (string, error) {
-	presetsDir, err := config.GetPresetsPath()
+	presetsDir, err := GetConfigDir()
 	if err != nil {
 		return "", err
 	}
@@ -32,7 +36,7 @@ func CreatePresetDirectory(name string) error {
 	}
 
 	// Create preset directory
-	err = os.MkdirAll(presetPath, config.DirPermissions)
+	err = os.MkdirAll(presetPath, internal.DirPermissions)
 	if err != nil {
 		return fmt.Errorf(display.ErrDirectoryFailed)
 	}
@@ -45,13 +49,13 @@ func CreatePresetDirectory(name string) error {
 
 // ListPresets returns a list of all preset names
 func ListPresets() ([]string, error) {
-	presetsDir, err := config.GetPresetsPath()
+	presetsDir, err := GetConfigDir()
 	if err != nil {
 		return nil, err
 	}
 
 	// Create presets directory if it doesn't exist
-	err = os.MkdirAll(presetsDir, config.DirPermissions)
+	err = os.MkdirAll(presetsDir, internal.DirPermissions)
 	if err != nil {
 		return nil, fmt.Errorf(display.ErrDirectoryFailed)
 	}

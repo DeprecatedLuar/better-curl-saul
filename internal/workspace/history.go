@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/config"
+	"github.com/DeprecatedLuar/better-curl-saul/internal"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
 )
 
@@ -42,7 +42,7 @@ func CreateHistoryDirectory(preset string) error {
 	}
 
 	// Create history directory
-	err = os.MkdirAll(historyPath, config.DirPermissions)
+	err = os.MkdirAll(historyPath, internal.DirPermissions)
 	if err != nil {
 		return fmt.Errorf(display.ErrDirectoryFailed)
 	}
@@ -107,7 +107,7 @@ func StoreResponse(preset string, response HistoryResponse, historyCount int) er
 		return err
 	}
 
-	return utils.AtomicWriteFile(filePath, jsonData, config.FilePermissions)
+	return utils.AtomicWriteFile(filePath, jsonData, internal.FilePermissions)
 }
 
 // ListHistoryResponses returns a list of history responses with metadata

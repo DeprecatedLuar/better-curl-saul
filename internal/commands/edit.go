@@ -9,12 +9,11 @@ import (
 
 	"github.com/chzyer/readline"
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/core"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 )
 
 // Edit handles both field-level and container-level editing
-func Edit(cmd core.Command) error {
+func Edit(cmd Command) error {
 	if cmd.Preset == "" {
 		return fmt.Errorf(display.ErrPresetNameRequired)
 	}
@@ -40,7 +39,7 @@ func Edit(cmd core.Command) error {
 }
 
 // executeFieldEdit handles field-level editing with pre-filled prompts (existing functionality)
-func executeFieldEdit(cmd core.Command) error {
+func executeFieldEdit(cmd Command) error {
 	// Use first key-value pair for field editing
 	key := cmd.KeyValuePairs[0].Key
 	
@@ -95,7 +94,7 @@ func executeFieldEdit(cmd core.Command) error {
 }
 
 // executeContainerEdit handles container-level editing (open file in editor)
-func executeContainerEdit(cmd core.Command) error {
+func executeContainerEdit(cmd Command) error {
 	// Get the file path for the target
 	presetPath, err := workspace.GetPresetPath(cmd.Preset)
 	if err != nil {

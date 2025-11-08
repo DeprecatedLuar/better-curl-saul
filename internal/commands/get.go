@@ -6,21 +6,45 @@ import (
 	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/core"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/http"
+	"github.com/DeprecatedLuar/better-curl-saul/internal"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 )
 
 
 // Get displays TOML file contents in a clean, readable format
-func Get(cmd core.Command) error {
+func Get(cmd Command) error {
 	if cmd.Preset == "" {
 		return fmt.Errorf(display.ErrPresetNameRequired)
 	}
 
 	// Early return for curl export: --raw flag with no target
 	if cmd.RawOutput && cmd.Target == "" {
-		curlCmd, err := workspace.ExportToCurl(cmd.Preset)
+		// Load preset files
+		requestHandler, _ := workspace.LoadPresetFile(cmd.Preset, "request")
+		headersHandler, _ := workspace.LoadPresetFile(cmd.Preset, "headers")
+		queryHandler, _ := workspace.LoadPresetFile(cmd.Preset, "query")
+		bodyHandler, _ := workspace.LoadPresetFile(cmd.Preset, "body")
+
+		// Extract data
+		method := requestHandler.GetAsString("method")
+		baseURL := requestHandler.GetAsString("url")
+
+		headers := make(map[string]string)
+		for _, key := range headersHandler.Keys() {
+			headers[key] = headersHandler.GetAsString(key)
+		}
+
+		query := make(map[string]string)
+		for _, key := range queryHandler.Keys() {
+			query[key] = queryHandler.GetAsString(key)
+		}
+
+		var body []byte
+		if len(bodyHandler.Keys()) > 0 {
+			body, _ = bodyHandler.ToJSON()
+		}
+
+		curlCmd, err := internal.ExportToCurl(method, baseURL, headers, query, body)
 		if err != nil {
 			return err
 		}
@@ -123,14 +147,14 @@ func Get(cmd core.Command) error {
 
 
 // getHistory handles history listing (LIST operation only)
-func getHistory(cmd core.Command) error {
+func getHistory(cmd Command) error {
 	// History command only lists responses - no specific response access
 	return ListHistoryResponses(cmd.Preset, cmd.RawOutput)
 }
 
 // getResponse handles response content fetching for most recent response only
 // Space-separated format (response 1) is no longer supported - use response1 instead
-func getResponse(cmd core.Command) error {
+func getResponse(cmd Command) error {
 	// Always get most recent response - no space-separated number support
 	number, err := GetMostRecentResponseNumber(cmd.Preset)
 	if err != nil {
@@ -142,7 +166,7 @@ func getResponse(cmd core.Command) error {
 
 // getResponseWithField handles response field extraction (e.g., response1 body, response2 headers)
 // Also handles whole response display (e.g., response1 with no field specified)
-func getResponseWithField(cmd core.Command) error {
+func getResponseWithField(cmd Command) error {
 	// Extract response number from target (response1 -> 1)
 	numberStr := cmd.Target[8:] // Remove "response" prefix
 	number, err := ParseResponseNumber(numberStr, cmd.Preset)
@@ -193,7 +217,7 @@ func displayResponseField(response *workspace.HistoryResponse, fieldName string,
 		}
 
 		// Use EXACT same function as live API: FormatResponseContent (applies filtering + TOML conversion)
-		formattedContent := http.FormatResponseContent(bodyBytes, preset, rawOutput)
+		formattedContent := internal.FormatResponseContent(bodyBytes, preset, rawOutput)
 		fmt.Print(formattedContent)
 
 	case "headers":
@@ -209,7 +233,7 @@ func displayResponseField(response *workspace.HistoryResponse, fieldName string,
 		}
 
 		// Format headers without filtering (direct TOML conversion)
-		if tomlFormatted := http.FormatAsToml(headersJSON); tomlFormatted != "" {
+		if tomlFormatted := internal.FormatAsToml(headersJSON); tomlFormatted != "" {
 			fmt.Print(tomlFormatted)
 		} else {
 			// Fallback to pretty JSON if TOML conversion fails
@@ -252,7 +276,7 @@ func isFieldName(s string) bool {
 }
 
 // getResponseFieldMostRecent handles field extraction from most recent response (e.g., "response body")
-func getResponseFieldMostRecent(cmd core.Command) error {
+func getResponseFieldMostRecent(cmd Command) error {
 	// Get most recent response number
 	number, err := GetMostRecentResponseNumber(cmd.Preset)
 	if err != nil {

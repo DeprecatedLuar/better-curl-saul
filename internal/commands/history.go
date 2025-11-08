@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/http"
+	"github.com/DeprecatedLuar/better-curl-saul/internal"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 )
 
@@ -117,7 +117,7 @@ func DisplayHistoryResponse(preset string, number int, rawOutput bool) error {
 
 	// Get JSON data and format for display
 	jsonStr := response.Body.(string)
-	content := http.FormatResponseContent([]byte(jsonStr), preset, rawOutput)
+	content := internal.FormatResponseContent([]byte(jsonStr), preset, rawOutput)
 
 	if rawOutput {
 		fmt.Print(content)

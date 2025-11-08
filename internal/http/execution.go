@@ -8,13 +8,13 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/core"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/commands"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/variables"
 )
 
 // ExecuteCallCommand handles HTTP execution for call commands
-func ExecuteCallCommand(cmd core.Command) error {
+func ExecuteCallCommand(cmd commands.Command) error {
 	if cmd.Preset == "" {
 		return fmt.Errorf(display.ErrPresetNameRequired)
 	}
