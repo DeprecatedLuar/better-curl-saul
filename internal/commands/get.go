@@ -7,12 +7,13 @@ import (
 
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 	"github.com/DeprecatedLuar/better-curl-saul/internal"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/commands/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 )
 
 
 // Get displays TOML file contents in a clean, readable format
-func Get(cmd Command) error {
+func Get(cmd parser.Command) error {
 	if cmd.Preset == "" {
 		return fmt.Errorf(display.ErrPresetNameRequired)
 	}
@@ -140,14 +141,14 @@ func Get(cmd Command) error {
 
 
 // getHistory handles history listing (LIST operation only)
-func getHistory(cmd Command) error {
+func getHistory(cmd parser.Command) error {
 	// History command only lists responses - no specific response access
 	return ListHistoryResponses(cmd.Preset, cmd.RawOutput)
 }
 
 // getResponse handles response content fetching for most recent response only
 // Space-separated format (response 1) is no longer supported - use response1 instead
-func getResponse(cmd Command) error {
+func getResponse(cmd parser.Command) error {
 	// Always get most recent response - no space-separated number support
 	number, err := GetMostRecentResponseNumber(cmd.Preset)
 	if err != nil {
@@ -159,7 +160,7 @@ func getResponse(cmd Command) error {
 
 // getResponseWithField handles response field extraction (e.g., response1 body, response2 headers)
 // Also handles whole response display (e.g., response1 with no field specified)
-func getResponseWithField(cmd Command) error {
+func getResponseWithField(cmd parser.Command) error {
 	// Extract response number from target (response1 -> 1)
 	numberStr := cmd.Target[8:] // Remove "response" prefix
 	number, err := ParseResponseNumber(numberStr, cmd.Preset)
@@ -269,7 +270,7 @@ func isFieldName(s string) bool {
 }
 
 // getResponseFieldMostRecent handles field extraction from most recent response (e.g., "response body")
-func getResponseFieldMostRecent(cmd Command) error {
+func getResponseFieldMostRecent(cmd parser.Command) error {
 	// Get most recent response number
 	number, err := GetMostRecentResponseNumber(cmd.Preset)
 	if err != nil {

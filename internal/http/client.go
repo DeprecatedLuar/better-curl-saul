@@ -3,7 +3,6 @@ package http
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -24,15 +23,9 @@ type HTTPRequestConfig struct {
 }
 
 // LoadPresetFile loads a single TOML file as a handler, returns empty handler if file doesn't exist
+// Now uses variant-aware workspace.LoadPresetFile() for proper variant support
 func LoadPresetFile(preset, filename string) *workspace.TomlHandler {
-	presetPath, err := workspace.GetPresetPath(preset)
-	if err != nil {
-		// Return empty handler if preset path fails
-		return createEmptyHandler()
-	}
-
-	filePath := filepath.Join(presetPath, filename+".toml")
-	handler, err := workspace.NewTomlHandler(filePath)
+	handler, err := workspace.LoadPresetFile(preset, filename)
 	if err != nil {
 		// Return empty handler if file doesn't exist or can't be loaded
 		return createEmptyHandler()

@@ -1,7 +1,4 @@
-// Package commands provides command parsing, execution logic and validation for Better-Curl-Saul.
-// This package handles all command-related operations including argument parsing,
-// command execution, and request validation.
-package commands
+package parser
 
 import (
 	"fmt"
@@ -33,8 +30,9 @@ type Command struct {
 
 // KeyValuePair represents a key-value pair from command arguments
 type KeyValuePair struct {
-	Key   string
-	Value string
+	Target string // Target file: "body", "headers", "query", "request" (optional, for HTTPie syntax)
+	Key    string
+	Value  string
 }
 
 // SessionProvider interface for getting current preset
@@ -55,7 +53,7 @@ func ParseCommandWithSession(args []string, session SessionProvider) (Command, e
 	}
 
 	// Check for list command aliases FIRST - skip flag parsing for them
-	if isListCommand(args[0]) {
+	if IsListCommand(args[0]) {
 		cmd.Global = "list"
 		cmd.Preset = args[0]  // Store the actual command (ls/exa/etc) for delegation
 		return cmd, nil
@@ -83,6 +81,13 @@ func ParseCommandWithSession(args []string, session SessionProvider) (Command, e
 			cmd.Targets = args[1:]
 			// Keep single target for backward compatibility
 			cmd.Preset = args[1]
+		}
+		return cmd, nil
+	case "copy", "cp":
+		cmd.Global = "copy"
+		if len(args) >= 3 {
+			// Handle copy command: saul cp source dest
+			cmd.Targets = args[1:]
 		}
 		return cmd, nil
 	case "version", "help", "update":
@@ -135,6 +140,14 @@ func ParseCommandWithSession(args []string, session SessionProvider) (Command, e
 
 	if len(args) > 1 {
 		cmd.Command = args[1]
+	}
+
+	// Check for HTTPie syntax: preset followed by non-explicit command that looks like HTTPie
+	if len(args) > 1 && !isExplicitCommand(args[1]) {
+		// Check if it looks like HTTPie syntax (URL, method, or HTTPie arg)
+		if LooksLikeURL(args[1]) || IsHTTPMethod(args[1]) || IsHTTPieArg(args[1]) {
+			return ParseHTTPieSyntax(args[1:], cmd.Preset)
+		}
 	}
 
 	// Handle special request commands with no-equals syntax
@@ -223,133 +236,4 @@ func ParseCommandWithSession(args []string, session SessionProvider) (Command, e
 	}
 
 	return cmd, nil
-}
-
-// isSpecialRequestCommand checks if a command is a special request command (no = syntax)
-func isSpecialRequestCommand(command string) bool {
-	specialCommands := []string{"url", "method", "timeout", "history"}
-	command = strings.ToLower(command)
-
-	for _, special := range specialCommands {
-		if command == special {
-			return true
-		}
-	}
-	return false
-}
-
-// parseSpaceSeparatedKeyValues handles space-separated key=value arguments
-func parseSpaceSeparatedKeyValues(args []string) ([]KeyValuePair, error) {
-	var pairs []KeyValuePair
-
-	for _, arg := range args {
-		parts := strings.SplitN(arg, "=", 2)
-		if len(parts) != 2 {
-			return nil, fmt.Errorf(display.ErrInvalidKeyValue)
-		}
-
-		key := strings.TrimSpace(parts[0])
-		value := strings.TrimSpace(parts[1])
-
-		// Remove surrounding quotes if present
-		if len(value) >= 2 && value[0] == '"' && value[len(value)-1] == '"' {
-			value = value[1 : len(value)-1]
-		}
-
-		pairs = append(pairs, KeyValuePair{Key: key, Value: value})
-	}
-
-	return pairs, nil
-}
-
-// parseFlags extracts flags from args and sets them in cmd, returning filtered args
-func parseFlags(args []string, cmd *Command) ([]string, error) {
-	var filteredArgs []string
-	skip := 0
-
-	for i, arg := range args {
-		if skip > 0 {
-			skip--
-			continue
-		}
-
-		if strings.HasPrefix(arg, "--") {
-			// Handle long flags
-			switch arg {
-			case "--raw":
-				cmd.RawOutput = true
-			case "--headers-only":
-				cmd.ResponseFormat = "headers-only"
-			case "--body-only":
-				cmd.ResponseFormat = "body-only"
-			case "--status-only":
-				cmd.ResponseFormat = "status-only"
-			case "--dry-run":
-				cmd.DryRun = true
-			case "--call":
-				cmd.Call = true
-			case "--create":
-				cmd.Create = true
-			default:
-				return nil, fmt.Errorf("unknown flag: %s", arg)
-			}
-		} else if strings.HasPrefix(arg, "-") && len(arg) > 1 && !strings.HasPrefix(arg, "--") {
-			// Handle short flags
-			flagPart := arg[1:] // Remove leading -
-			if flagPart == "v" {
-				// -v flag: collect all following non-flag arguments as variable names
-				varCount := 0
-				for j := i + 1; j < len(args); j++ {
-					if strings.HasPrefix(args[j], "-") {
-						break // Stop at next flag
-					}
-					cmd.VariableFlags = append(cmd.VariableFlags, args[j])
-					varCount++
-				}
-				skip = varCount // Skip these args in main loop
-				// If no variables specified, empty slice signals "all variables"
-				if len(cmd.VariableFlags) == 0 {
-					cmd.VariableFlags = []string{}
-				}
-			} else {
-				return nil, fmt.Errorf("unknown flag: %s", arg)
-			}
-		} else {
-			// Not a flag, keep in filtered args
-			filteredArgs = append(filteredArgs, arg)
-		}
-	}
-
-	return filteredArgs, nil
-}
-
-// isListCommand checks if a command is a list command alias
-func isListCommand(command string) bool {
-	listCommands := []string{"list", "ls", "exa", "lsd", "tree", "dir"}
-	for _, cmd := range listCommands {
-		if command == cmd {
-			return true
-		}
-	}
-	return false
-}
-
-// normalizeTarget converts target aliases to canonical names
-func normalizeTarget(target string) string {
-	switch strings.ToLower(target) {
-	case "body":
-		return "body"
-	case "headers", "header":
-		return "headers"
-	case "query", "queries":
-		return "query"
-	case "request", "req", "url":
-		return "request"
-	case "variables", "vars", "var":
-		return "variables"
-	case "filters", "filter":
-		return "filters"
-	default:
-		return target // Return as-is if not recognized (for special cases like "history", "response")
-	}
 }

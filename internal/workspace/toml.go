@@ -7,13 +7,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	lib "github.com/pelletier/go-toml"
 	"github.com/DeprecatedLuar/better-curl-saul/internal"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
-	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 )
 
 // ===== TOML HANDLER TYPE =====
@@ -228,41 +226,10 @@ func (t *TomlHandler) Clone() (*TomlHandler, error) {
 // If file doesn't exist, returns an empty handler that will create the file on first Write()
 // Supports variants: handles preset paths like "myapi/submit" or "myapi"
 func LoadPresetFile(preset, fileType string) (*TomlHandler, error) {
-	// Extract base preset if variant path provided
-	basePreset := preset
-	if strings.Contains(preset, "/") {
-		basePreset = strings.Split(preset, "/")[0]
-	}
-
-	presetPath, err := GetPresetPath(basePreset)
+	// Use centralized variant path resolution
+	filePath, err := GetVariantPath(preset, fileType)
 	if err != nil {
 		return nil, err
-	}
-
-	// Ensure preset directory exists
-	err = os.MkdirAll(presetPath, internal.DirPermissions)
-	if err != nil {
-		return nil, fmt.Errorf(display.ErrDirectoryFailed)
-	}
-
-	variantsDir := filepath.Join(presetPath, "variants")
-	var filePath string
-
-	// Check if variants folder exists
-	if _, err := os.Stat(variantsDir); err == nil {
-		activeVariant := GetActiveVariant(basePreset)
-		variantPath := filepath.Join(variantsDir, activeVariant)
-
-		// Ensure variant directory exists
-		err = os.MkdirAll(variantPath, internal.DirPermissions)
-		if err != nil {
-			return nil, fmt.Errorf(display.ErrDirectoryFailed)
-		}
-
-		filePath = filepath.Join(variantPath, fileType+".toml")
-	} else {
-		// Fallback to root files (backward compatible)
-		filePath = filepath.Join(presetPath, fileType+".toml")
 	}
 
 	// If file doesn't exist, create an empty handler (file created on Write())
@@ -280,35 +247,10 @@ func LoadPresetFile(preset, fileType string) (*TomlHandler, error) {
 // SavePresetFile saves a TOML handler to a specific preset file
 // Supports variants: handles preset paths like "myapi/submit" or "myapi"
 func SavePresetFile(preset, fileType string, handler *TomlHandler) error {
-	// Extract base preset if variant path provided
-	basePreset := preset
-	if strings.Contains(preset, "/") {
-		basePreset = strings.Split(preset, "/")[0]
-	}
-
-	presetPath, err := GetPresetPath(basePreset)
+	// Use centralized variant path resolution
+	filePath, err := GetVariantPath(preset, fileType)
 	if err != nil {
 		return err
-	}
-
-	variantsDir := filepath.Join(presetPath, "variants")
-	var filePath string
-
-	// Check if variants folder exists
-	if _, err := os.Stat(variantsDir); err == nil {
-		activeVariant := GetActiveVariant(basePreset)
-		variantPath := filepath.Join(variantsDir, activeVariant)
-
-		// Ensure variant directory exists
-		err = os.MkdirAll(variantPath, internal.DirPermissions)
-		if err != nil {
-			return fmt.Errorf(display.ErrDirectoryFailed)
-		}
-
-		filePath = filepath.Join(variantPath, fileType+".toml")
-	} else {
-		// Fallback to root files (backward compatible)
-		filePath = filepath.Join(presetPath, fileType+".toml")
 	}
 
 	handler.SetOutputPath(filePath)

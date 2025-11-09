@@ -8,13 +8,13 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/commands/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/http"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/variables"
 )
 
 // Call handles HTTP execution for call commands
-func Call(cmd Command) error {
+func Call(cmd parser.Command) error {
 	if cmd.Preset == "" {
 		return fmt.Errorf(display.ErrPresetNameRequired)
 	}
@@ -39,10 +39,10 @@ func Call(cmd Command) error {
 
 	if cmd.VariableFlags != nil {
 		// -v flag was used (either with args or without)
-		substitutions, err = variables.PromptForSpecificVariables(cmd.Preset, cmd.VariableFlags, persist)
+		substitutions, err = workspace.PromptForSpecificVariables(cmd.Preset, cmd.VariableFlags, persist)
 	} else {
 		// No -v flag used = normal variable prompting
-		substitutions, err = variables.PromptForVariables(cmd.Preset, persist)
+		substitutions, err = workspace.PromptForVariables(cmd.Preset, persist)
 	}
 	if err != nil {
 		return fmt.Errorf(display.ErrVariableLoadFailed)
@@ -55,19 +55,19 @@ func Call(cmd Command) error {
 	queryHandler := http.LoadPresetFile(cmd.Preset, "query")
 
 	// Apply variable substitutions to each separately
-	err = variables.SubstituteVariables(requestHandler, substitutions)
+	err = workspace.SubstituteVariables(requestHandler, substitutions)
 	if err != nil {
 		return fmt.Errorf(display.ErrVariableLoadFailed)
 	}
-	err = variables.SubstituteVariables(headersHandler, substitutions)
+	err = workspace.SubstituteVariables(headersHandler, substitutions)
 	if err != nil {
 		return fmt.Errorf(display.ErrVariableLoadFailed)
 	}
-	err = variables.SubstituteVariables(bodyHandler, substitutions)
+	err = workspace.SubstituteVariables(bodyHandler, substitutions)
 	if err != nil {
 		return fmt.Errorf(display.ErrVariableLoadFailed)
 	}
-	err = variables.SubstituteVariables(queryHandler, substitutions)
+	err = workspace.SubstituteVariables(queryHandler, substitutions)
 	if err != nil {
 		return fmt.Errorf(display.ErrVariableLoadFailed)
 	}

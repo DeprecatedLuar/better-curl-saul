@@ -21,7 +21,8 @@
   </a>
 </p>
 
-**v0.3.0 Try out the new curl import/exporting**: `saul myapi set --raw` and `saul myapi get --raw` 
+**v0.4.0 HTTPie-style syntax is here!**: Quick one-liners like `saul myapi POST api.com name=value Authorization:token`
+**v0.3.0 curl import/exporting**: `saul myapi set --raw` and `saul myapi get --raw` 
 
 ---
 
@@ -65,6 +66,7 @@ curl -X POST "https://company.atlassian.net/rest/api/3/issue" \
 
 ## The nice features you've never seen before
 
+- **HTTPie-style syntax** - Quick one-liners: `saul api POST url name=value Auth:token`
 - **Workspace-based** - Each API gets its own organized folder (reusable)
 - **Inline editor** - the `edit` command for any given field also supports `$EDITOR`
 - **Smart variables** - `{@token}` persists,`{?name}` prompts every time
@@ -137,6 +139,7 @@ saul temp set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-s
 | Action | Targets                                                            | Description                              | Example                                    |
 |--------|--------------------------------------------------------------------|------------------------------------------|--------------------------------------------|
 | create | -                                                                  | Create new preset                        | `saul create myapi --create`               |
+| cp     | -                                                                  | Copy preset or variant                   | `saul cp source dest`                      |
 | set    | `url`, `method`, `timeout`, `body`, `header`, `query`, `variables` | Configure request settings and data      | `saul api set url https://...`             |
 | edit   | `body`, `header`, `query`                                          | Edit inline or open in $EDITOR           | `saul edit body user.name` / `saul edit body` |
 | rm     | `body`, `header`, `query`                                          | Remove specific fields                   | `saul rm body user.email`                  |
@@ -153,6 +156,12 @@ Organize multiple variations of the same API under one preset:
 saul myapi/submit set url https://api.com/submit
 saul myapi/check set url https://api.com/check
 
+# Copy existing preset to variant
+saul cp myapi_submit myapi/submit
+
+# Copy variant to variant
+saul cp myapi/submit myapi/get
+
 # Switch between variants
 saul myapi/submit          # Absolute path
 saul /check                # Relative to current preset
@@ -161,6 +170,34 @@ saul switch submit         # Explicit switch command
 # First variant migrates existing root files automatically
 # Each variant maintains isolated configuration
 ```
+
+### HTTPie-Style Syntax
+
+Quick one-liner commands without explicit `set` keywords:
+
+```bash
+# URL + body fields
+saul myapi https://api.example.com name=john email=john@example.com
+
+# Method + URL + headers
+saul myapi POST https://api.example.com/users Authorization:Bearer-token Content-Type:application/json
+
+# Query parameters (use == for query params)
+saul myapi https://api.example.com/search q==searchterm limit==10 offset==0
+
+# Mix and match - all in one command
+saul myapi POST https://api.example.com/posts title=foo Authorization:Bearer-token tags==production status==active
+
+# Explicit syntax still works
+saul myapi set url https://api.example.com
+saul myapi set body user=alice age=30
+```
+
+**Syntax Rules:**
+- `=` → Body field (e.g., `name=value`)
+- `==` → Query parameter (e.g., `q==search`)
+- `:` → Header (e.g., `Authorization:token`)
+- URLs and HTTP methods detected automatically
 
 ### Flags
 

@@ -8,9 +8,9 @@ import (
 
 	"github.com/DeprecatedLuar/better-curl-saul/internal"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/commands"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/commands/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/http"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/variables"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 )
 
@@ -45,16 +45,16 @@ func TestSetAndGetFlow(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		setCmd    commands.Command
+		setCmd    parser.Command
 		getKey    string
 		wantValue string
 	}{
 		{
 			name: "set and get URL",
-			setCmd: commands.Command{
+			setCmd: parser.Command{
 				Preset: preset,
 				Target: "request",
-				KeyValuePairs: []commands.KeyValuePair{
+				KeyValuePairs: []parser.KeyValuePair{
 					{Key: "url", Value: "https://api.example.com"},
 				},
 			},
@@ -63,10 +63,10 @@ func TestSetAndGetFlow(t *testing.T) {
 		},
 		{
 			name: "set and get method (uppercase)",
-			setCmd: commands.Command{
+			setCmd: parser.Command{
 				Preset: preset,
 				Target: "request",
-				KeyValuePairs: []commands.KeyValuePair{
+				KeyValuePairs: []parser.KeyValuePair{
 					{Key: "method", Value: "post"},
 				},
 			},
@@ -75,10 +75,10 @@ func TestSetAndGetFlow(t *testing.T) {
 		},
 		{
 			name: "set and get body field",
-			setCmd: commands.Command{
+			setCmd: parser.Command{
 				Preset: preset,
 				Target: "body",
-				KeyValuePairs: []commands.KeyValuePair{
+				KeyValuePairs: []parser.KeyValuePair{
 					{Key: "user.name", Value: "testuser"},
 				},
 			},
@@ -161,7 +161,7 @@ func TestHardVariableDetection(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			isVar, varType, varName := variables.DetectVariableType(tt.value)
+			isVar, varType, varName := workspace.DetectVariableType(tt.value)
 
 			if isVar != tt.wantVar {
 				t.Errorf("isVariable = %v, want %v", isVar, tt.wantVar)
@@ -205,10 +205,10 @@ func TestVariableStorageAndRetrieval(t *testing.T) {
 	preset, cleanup := setupTestPreset(t, "vartest")
 	defer cleanup()
 
-	setCmd := commands.Command{
+	setCmd := parser.Command{
 		Preset: preset,
 		Target: "body",
-		KeyValuePairs: []commands.KeyValuePair{
+		KeyValuePairs: []parser.KeyValuePair{
 			{Key: "api.token", Value: "{@token}"},
 			{Key: "api.key", Value: "{@apikey}"},
 		},
@@ -218,7 +218,7 @@ func TestVariableStorageAndRetrieval(t *testing.T) {
 		t.Fatalf("Set with variables failed: %v", err)
 	}
 
-	foundVars, err := variables.FindAllVariables(preset)
+	foundVars, err := workspace.FindAllVariables(preset)
 	if err != nil {
 		t.Fatalf("FindAllVariables failed: %v", err)
 	}
@@ -253,10 +253,10 @@ func TestLazyFileCreation(t *testing.T) {
 	presetPath, _ := workspace.GetPresetPath(preset)
 
 	// Set only body data
-	setCmd := commands.Command{
+	setCmd := parser.Command{
 		Preset: preset,
 		Target: "body",
-		KeyValuePairs: []commands.KeyValuePair{
+		KeyValuePairs: []parser.KeyValuePair{
 			{Key: "test", Value: "value"},
 		},
 	}
@@ -298,7 +298,7 @@ func TestTargetAliasNormalization(t *testing.T) {
 		t.Run(tt.alias, func(t *testing.T) {
 			// Test through ParseCommand to verify normalization happens during parsing
 			args := []string{"testpreset", "set", tt.alias, "key=value"}
-			cmd, err := commands.ParseCommand(args)
+			cmd, err := parser.ParseCommand(args)
 			if err != nil {
 				t.Fatalf("ParseCommand failed: %v", err)
 			}
@@ -393,7 +393,7 @@ func TestGetCommandParsing(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cmd, err := commands.ParseCommand(tt.args)
+			cmd, err := parser.ParseCommand(tt.args)
 			if err != nil {
 				t.Fatalf("ParseCommand failed: %v", err)
 			}

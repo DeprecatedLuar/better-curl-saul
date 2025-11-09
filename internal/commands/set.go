@@ -8,14 +8,14 @@ import (
 	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/commands/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/http"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/variables"
 )
 
 // Set handles set operations for TOML files
-func Set(cmd Command) error {
+func Set(cmd parser.Command) error {
 	// Handle --raw flag for curl import via editor
 	if cmd.RawOutput {
 		if cmd.Preset == "" {
@@ -59,10 +59,10 @@ func Set(cmd Command) error {
 			}
 
 			// Detect if value is a variable
-			isVar, varType, varName := variables.DetectVariableType(kvp.Value)
+			isVar, varType, varName := workspace.DetectVariableType(kvp.Value)
 			if isVar {
 				// Store variable info in config.toml for later resolution
-				err := variables.StoreVariableInfo(cmd.Preset, kvp.Key, varType, varName)
+				err := workspace.StoreVariableInfo(cmd.Preset, kvp.Key, varType, varName)
 				if err != nil {
 					return fmt.Errorf(display.ErrVariableSaveFailed)
 				}
