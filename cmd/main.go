@@ -6,12 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 	"github.com/DeprecatedLuar/better-curl-saul/internal"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/http"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/commands"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 )
 
 // SessionManager encapsulates session state and file operations
@@ -25,12 +24,12 @@ type SessionManager struct {
 func NewSessionManager() (*SessionManager, error) {
 	ttyID, err := getTTYID()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get TTY ID: %v", err)
+		return nil, fmt.Errorf(display.ErrSessionTTYFailed, err)
 	}
 
 	configPath, err := getConfigPath()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get config path: %v", err)
+		return nil, fmt.Errorf(display.ErrSessionConfigFailed, err)
 	}
 
 	sm := &SessionManager{
@@ -79,7 +78,7 @@ func (s *SessionManager) SaveSession() error {
 
 	// Ensure the directory exists
 	if err := os.MkdirAll(filepath.Dir(sessionFile), internal.DirPermissions); err != nil {
-		return fmt.Errorf("failed to create session directory: %v", err)
+		return fmt.Errorf(display.ErrSessionDirFailed, err)
 	}
 
 	return utils.AtomicWriteFile(sessionFile, []byte(s.currentPreset), internal.FilePermissions)
@@ -124,7 +123,6 @@ func isActionCommand(cmd string) bool {
 	return cmd == "set" || cmd == "get" || cmd == "edit" || cmd == "call"
 }
 
-
 func main() {
 	args := os.Args[1:]
 
@@ -154,7 +152,7 @@ func main() {
 		}
 	}
 
-	cmd, err := commands.ParseCommand(args)
+	cmd, err := commands.ParseCommandWithSession(args, sessionManager)
 	if err != nil {
 		display.Error(err.Error())
 		return
@@ -170,12 +168,29 @@ func main() {
 // executeCommand routes commands to appropriate handlers
 func executeCommand(cmd commands.Command, sessionManager *SessionManager) error {
 
+	// Handle variant switching first (before updating session)
+	if cmd.Global == "switch" || cmd.Global == "switch-variant" {
+		return executeVariantSwitch(cmd, sessionManager)
+	}
+
 	// Update current preset when explicitly specified and save to session
 	if cmd.Preset != "" {
+		// Handle variant creation if preset contains / AND base preset exists
+		if strings.Contains(cmd.Preset, "/") {
+			basePreset := strings.Split(cmd.Preset, "/")[0]
+			// Only ensure variant structure if base preset already exists
+			// If it doesn't exist, executePresetCommand will handle creation
+			if workspace.PresetExists(basePreset) {
+				if err := ensureVariantStructure(cmd.Preset); err != nil {
+					return err
+				}
+			}
+		}
+
 		err := sessionManager.SetCurrentPreset(cmd.Preset)
 		if err != nil {
 			// Session save failure is not critical - log but continue
-			fmt.Fprintf(os.Stderr, "Warning: failed to save session: %v\n", err)
+			display.Warning(fmt.Sprintf(display.WarnSessionSaveFailed, err))
 		}
 	}
 
@@ -188,9 +203,120 @@ func executeCommand(cmd commands.Command, sessionManager *SessionManager) error 
 	return executePresetCommand(cmd)
 }
 
+// executeVariantSwitch handles variant switching
+func executeVariantSwitch(cmd commands.Command, sessionManager *SessionManager) error {
+	if !sessionManager.HasCurrentPreset() {
+		return fmt.Errorf(display.ErrNoActivePreset)
+	}
+
+	currentPreset := sessionManager.GetCurrentPreset()
+	basePreset := strings.Split(currentPreset, "/")[0]
+
+	// Extract variant name from cmd.Preset
+	// For "switch" command: cmd.Preset is just variant name
+	// For "switch-variant" (from /variant): cmd.Preset is full path
+	variantName := cmd.Preset
+	if strings.Contains(variantName, "/") {
+		variantName = strings.Split(variantName, "/")[1]
+	}
+
+	// Ensure variants folder and variant directory exist
+	fullPresetPath := basePreset + "/" + variantName
+	if err := ensureVariantStructure(fullPresetPath); err != nil {
+		return err
+	}
+
+	// Update .config file
+	if err := workspace.SetActiveVariant(basePreset, variantName); err != nil {
+		return err
+	}
+
+	// Update session
+	if err := sessionManager.SetCurrentPreset(fullPresetPath); err != nil {
+		display.Warning(fmt.Sprintf(display.WarnSessionSaveFailed, err))
+	}
+
+	display.Success(fmt.Sprintf("Switched to variant: %s", variantName))
+	return nil
+}
+
+// ensureVariantStructure creates variants/ folder and variant directory if preset contains /
+// On first variant creation, migrates root TOML files into the variant
+func ensureVariantStructure(presetWithVariant string) error {
+	parts := strings.Split(presetWithVariant, "/")
+	if len(parts) != 2 {
+		return fmt.Errorf(display.ErrInvalidVariantPath, presetWithVariant)
+	}
+
+	basePreset := parts[0]
+	variantName := parts[1]
+
+	// Ensure base preset exists
+	if !workspace.PresetExists(basePreset) {
+		return fmt.Errorf(display.ErrVariantPresetMissing, basePreset)
+	}
+
+	presetPath, err := workspace.GetPresetPath(basePreset)
+	if err != nil {
+		return err
+	}
+
+	variantsDir := filepath.Join(presetPath, "variants")
+	isFirstVariant := false
+
+	// Check if this is first variant creation
+	if _, err := os.Stat(variantsDir); os.IsNotExist(err) {
+		isFirstVariant = true
+	}
+
+	// Create variants/ folder
+	if err := os.MkdirAll(variantsDir, internal.DirPermissions); err != nil {
+		return fmt.Errorf(display.ErrVariantsDirFailed, err)
+	}
+
+	// Create variant directory
+	variantPath := filepath.Join(variantsDir, variantName)
+	if err := os.MkdirAll(variantPath, internal.DirPermissions); err != nil {
+		return fmt.Errorf(display.ErrVariantDirFailed, err)
+	}
+
+	// Migrate root TOML files to first variant
+	if isFirstVariant {
+		tomlFiles := []string{"request.toml", "body.toml", "headers.toml", "query.toml", "variables.toml", "filters.toml"}
+		for _, file := range tomlFiles {
+			rootFile := filepath.Join(presetPath, file)
+			if _, err := os.Stat(rootFile); err == nil {
+				// File exists, move it
+				variantFile := filepath.Join(variantPath, file)
+				if err := os.Rename(rootFile, variantFile); err != nil {
+					return fmt.Errorf(display.ErrVariantMigrateFailed, file, err)
+				}
+			}
+		}
+	}
+
+	// Create/update .config file to point to this variant
+	configPath := filepath.Join(presetPath, ".config")
+	if err := os.WriteFile(configPath, []byte(variantName), internal.FilePermissions); err != nil {
+		return fmt.Errorf(display.ErrVariantConfigFailed, err)
+	}
+
+	return nil
+}
+
 // executeGlobalCommand handles global commands like list, rm, version
 func executeGlobalCommand(cmd commands.Command) error {
 	switch cmd.Global {
+	case "create":
+		if cmd.Preset == "" {
+			return fmt.Errorf(display.ErrPresetNameRequired)
+		}
+		err := workspace.CreatePresetDirectory(cmd.Preset)
+		if err != nil {
+			return fmt.Errorf(display.ErrPresetCreateFailed, cmd.Preset, err)
+		}
+		return nil
+
 	case "list":
 		return commands.List(cmd)
 
@@ -199,57 +325,80 @@ func executeGlobalCommand(cmd commands.Command) error {
 
 	case "rm":
 		if len(cmd.Targets) == 0 {
-			return fmt.Errorf("preset name required for rm command")
+			return fmt.Errorf(display.ErrPresetNameRequired)
 		}
 
 		// Handle multiple targets: saul rm preset1 preset2 preset3
 		// Continue processing, warn about non-existent presets
-		var warnings []string
 		deletedCount := 0
 
 		for _, presetName := range cmd.Targets {
 			err := workspace.DeletePreset(presetName)
 			if err != nil {
 				// Collect warnings for non-existent presets, continue processing
-				warnings = append(warnings, fmt.Sprintf("Warning: preset '%s' does not exist", presetName))
+				display.Warning(fmt.Sprintf(display.ErrPresetNotFound, presetName))
 			} else {
 				deletedCount++
 			}
-		}
-
-		// Print warnings if any
-		for _, warning := range warnings {
-			display.Warning(warning)
 		}
 
 		// Silent success if at least one was deleted, or no warnings
 		return nil
 
 	case "help":
-		showHelp()
-		return nil
+		return commands.Help()
 
 	case "update":
 		return commands.Update()
 
 	default:
-		return fmt.Errorf("unknown global command: %s", cmd.Global)
+		return fmt.Errorf(display.ErrCommandUnknownGlobal, cmd.Global)
 	}
 }
 
 // executePresetCommand handles preset-specific commands
 func executePresetCommand(cmd commands.Command) error {
 	if cmd.Preset == "" {
-		return fmt.Errorf("preset name required")
+		return fmt.Errorf(display.ErrPresetNameRequired)
 	}
 
-	// If no command specified, create the preset if it doesn't exist
-	if cmd.Command == "" {
-		err := workspace.CreatePresetDirectory(cmd.Preset)
-		if err != nil {
-			return fmt.Errorf("failed to create preset '%s': %v", cmd.Preset, err)
+	// Handle variant paths: check base preset exists, not full variant path
+	basePreset := cmd.Preset
+	isVariant := strings.Contains(cmd.Preset, "/")
+	if isVariant {
+		basePreset = strings.Split(cmd.Preset, "/")[0]
+	}
+
+	// Check if base preset exists
+	presetExists := workspace.PresetExists(basePreset)
+
+	// Handle preset creation requirements
+	if !presetExists {
+		if cmd.Create {
+			// Create base preset explicitly requested via --create flag
+			err := workspace.CreatePresetDirectory(basePreset)
+			if err != nil {
+				return fmt.Errorf(display.ErrPresetCreateFailed, basePreset, err)
+			}
+			// If it's a variant, ensure variant structure
+			if isVariant {
+				if err := ensureVariantStructure(cmd.Preset); err != nil {
+					return err
+				}
+			}
+			// If no command specified, we're done
+			if cmd.Command == "" {
+				return nil
+			}
+			// Otherwise, continue to execute the command
+		} else {
+			// Preset doesn't exist and no --create flag
+			return fmt.Errorf(display.ErrPresetNotFoundCreate, basePreset, basePreset, basePreset)
 		}
-		// Silent success - Unix philosophy
+	}
+
+	// If preset exists and no command specified, just switch to it (silent success)
+	if cmd.Command == "" {
 		return nil
 	}
 
@@ -266,73 +415,16 @@ func executePresetCommand(cmd commands.Command) error {
 		err = commands.Edit(cmd)
 
 	case "call":
-		err = http.ExecuteCallCommand(cmd)
+		err = commands.Call(cmd)
 
 	default:
-		return fmt.Errorf("unknown preset command: %s", cmd.Command)
+		return fmt.Errorf(display.ErrCommandUnknownPreset, cmd.Command)
 	}
 
 	// If main command succeeded and --call flag is set, execute call
 	if err == nil && cmd.Call {
-		return http.ExecuteCallCommand(cmd)
+		return commands.Call(cmd)
 	}
 
 	return err
-}
-
-// showHelp displays usage information
-func showHelp() {
-	display.Info("Better-Curl (Saul) - Workspace-based HTTP Client")
-	display.Plain("")
-
-	// Usage section
-	usage := "  saul [preset] [command] [target] [key=value]"
-	formatted := display.FormatSimpleSection("Usage", usage)
-	display.Plain(formatted)
-
-	// Global Commands section
-	globalCmds := `  saul version              Show version information
-  saul update               Check for updates
-  saul ls [options]         List presets directory (system ls command)
-  saul rm [preset...]       Delete one or more presets
-  saul help                 Show this help`
-	formatted = display.FormatSimpleSection("Global Commands", globalCmds)
-	display.Plain(formatted)
-
-	// Preset Commands section
-	presetCmds := `  saul [preset]             Create or switch to preset
-  saul [preset] set [target] [key=value]
-                            Set value in target file
-  saul [preset] get [target] [key]
-                            Get value from target file
-  saul [preset] call        Execute HTTP request
-  saul call                 Execute HTTP request (current preset)`
-	formatted = display.FormatSimpleSection("Preset Commands", presetCmds)
-	display.Plain(formatted)
-
-	// Targets section
-	targets := `  body      HTTP request body (JSON)
-  headers   HTTP headers
-  query     Query/search payload data
-  request   HTTP method, URL, and settings
-  variables Hard variables only (soft variables never stored)`
-	formatted = display.FormatSimpleSection("Targets", targets)
-	display.Plain(formatted)
-
-	// Examples section
-	examples := `  # Special request syntax (no = sign)
-  saul pokeapi set url https://api.example.com
-  saul pokeapi set method POST
-  saul pokeapi set timeout 30
-
-  # Regular TOML syntax (with = sign)
-  saul pokeapi set body pokemon.name=pikachu
-  saul pokeapi set header Content-Type=application/json
-  saul pokeapi set body pokemon.level=@level
-
-  # Check what's configured
-  saul pokeapi get url
-  saul pokeapi get body pokemon.name`
-	formatted = display.FormatSimpleSection("Examples", examples)
-	display.Plain(formatted)
 }

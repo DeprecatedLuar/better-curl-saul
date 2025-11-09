@@ -38,6 +38,26 @@ const (
 	ErrEmptyCurlCommand      = "Come on now, friend - you gave me an empty file! I need an actual curl command to work with!"
 	ErrCurlParseFailed       = "That curl command's not holding up under scrutiny - syntax error, plain and simple: %v"
 	ErrNoCurlURL             = "Listen pal, that curl command's missing the most important part - the URL! Can't make a case without an address!"
+
+	// Session-related errors
+	ErrSessionTTYFailed      = "Can't get terminal ID - that's a courtroom security breach: %v"
+	ErrSessionConfigFailed   = "Config path's playing hide and seek - can't locate it: %v"
+	ErrSessionDirFailed      = "Session directory won't cooperate - creation failed: %v"
+
+	// Variant-related errors
+	ErrInvalidVariantPath    = "That variant path '%s'? Not gonna hold up - should be preset/variant format!"
+	ErrVariantPresetMissing  = "Base preset '%s' is MIA - can't create variants from thin air!"
+	ErrVariantsDirFailed     = "Variants directory won't budge - creation failure: %v"
+	ErrVariantDirFailed      = "Variant directory hit a wall - can't create it: %v"
+	ErrVariantMigrateFailed  = "File '%s' won't migrate - something's blocking it: %v"
+	ErrVariantConfigFailed   = "Variant .config file won't write - that's a technical violation: %v"
+
+	// Command errors
+	ErrCommandUnknownGlobal  = "Unknown command '%s'? That's not in my playbook, friend!"
+	ErrCommandUnknownPreset  = "Preset command '%s'? Never heard of it - check the legal documents!"
+	ErrPresetCreateFailed    = "Preset '%s' creation just crashed - technical difficulties: %v"
+	ErrPresetNotFoundCreate  = "Preset '%s' not found. Create with: saul create %s or saul %s --create - that's proper procedure!"
+	ErrNoActivePreset        = "No active case on file! Need a preset name to work with - that's the rules!"
 )
 
 const (
@@ -47,6 +67,7 @@ const (
 	WarnResponseLarge     = "That response is huge (%d bytes), even 'loco' maybe - giving you raw JSON instead of TOML! That's just good business!"
 	WarnHistoryFailed     = "Listen, buddy - couldn't save that response to history! No biggie, but thought you should know!"
 	WarnUpdateCheckFailed = "Listen friend, couldn't check for updates right now - network's being difficult! Try again later, no big deal!"
+	WarnSessionSaveFailed = "Session save went sideways - no big deal, but you should know: %v"
 )
 
 const (

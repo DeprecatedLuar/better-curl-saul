@@ -75,6 +75,17 @@ func ListPresets() ([]string, error) {
 	return presets, nil
 }
 
+// PresetExists checks if a preset directory exists
+func PresetExists(name string) bool {
+	presetPath, err := GetPresetPath(name)
+	if err != nil {
+		return false
+	}
+
+	_, err = os.Stat(presetPath)
+	return !os.IsNotExist(err)
+}
+
 // DeletePreset removes a preset directory and all its files
 func DeletePreset(name string) error {
 	presetPath, err := GetPresetPath(name)
@@ -94,4 +105,52 @@ func DeletePreset(name string) error {
 	}
 
 	return nil
+}
+
+// GetActiveVariant returns the active variant name from .config file
+// Returns "default" if .config doesn't exist or contains invalid variant
+func GetActiveVariant(preset string) string {
+	presetPath, err := GetPresetPath(preset)
+	if err != nil {
+		return "default"
+	}
+
+	configPath := filepath.Join(presetPath, ".config")
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return "default"
+	}
+
+	variant := filepath.Clean(filepath.Base(string(data)))
+	if variant == "" || variant == "." {
+		return "default"
+	}
+
+	variantsDir := filepath.Join(presetPath, "variants")
+	variantPath := filepath.Join(variantsDir, variant)
+
+	if _, err := os.Stat(variantPath); os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "Warning: variant '%s' from .config does not exist, using 'default'\n", variant)
+		return "default"
+	}
+
+	return variant
+}
+
+// SetActiveVariant writes the variant name to .config file
+func SetActiveVariant(preset, variant string) error {
+	presetPath, err := GetPresetPath(preset)
+	if err != nil {
+		return err
+	}
+
+	variantsDir := filepath.Join(presetPath, "variants")
+	variantPath := filepath.Join(variantsDir, variant)
+
+	if _, err := os.Stat(variantPath); os.IsNotExist(err) {
+		return fmt.Errorf("variant '%s' does not exist", variant)
+	}
+
+	configPath := filepath.Join(presetPath, ".config")
+	return os.WriteFile(configPath, []byte(variant), internal.FilePermissions)
 }

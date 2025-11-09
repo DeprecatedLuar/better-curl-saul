@@ -9,6 +9,8 @@ import (
 
 	"github.com/chzyer/readline"
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/http"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 )
 
@@ -20,13 +22,6 @@ func Edit(cmd Command) error {
 	if cmd.Target == "" {
 		return fmt.Errorf(display.ErrTargetRequired)
 	}
-
-	// Normalize target aliases
-	normalizedTarget := NormalizeTarget(cmd.Target)
-	if normalizedTarget == "" {
-		return fmt.Errorf(display.ErrInvalidTarget, cmd.Target)
-	}
-	cmd.Target = normalizedTarget
 
 	// Distinguish between field-level and container-level editing
 	if len(cmd.KeyValuePairs) == 0 || cmd.KeyValuePairs[0].Key == "" {
@@ -70,7 +65,7 @@ func executeFieldEdit(cmd Command) error {
 
 	// Special validation for request fields
 	if cmd.Target == "request" {
-		if err := ValidateRequestField(key, newValue); err != nil {
+		if err := http.ValidateRequestField(key, newValue); err != nil {
 			return err
 		}
 	}
@@ -81,7 +76,7 @@ func executeFieldEdit(cmd Command) error {
 		// Store HTTP methods in uppercase
 		valueToStore = strings.ToUpper(newValue)
 	}
-	inferredValue := InferValueType(valueToStore)
+	inferredValue := utils.InferValueType(valueToStore)
 	handler.Set(key, inferredValue)
 
 	err = workspace.SavePresetFile(cmd.Preset, cmd.Target, handler)

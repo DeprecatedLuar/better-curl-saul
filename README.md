@@ -136,11 +136,31 @@ saul temp set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-s
 
 | Action | Targets                                                            | Description                              | Example                                    |
 |--------|--------------------------------------------------------------------|------------------------------------------|--------------------------------------------|
+| create | -                                                                  | Create new preset                        | `saul create myapi --create`               |
 | set    | `url`, `method`, `timeout`, `body`, `header`, `query`, `variables` | Configure request settings and data      | `saul api set url https://...`             |
 | edit   | `body`, `header`, `query`                                          | Edit inline or open in $EDITOR           | `saul edit body user.name` / `saul edit body` |
 | rm     | `body`, `header`, `query`                                          | Remove specific fields                   | `saul rm body user.email`                  |
 | call   | -                                                                  | Execute the configured request           | `saul call --dry-run`                      |
 | get    | `url`, `body`, `header`, `query`, `request`, `response`, `history` | View configuration or response data      | `saul get body --raw`                      |
+| switch | -                                                                  | Switch between variants                  | `saul switch submit` / `saul /submit`      |
+
+### Variants (Sub-presets)
+
+Organize multiple variations of the same API under one preset:
+
+```bash
+# Create variants for different endpoints
+saul myapi/submit set url https://api.com/submit
+saul myapi/check set url https://api.com/check
+
+# Switch between variants
+saul myapi/submit          # Absolute path
+saul /check                # Relative to current preset
+saul switch submit         # Explicit switch command
+
+# First variant migrates existing root files automatically
+# Each variant maintains isolated configuration
+```
 
 ### Flags
 
@@ -214,6 +234,7 @@ saul get history # View response history
 - [x] 'Proper' Windows support
 - [x]  curl command exportation/generation feature
 - [x] Support pasting raw JSON template
+- [x] Variants system (sub-presets)
 - [ ] Stateless command support with HttPie syntax
 - [x] Homebrew and Scoop releases
 - [ ] User config system using github.com/DeprecatedLuar/toml-vars-letsgooo library

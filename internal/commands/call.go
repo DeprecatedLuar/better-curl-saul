@@ -1,4 +1,4 @@
-package http
+package commands
 
 import (
 	"fmt"
@@ -8,13 +8,13 @@ import (
 
 	"github.com/go-resty/resty/v2"
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
-	"github.com/DeprecatedLuar/better-curl-saul/internal/commands"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/http"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/variables"
 )
 
-// ExecuteCallCommand handles HTTP execution for call commands
-func ExecuteCallCommand(cmd commands.Command) error {
+// Call handles HTTP execution for call commands
+func Call(cmd Command) error {
 	if cmd.Preset == "" {
 		return fmt.Errorf(display.ErrPresetNameRequired)
 	}
@@ -49,10 +49,10 @@ func ExecuteCallCommand(cmd commands.Command) error {
 	}
 
 	// Load each file as separate handler - no merging
-	requestHandler := LoadPresetFile(cmd.Preset, "request")
-	headersHandler := LoadPresetFile(cmd.Preset, "headers")
-	bodyHandler := LoadPresetFile(cmd.Preset, "body")
-	queryHandler := LoadPresetFile(cmd.Preset, "query")
+	requestHandler := http.LoadPresetFile(cmd.Preset, "request")
+	headersHandler := http.LoadPresetFile(cmd.Preset, "headers")
+	bodyHandler := http.LoadPresetFile(cmd.Preset, "body")
+	queryHandler := http.LoadPresetFile(cmd.Preset, "query")
 
 	// Apply variable substitutions to each separately
 	err = variables.SubstituteVariables(requestHandler, substitutions)
@@ -73,7 +73,7 @@ func ExecuteCallCommand(cmd commands.Command) error {
 	}
 
 	// Build HTTP request components explicitly - no guessing
-	request, err := BuildHTTPRequestFromHandlers(requestHandler, headersHandler, bodyHandler, queryHandler)
+	request, err := http.BuildHTTPRequestFromHandlers(requestHandler, headersHandler, bodyHandler, queryHandler)
 	if err != nil {
 		return fmt.Errorf(display.ErrRequestBuildFailed)
 	}
@@ -84,7 +84,7 @@ func ExecuteCallCommand(cmd commands.Command) error {
 	}
 
 	// Execute the HTTP request (only if not dry-run)
-	response, err := ExecuteHTTPRequest(request)
+	response, err := http.ExecuteHTTPRequest(request)
 	if err != nil {
 		return fmt.Errorf(display.ErrHTTPRequestFailed)
 	}
@@ -97,13 +97,13 @@ func ExecuteCallCommand(cmd commands.Command) error {
 	}
 
 	// Display response with filtering support
-	DisplayResponse(response, rawMode, cmd.Preset, cmd.ResponseFormat)
+	http.DisplayResponse(response, rawMode, cmd.Preset, cmd.ResponseFormat)
 
 	return nil
 }
 
 // storeResponseHistory stores the HTTP response in history if enabled
-func storeResponseHistory(preset string, request *HTTPRequestConfig, response *resty.Response) error {
+func storeResponseHistory(preset string, request *http.HTTPRequestConfig, response *resty.Response) error {
 	// Load request.toml to check for history configuration
 	requestHandler, err := workspace.LoadPresetFile(preset, "request")
 	if err != nil {
@@ -172,7 +172,7 @@ func storeResponseHistory(preset string, request *HTTPRequestConfig, response *r
 }
 
 // displayDryRunRequest shows request details without executing
-func displayDryRunRequest(request *HTTPRequestConfig) error {
+func displayDryRunRequest(request *http.HTTPRequestConfig) error {
 	fmt.Printf("%s %s\n", request.Method, request.URL)
 
 	if len(request.Headers) > 0 {
@@ -197,4 +197,3 @@ func displayDryRunRequest(request *HTTPRequestConfig) error {
 	fmt.Println("\n(Request not sent - dry run mode)")
 	return nil
 }
-

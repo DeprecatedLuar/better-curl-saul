@@ -8,14 +8,16 @@ require (
 	github.com/pelletier/go-toml v1.9.5
 )
 
-require (
-	github.com/tidwall/gjson v1.18.0
-	golang.org/x/term v0.35.0
-)
+require golang.org/x/term v0.35.0
 
 require (
-	github.com/tidwall/match v1.1.1 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
+	github.com/mattn/go-runewidth v0.0.12 // indirect
+	github.com/muesli/reflow v0.3.0 // indirect
+	github.com/rivo/uniseg v0.2.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/sys v0.36.0 // indirect
 )
+
+require github.com/DeprecatedLuar/gohelp v0.0.0
+
+replace github.com/DeprecatedLuar/gohelp => ./lib/gohelp

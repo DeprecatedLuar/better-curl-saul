@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/http"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/variables"
 )
@@ -33,15 +35,6 @@ func Set(cmd Command) error {
 		return fmt.Errorf(display.ErrKeyValueRequired)
 	}
 
-	// Normalize target aliases for better UX
-	normalizedTarget := NormalizeTarget(cmd.Target)
-	if normalizedTarget == "" {
-		return fmt.Errorf(display.ErrInvalidTarget, cmd.Target)
-	}
-
-	// Use normalized target for file operations
-	cmd.Target = normalizedTarget
-
 	// Load the TOML file for the target
 	handler, err := workspace.LoadPresetFile(cmd.Preset, cmd.Target)
 	if err != nil {
@@ -60,7 +53,7 @@ func Set(cmd Command) error {
 		for _, kvp := range cmd.KeyValuePairs {
 			// Special validation for request fields
 			if cmd.Target == "request" {
-				if err := ValidateRequestField(kvp.Key, kvp.Value); err != nil {
+				if err := http.ValidateRequestField(kvp.Key, kvp.Value); err != nil {
 					return err
 				}
 			}
@@ -91,7 +84,7 @@ func Set(cmd Command) error {
 					}
 				}
 
-				inferredValue := InferValueType(valueToStore)
+				inferredValue := utils.InferValueType(valueToStore)
 				handler.Set(keyToStore, inferredValue)
 			}
 		}

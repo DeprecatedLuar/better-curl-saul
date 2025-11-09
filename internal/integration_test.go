@@ -8,6 +8,8 @@ import (
 
 	"github.com/DeprecatedLuar/better-curl-saul/internal"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/commands"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/http"
+	"github.com/DeprecatedLuar/better-curl-saul/internal/utils"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/variables"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
 )
@@ -191,7 +193,7 @@ func TestMethodValidation(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := commands.ValidateRequestField("method", tt.method)
+			err := http.ValidateRequestField("method", tt.method)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ValidateRequestField() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -285,17 +287,23 @@ func TestTargetAliasNormalization(t *testing.T) {
 		{"queries", "query"},
 		{"request", "request"},
 		{"req", "request"},
-		{"url", "request"},
 		{"variables", "variables"},
 		{"vars", "variables"},
 		{"var", "variables"},
+		{"filter", "filters"},
+		{"filters", "filters"},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.alias, func(t *testing.T) {
-			normalized := commands.NormalizeTarget(tt.alias)
-			if normalized != tt.normalized {
-				t.Errorf("NormalizeTarget(%s) = %s, want %s", tt.alias, normalized, tt.normalized)
+			// Test through ParseCommand to verify normalization happens during parsing
+			args := []string{"testpreset", "set", tt.alias, "key=value"}
+			cmd, err := commands.ParseCommand(args)
+			if err != nil {
+				t.Fatalf("ParseCommand failed: %v", err)
+			}
+			if cmd.Target != tt.normalized {
+				t.Errorf("ParseCommand normalized target: got %s, want %s", cmd.Target, tt.normalized)
 			}
 		})
 	}
@@ -331,7 +339,7 @@ func TestArrayInference(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := commands.InferValueType(tt.value)
+			result := utils.InferValueType(tt.value)
 
 			switch expected := tt.want.(type) {
 			case []string:

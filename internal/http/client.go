@@ -160,3 +160,66 @@ func ExecuteHTTPRequest(config *HTTPRequestConfig) (*resty.Response, error) {
 		return nil, fmt.Errorf(display.ErrUnsupportedMethod, config.Method)
 	}
 }
+
+// ValidateRequestField validates HTTP request field values
+func ValidateRequestField(key, value string) error {
+	switch strings.ToLower(key) {
+	case "method":
+		return validateHTTPMethod(value)
+	case "url":
+		return validateURL(value)
+	case "timeout":
+		return validateTimeout(value)
+	case "history", "history_count":
+		return validateHistoryCount(value)
+	default:
+		return nil
+	}
+}
+
+func validateHTTPMethod(method string) error {
+	validMethods := []string{
+		"GET", "POST", "PUT", "DELETE", "PATCH",
+		"HEAD", "OPTIONS", "TRACE", "CONNECT",
+	}
+
+	methodUpper := strings.ToUpper(method)
+	for _, valid := range validMethods {
+		if methodUpper == valid {
+			return nil
+		}
+	}
+
+	return fmt.Errorf(display.ErrInvalidMethod, method)
+}
+
+func validateURL(url string) error {
+	if url == "" {
+		return fmt.Errorf(display.ErrMissingURL)
+	}
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
+		return fmt.Errorf(display.ErrInvalidURL)
+	}
+	return nil
+}
+
+func validateTimeout(timeout string) error {
+	if _, err := strconv.Atoi(timeout); err != nil {
+		return fmt.Errorf(display.ErrInvalidTimeout)
+	}
+	return nil
+}
+
+func validateHistoryCount(count string) error {
+	historyCount, err := strconv.Atoi(count)
+	if err != nil {
+		return fmt.Errorf("invalid history count: %s (must be a number)", count)
+	}
+	if historyCount < 0 {
+		return fmt.Errorf("history count cannot be negative: %d", historyCount)
+	}
+	if historyCount > 100 {
+		return fmt.Errorf("history count cannot exceed 100: %d", historyCount)
+	}
+	return nil
+}

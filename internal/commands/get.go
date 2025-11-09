@@ -83,13 +83,6 @@ func Get(cmd Command) error {
 		return getResponseWithField(cmd)
 	}
 
-	// Normalize target aliases
-	normalizedTarget := NormalizeTarget(cmd.Target)
-	if normalizedTarget == "" {
-		return fmt.Errorf(display.ErrInvalidTarget, cmd.Target)
-	}
-	cmd.Target = normalizedTarget
-
 	// Load the TOML file for the target
 	handler, err := workspace.LoadPresetFile(cmd.Preset, cmd.Target)
 	if err != nil {

@@ -226,8 +226,15 @@ func (t *TomlHandler) Clone() (*TomlHandler, error) {
 
 // LoadPresetFile loads a specific TOML file from a preset
 // If file doesn't exist, returns an empty handler that will create the file on first Write()
+// Supports variants: handles preset paths like "myapi/submit" or "myapi"
 func LoadPresetFile(preset, fileType string) (*TomlHandler, error) {
-	presetPath, err := GetPresetPath(preset)
+	// Extract base preset if variant path provided
+	basePreset := preset
+	if strings.Contains(preset, "/") {
+		basePreset = strings.Split(preset, "/")[0]
+	}
+
+	presetPath, err := GetPresetPath(basePreset)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +245,25 @@ func LoadPresetFile(preset, fileType string) (*TomlHandler, error) {
 		return nil, fmt.Errorf(display.ErrDirectoryFailed)
 	}
 
-	filePath := filepath.Join(presetPath, fileType+".toml")
+	variantsDir := filepath.Join(presetPath, "variants")
+	var filePath string
+
+	// Check if variants folder exists
+	if _, err := os.Stat(variantsDir); err == nil {
+		activeVariant := GetActiveVariant(basePreset)
+		variantPath := filepath.Join(variantsDir, activeVariant)
+
+		// Ensure variant directory exists
+		err = os.MkdirAll(variantPath, internal.DirPermissions)
+		if err != nil {
+			return nil, fmt.Errorf(display.ErrDirectoryFailed)
+		}
+
+		filePath = filepath.Join(variantPath, fileType+".toml")
+	} else {
+		// Fallback to root files (backward compatible)
+		filePath = filepath.Join(presetPath, fileType+".toml")
+	}
 
 	// If file doesn't exist, create an empty handler (file created on Write())
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -253,13 +278,39 @@ func LoadPresetFile(preset, fileType string) (*TomlHandler, error) {
 }
 
 // SavePresetFile saves a TOML handler to a specific preset file
+// Supports variants: handles preset paths like "myapi/submit" or "myapi"
 func SavePresetFile(preset, fileType string, handler *TomlHandler) error {
-	presetPath, err := GetPresetPath(preset)
+	// Extract base preset if variant path provided
+	basePreset := preset
+	if strings.Contains(preset, "/") {
+		basePreset = strings.Split(preset, "/")[0]
+	}
+
+	presetPath, err := GetPresetPath(basePreset)
 	if err != nil {
 		return err
 	}
 
-	filePath := filepath.Join(presetPath, fileType+".toml")
+	variantsDir := filepath.Join(presetPath, "variants")
+	var filePath string
+
+	// Check if variants folder exists
+	if _, err := os.Stat(variantsDir); err == nil {
+		activeVariant := GetActiveVariant(basePreset)
+		variantPath := filepath.Join(variantsDir, activeVariant)
+
+		// Ensure variant directory exists
+		err = os.MkdirAll(variantPath, internal.DirPermissions)
+		if err != nil {
+			return fmt.Errorf(display.ErrDirectoryFailed)
+		}
+
+		filePath = filepath.Join(variantPath, fileType+".toml")
+	} else {
+		// Fallback to root files (backward compatible)
+		filePath = filepath.Join(presetPath, fileType+".toml")
+	}
+
 	handler.SetOutputPath(filePath)
 	return handler.Write()
 }

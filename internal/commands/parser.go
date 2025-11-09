@@ -23,11 +23,12 @@ type Command struct {
 	KeyValuePairs []KeyValuePair
 
 	// Flags
-	RawOutput        bool     // For --raw flag
-	VariableFlags    []string // -v var1 var2 var3 (space-separated variables to prompt)
-	ResponseFormat   string   // --headers-only, --body-only, --status-only
-	DryRun          bool     // --dry-run
-	Call            bool     // --call
+	RawOutput        bool
+	VariableFlags    []string
+	ResponseFormat   string
+	DryRun          bool
+	Call            bool
+	Create          bool
 }
 
 // KeyValuePair represents a key-value pair from command arguments
@@ -36,7 +37,17 @@ type KeyValuePair struct {
 	Value string
 }
 
+// SessionProvider interface for getting current preset
+type SessionProvider interface {
+	HasCurrentPreset() bool
+	GetCurrentPreset() string
+}
+
 func ParseCommand(args []string) (Command, error) {
+	return ParseCommandWithSession(args, nil)
+}
+
+func ParseCommandWithSession(args []string, session SessionProvider) (Command, error) {
 	var cmd Command
 
 	if len(args) < 1 {
@@ -58,6 +69,13 @@ func ParseCommand(args []string) (Command, error) {
 	args = filteredArgs
 
 	switch args[0] {
+	case "create":
+		cmd.Global = "create"
+		if len(args) >= 2 {
+			cmd.Preset = args[1]
+			cmd.Create = true
+		}
+		return cmd, nil
 	case "rm":
 		cmd.Global = args[0]
 		if len(args) >= 2 {
@@ -73,6 +91,44 @@ func ParseCommand(args []string) (Command, error) {
 			cmd.Preset = args[1]
 		}
 		return cmd, nil
+	case "switch":
+		// Handle explicit switch command: saul switch variant
+		if len(args) < 2 {
+			return cmd, fmt.Errorf("variant name required for switch command")
+		}
+		if session == nil || !session.HasCurrentPreset() {
+			return cmd, fmt.Errorf("no active preset")
+		}
+		cmd.Global = "switch"
+		cmd.Preset = args[1]
+		return cmd, nil
+	}
+
+	// Handle relative variant path: /variant
+	if strings.HasPrefix(args[0], "/") {
+		if session == nil || !session.HasCurrentPreset() {
+			return cmd, fmt.Errorf("no active preset for relative variant path")
+		}
+		variantName := args[0][1:]
+		if variantName == "" {
+			return cmd, fmt.Errorf("variant name required")
+		}
+
+		// Extract base preset (strip existing variant if present)
+		basePreset := strings.Split(session.GetCurrentPreset(), "/")[0]
+		cmd.Preset = basePreset + "/" + variantName
+
+		// If only the variant path is provided, treat as switch
+		if len(args) == 1 {
+			cmd.Global = "switch-variant"
+			return cmd, nil
+		}
+
+		// Otherwise, continue with command processing
+		if len(args) > 1 {
+			cmd.Command = args[1]
+		}
+		return cmd, nil
 	}
 
 	cmd.Preset = args[0]
@@ -85,7 +141,7 @@ func ParseCommand(args []string) (Command, error) {
 	if len(args) >= 4 && cmd.Command == "set" {
 		if isSpecialRequestCommand(args[2]) {
 			// Special syntax: "saul preset set url https://..."
-			cmd.Target = "request"
+			cmd.Target = normalizeTarget("request")
 			cmd.KeyValuePairs = []KeyValuePair{
 				{Key: args[2], Value: args[3]},
 			}
@@ -104,14 +160,14 @@ func ParseCommand(args []string) (Command, error) {
 				}
 			} else if isSpecialRequestCommand(args[2]) {
 				// Check if it's a special request field (auto-map to request target)
-				cmd.Target = "request"
+				cmd.Target = normalizeTarget("request")
 				if len(args) > 3 {
 					cmd.KeyValuePairs = []KeyValuePair{{Key: args[2], Value: args[3]}}
 				} else {
 					cmd.KeyValuePairs = []KeyValuePair{{Key: args[2], Value: ""}}
 				}
 			} else {
-				cmd.Target = args[2]
+				cmd.Target = normalizeTarget(args[2])
 				if len(args) > 3 {
 					cmd.KeyValuePairs = []KeyValuePair{{Key: args[3], Value: ""}}
 				}
@@ -125,14 +181,14 @@ func ParseCommand(args []string) (Command, error) {
 		if len(args) > 2 {
 			// Check if it's a special request field (auto-map to request target)
 			if isSpecialRequestCommand(args[2]) {
-				cmd.Target = "request"
+				cmd.Target = normalizeTarget("request")
 				if len(args) > 3 {
 					cmd.KeyValuePairs = []KeyValuePair{{Key: args[2], Value: args[3]}}
 				} else {
 					cmd.KeyValuePairs = []KeyValuePair{{Key: args[2], Value: ""}}
 				}
 			} else {
-				cmd.Target = args[2]
+				cmd.Target = normalizeTarget(args[2])
 				if len(args) > 3 {
 					cmd.KeyValuePairs = []KeyValuePair{{Key: args[3], Value: ""}}
 				}
@@ -144,13 +200,13 @@ func ParseCommand(args []string) (Command, error) {
 
 	// Handle regular commands with key=value syntax (supports space-separated)
 	if len(args) > 2 {
-		cmd.Target = args[2]
+		cmd.Target = normalizeTarget(args[2])
 	}
 	if len(args) > 3 {
 		keyValueArgs := args[3:]
 
 		// Special handling for filters - just field names, no key=value
-		if cmd.Target == "filters" || cmd.Target == "filter" {
+		if cmd.Target == "filters" {
 			var pairs []KeyValuePair
 			for _, fieldName := range keyValueArgs {
 				pairs = append(pairs, KeyValuePair{Key: "", Value: fieldName})
@@ -232,6 +288,8 @@ func parseFlags(args []string, cmd *Command) ([]string, error) {
 				cmd.DryRun = true
 			case "--call":
 				cmd.Call = true
+			case "--create":
+				cmd.Create = true
 			default:
 				return nil, fmt.Errorf("unknown flag: %s", arg)
 			}
@@ -274,4 +332,24 @@ func isListCommand(command string) bool {
 		}
 	}
 	return false
+}
+
+// normalizeTarget converts target aliases to canonical names
+func normalizeTarget(target string) string {
+	switch strings.ToLower(target) {
+	case "body":
+		return "body"
+	case "headers", "header":
+		return "headers"
+	case "query", "queries":
+		return "query"
+	case "request", "req", "url":
+		return "request"
+	case "variables", "vars", "var":
+		return "variables"
+	case "filters", "filter":
+		return "filters"
+	default:
+		return target // Return as-is if not recognized (for special cases like "history", "response")
+	}
 }
