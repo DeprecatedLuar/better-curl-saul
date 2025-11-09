@@ -152,7 +152,7 @@ func getResponse(cmd parser.Command) error {
 	// Always get most recent response - no space-separated number support
 	number, err := GetMostRecentResponseNumber(cmd.Preset)
 	if err != nil {
-		return fmt.Errorf("no history found for preset '%s'", cmd.Preset)
+		return fmt.Errorf(display.ErrNoHistory, cmd.Preset)
 	}
 
 	return DisplayHistoryResponse(cmd.Preset, number, cmd.RawOutput)
@@ -274,7 +274,7 @@ func getResponseFieldMostRecent(cmd parser.Command) error {
 	// Get most recent response number
 	number, err := GetMostRecentResponseNumber(cmd.Preset)
 	if err != nil {
-		return fmt.Errorf("no history found for preset '%s'", cmd.Preset)
+		return fmt.Errorf(display.ErrNoHistory, cmd.Preset)
 	}
 
 	// Get the field name

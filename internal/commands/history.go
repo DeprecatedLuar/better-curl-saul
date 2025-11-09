@@ -41,7 +41,7 @@ func DisplayTOMLFile(handler *workspace.TomlHandler, target string, preset strin
 func ListHistoryResponses(preset string, rawOutput bool) error {
 	responses, err := workspace.ListHistoryResponses(preset)
 	if err != nil {
-		return fmt.Errorf("failed to load history: %v", err)
+		return fmt.Errorf(display.ErrHistoryLoadFailed, err)
 	}
 
 	if len(responses) == 0 {
@@ -196,10 +196,10 @@ func FormatRelativeTime(timestamp string) string {
 func GetMostRecentResponseNumber(preset string) (int, error) {
 	responses, err := workspace.ListHistoryResponses(preset)
 	if err != nil {
-		return 0, fmt.Errorf("failed to load history: %v", err)
+		return 0, fmt.Errorf(display.ErrHistoryLoadFailed, err)
 	}
 	if len(responses) == 0 {
-		return 0, fmt.Errorf("no history found for preset '%s'", preset)
+		return 0, fmt.Errorf(display.ErrNoHistory, preset)
 	}
 	return len(responses), nil // Most recent is highest number
 }
@@ -213,7 +213,7 @@ func ParseResponseNumber(numberStr string, preset string) (int, error) {
 
 	number, err := strconv.Atoi(numberStr)
 	if err != nil {
-		return 0, fmt.Errorf("invalid response number: %s", numberStr)
+		return 0, fmt.Errorf(display.ErrInvalidResponseNumber, numberStr)
 	}
 	return number, nil
 }

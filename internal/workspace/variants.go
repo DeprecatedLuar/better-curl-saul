@@ -33,7 +33,7 @@ func GetActiveVariant(preset string) string {
 	variantPath := filepath.Join(variantsDir, variant)
 
 	if _, err := os.Stat(variantPath); os.IsNotExist(err) {
-		fmt.Fprintf(os.Stderr, "Warning: variant '%s' from .config does not exist, using 'default'\n", variant)
+		display.Warning(fmt.Sprintf(display.WarnVariantNotFound, variant))
 		return "default"
 	}
 
@@ -51,7 +51,7 @@ func SetActiveVariant(preset, variant string) error {
 	variantPath := filepath.Join(variantsDir, variant)
 
 	if _, err := os.Stat(variantPath); os.IsNotExist(err) {
-		return fmt.Errorf("variant '%s' does not exist", variant)
+		return fmt.Errorf(display.ErrVariantNotExist, variant)
 	}
 
 	configPath := filepath.Join(presetPath, ".config")
@@ -159,7 +159,7 @@ func ListVariants(preset string) ([]string, error) {
 
 	entries, err := os.ReadDir(variantsDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read variants directory: %v", err)
+		return nil, fmt.Errorf(display.ErrVariantsReadFailed, err)
 	}
 
 	var variants []string
@@ -184,12 +184,12 @@ func DeleteVariant(preset, variant string) error {
 
 	// Check if variant exists
 	if _, err := os.Stat(variantPath); os.IsNotExist(err) {
-		return fmt.Errorf("variant '%s' does not exist in preset '%s'", variant, preset)
+		return fmt.Errorf(display.ErrVariantNotExistPreset, variant, preset)
 	}
 
 	// Remove the variant directory
 	if err := os.RemoveAll(variantPath); err != nil {
-		return fmt.Errorf("failed to delete variant '%s': %v", variant, err)
+		return fmt.Errorf(display.ErrVariantDeleteFailed, variant, err)
 	}
 
 	return nil

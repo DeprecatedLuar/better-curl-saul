@@ -99,10 +99,10 @@ func ParseCommandWithSession(args []string, session SessionProvider) (Command, e
 	case "switch":
 		// Handle explicit switch command: saul switch variant
 		if len(args) < 2 {
-			return cmd, fmt.Errorf("variant name required for switch command")
+			return cmd, fmt.Errorf(display.ErrVariantNameRequired)
 		}
 		if session == nil || !session.HasCurrentPreset() {
-			return cmd, fmt.Errorf("no active preset")
+			return cmd, fmt.Errorf(display.ErrNoActivePreset)
 		}
 		cmd.Global = "switch"
 		cmd.Preset = args[1]
@@ -112,11 +112,11 @@ func ParseCommandWithSession(args []string, session SessionProvider) (Command, e
 	// Handle relative variant path: /variant
 	if strings.HasPrefix(args[0], "/") {
 		if session == nil || !session.HasCurrentPreset() {
-			return cmd, fmt.Errorf("no active preset for relative variant path")
+			return cmd, fmt.Errorf(display.ErrNoActivePresetVariant)
 		}
 		variantName := args[0][1:]
 		if variantName == "" {
-			return cmd, fmt.Errorf("variant name required")
+			return cmd, fmt.Errorf(display.ErrVariantNameRequired)
 		}
 
 		// Extract base preset (strip existing variant if present)

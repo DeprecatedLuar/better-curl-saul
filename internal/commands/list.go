@@ -8,6 +8,7 @@ import (
 
 	"github.com/DeprecatedLuar/better-curl-saul/internal"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/commands/parser"
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 )
 
 // List handles the list command - lists presets directory using system commands
@@ -22,13 +23,13 @@ func List(cmd parser.Command) error {
 
 	// Validate that it's an allowed command
 	if !parser.IsListCommand(command) {
-		return fmt.Errorf("invalid list command: %s", command)
+		return fmt.Errorf(display.ErrInvalidListCommand, command)
 	}
 
 	// Get presets directory
 	home, err := os.UserHomeDir()
 	if err != nil {
-		return fmt.Errorf("failed to get home directory: %v", err)
+		return fmt.Errorf(display.ErrHomeDirFailed, err)
 	}
 	presetsDir := filepath.Join(home, internal.ParentDirPath, internal.AppDirName, internal.PresetsDirName)
 

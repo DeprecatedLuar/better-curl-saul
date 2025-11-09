@@ -22,7 +22,7 @@ func Set(cmd parser.Command) error {
 			return fmt.Errorf(display.ErrPresetNameRequired)
 		}
 		// Open editor to get curl command
-		return fmt.Errorf("curl import via editor not yet implemented in refactored code")
+		return fmt.Errorf(display.ErrCurlImportNotImpl)
 	}
 
 	if cmd.Preset == "" {

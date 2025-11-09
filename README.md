@@ -140,9 +140,10 @@ saul temp set url https://raw.githubusercontent.com/DeprecatedLuar/better-curl-s
 |--------|--------------------------------------------------------------------|------------------------------------------|--------------------------------------------|
 | create | -                                                                  | Create new preset                        | `saul create myapi --create`               |
 | cp     | -                                                                  | Copy preset or variant                   | `saul cp source dest`                      |
+| rm     | `body`, `headers`, `query`, `request`, `variables` / presets       | Remove target files or delete presets    | `saul rm body headers` / `saul rm myapi`   |
+| status | -                                                                  | Show current preset configuration        | `saul status`                              |
 | set    | `url`, `method`, `timeout`, `body`, `header`, `query`, `variables` | Configure request settings and data      | `saul api set url https://...`             |
 | edit   | `body`, `header`, `query`                                          | Edit inline or open in $EDITOR           | `saul edit body user.name` / `saul edit body` |
-| rm     | `body`, `header`, `query`                                          | Remove specific fields                   | `saul rm body user.email`                  |
 | call   | -                                                                  | Execute the configured request           | `saul call --dry-run`                      |
 | get    | `url`, `body`, `header`, `query`, `request`, `response`, `history` | View configuration or response data      | `saul get body --raw`                      |
 | switch | -                                                                  | Switch between variants                  | `saul switch submit` / `saul /submit`      |
@@ -170,6 +171,27 @@ saul switch submit         # Explicit switch command
 # First variant migrates existing root files automatically
 # Each variant maintains isolated configuration
 ```
+
+### Removing Data
+
+The `rm` command operates in two intelligent modes:
+
+**Preset-scoped removal** (removes target files from current preset):
+```bash
+saul myapi/submit
+saul rm body                    # Remove body.toml from current preset
+saul rm body headers query      # Remove multiple target files at once
+```
+
+**Global removal** (deletes entire presets):
+```bash
+saul rm myapi                   # Delete entire preset
+saul rm old_api test_api        # Delete multiple presets
+```
+
+The command automatically detects context:
+- If you have an active preset and args match target names (`body`, `headers`, `query`, `request`, `variables`) → removes target files
+- Otherwise → deletes entire presets
 
 ### HTTPie-Style Syntax
 

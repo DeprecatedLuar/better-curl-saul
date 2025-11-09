@@ -16,7 +16,7 @@ import (
 // Supports: saul cp source dest, saul copy source dest
 func Copy(cmd parser.Command) error {
 	if len(cmd.Targets) < 2 {
-		return fmt.Errorf("copy requires source and destination arguments")
+		return fmt.Errorf(display.ErrCopyNeedsArgs)
 	}
 
 	source := cmd.Targets[0]
@@ -54,7 +54,7 @@ func copyPresetToPreset(source, dest string) error {
 
 	// Check destination doesn't exist
 	if workspace.PresetExists(dest) {
-		return fmt.Errorf("destination preset '%s' already exists", dest)
+		return fmt.Errorf(display.ErrCopyDestExists, dest)
 	}
 
 	sourcePath, err := workspace.GetPresetPath(source)
@@ -69,7 +69,7 @@ func copyPresetToPreset(source, dest string) error {
 
 	// Copy entire directory recursively
 	if err := copyDir(sourcePath, destPath); err != nil {
-		return fmt.Errorf("failed to copy preset: %v", err)
+		return fmt.Errorf(display.ErrCopyPresetFailed, err)
 	}
 
 	return nil
@@ -81,7 +81,7 @@ func copyVariantToVariant(source, dest string) error {
 	destParts := strings.Split(dest, "/")
 
 	if len(sourceParts) != 2 || len(destParts) != 2 {
-		return fmt.Errorf("invalid variant path format")
+		return fmt.Errorf(display.ErrCopyInvalidVariant)
 	}
 
 	sourceBase := sourceParts[0]
@@ -108,7 +108,7 @@ func copyVariantToVariant(source, dest string) error {
 
 	// Check source variant exists
 	if _, err := os.Stat(sourceVariantPath); os.IsNotExist(err) {
-		return fmt.Errorf("source variant '%s' does not exist", source)
+		return fmt.Errorf(display.ErrCopySourceNotFound, source)
 	}
 
 	// Ensure destination variant structure
@@ -125,7 +125,7 @@ func copyVariantToVariant(source, dest string) error {
 
 	// Copy variant directory
 	if err := copyDir(sourceVariantPath, destVariantPath); err != nil {
-		return fmt.Errorf("failed to copy variant: %v", err)
+		return fmt.Errorf(display.ErrCopyVariantFailed, err)
 	}
 
 	return nil
@@ -135,7 +135,7 @@ func copyVariantToVariant(source, dest string) error {
 func copyPresetToVariant(source, dest string) error {
 	destParts := strings.Split(dest, "/")
 	if len(destParts) != 2 {
-		return fmt.Errorf("invalid variant path format")
+		return fmt.Errorf(display.ErrCopyInvalidVariant)
 	}
 
 	destBase := destParts[0]
@@ -179,7 +179,7 @@ func copyPresetToVariant(source, dest string) error {
 
 		if _, err := os.Stat(sourceFile); err == nil {
 			if err := copyFile(sourceFile, destFile); err != nil {
-				return fmt.Errorf("failed to copy %s: %v", file, err)
+				return fmt.Errorf(display.ErrCopyFileFailed, file, err)
 			}
 		}
 	}
@@ -191,7 +191,7 @@ func copyPresetToVariant(source, dest string) error {
 func copyVariantToPreset(source, dest string) error {
 	sourceParts := strings.Split(source, "/")
 	if len(sourceParts) != 2 {
-		return fmt.Errorf("invalid variant path format")
+		return fmt.Errorf(display.ErrCopyInvalidVariant)
 	}
 
 	sourceBase := sourceParts[0]
@@ -204,7 +204,7 @@ func copyVariantToPreset(source, dest string) error {
 
 	// Check destination doesn't exist
 	if workspace.PresetExists(dest) {
-		return fmt.Errorf("destination preset '%s' already exists", dest)
+		return fmt.Errorf(display.ErrCopyDestExists, dest)
 	}
 
 	// Get source variant path
@@ -216,7 +216,7 @@ func copyVariantToPreset(source, dest string) error {
 
 	// Check source variant exists
 	if _, err := os.Stat(sourceVariantPath); os.IsNotExist(err) {
-		return fmt.Errorf("source variant '%s' does not exist", source)
+		return fmt.Errorf(display.ErrCopySourceNotFound, source)
 	}
 
 	// Create destination preset
@@ -238,7 +238,7 @@ func copyVariantToPreset(source, dest string) error {
 
 		if _, err := os.Stat(sourceFile); err == nil {
 			if err := copyFile(sourceFile, destFile); err != nil {
-				return fmt.Errorf("failed to copy %s: %v", file, err)
+				return fmt.Errorf(display.ErrCopyFileFailed, file, err)
 			}
 		}
 	}

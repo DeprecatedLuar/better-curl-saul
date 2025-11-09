@@ -3,6 +3,8 @@ package parser
 import (
 	"fmt"
 	"strings"
+
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 )
 
 // parseFlags extracts flags from args and sets them in cmd, returning filtered args
@@ -34,7 +36,7 @@ func parseFlags(args []string, cmd *Command) ([]string, error) {
 			case "--create":
 				cmd.Create = true
 			default:
-				return nil, fmt.Errorf("unknown flag: %s", arg)
+				return nil, fmt.Errorf(display.ErrUnknownFlag, arg)
 			}
 		} else if strings.HasPrefix(arg, "-") && len(arg) > 1 && !strings.HasPrefix(arg, "--") {
 			// Handle short flags
@@ -55,7 +57,7 @@ func parseFlags(args []string, cmd *Command) ([]string, error) {
 					cmd.VariableFlags = []string{}
 				}
 			} else {
-				return nil, fmt.Errorf("unknown flag: %s", arg)
+				return nil, fmt.Errorf(display.ErrUnknownFlag, arg)
 			}
 		} else {
 			// Not a flag, keep in filtered args
