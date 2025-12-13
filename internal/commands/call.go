@@ -7,10 +7,11 @@ import (
 	"strings"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/commands/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/http"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/debug"
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 )
 
 // Call handles HTTP execution for call commands
@@ -49,10 +50,24 @@ func Call(cmd parser.Command) error {
 	}
 
 	// Load each file as separate handler - no merging
-	requestHandler := http.LoadPresetFile(cmd.Preset, "request")
-	headersHandler := http.LoadPresetFile(cmd.Preset, "headers")
-	bodyHandler := http.LoadPresetFile(cmd.Preset, "body")
-	queryHandler := http.LoadPresetFile(cmd.Preset, "query")
+	requestHandler, err := http.LoadPresetFile(cmd.Preset, "request")
+	if err != nil {
+		return err
+	}
+	headersHandler, err := http.LoadPresetFile(cmd.Preset, "headers")
+	if err != nil {
+		return err
+	}
+	bodyHandler, err := http.LoadPresetFile(cmd.Preset, "body")
+	if err != nil {
+		return err
+	}
+	queryHandler, err := http.LoadPresetFile(cmd.Preset, "query")
+	if err != nil {
+		return err
+	}
+
+	debug.Log("body keys after load: %v", bodyHandler.Keys())
 
 	// Apply variable substitutions to each separately
 	err = workspace.SubstituteVariables(requestHandler, substitutions)
@@ -72,11 +87,19 @@ func Call(cmd parser.Command) error {
 		return fmt.Errorf(display.ErrVariableLoadFailed)
 	}
 
+	debug.Log("body keys after substitution: %v", bodyHandler.Keys())
+	if bodyJSON, err := bodyHandler.ToJSON(); err == nil {
+		debug.Log("body JSON: %s", string(bodyJSON))
+	}
+
 	// Build HTTP request components explicitly - no guessing
 	request, err := http.BuildHTTPRequestFromHandlers(requestHandler, headersHandler, bodyHandler, queryHandler)
 	if err != nil {
 		return fmt.Errorf(display.ErrRequestBuildFailed)
 	}
+
+	debug.Log("request.Body length: %d", len(request.Body))
+	debug.Log("request.Body content: %s", string(request.Body))
 
 	// Handle dry-run mode
 	if cmd.DryRun {

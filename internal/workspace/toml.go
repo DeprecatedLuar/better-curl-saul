@@ -166,6 +166,11 @@ func (t *TomlHandler) ToJSON() ([]byte, error) {
 	return json.Marshal(goMap)
 }
 
+// ToMap converts the TOML data to a Go map
+func (t *TomlHandler) ToMap() map[string]interface{} {
+	return t.tree.ToMap()
+}
+
 // ===== MERGE OPERATIONS =====
 
 // Merge combines another TOML handler into this one

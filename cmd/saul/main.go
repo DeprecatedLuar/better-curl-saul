@@ -12,7 +12,7 @@ import (
 
 // isActionCommand checks if a command is a preset action command
 func isActionCommand(cmd string) bool {
-	return cmd == "set" || cmd == "get" || cmd == "edit" || cmd == "call"
+	return cmd == "set" || cmd == "get" || cmd == "edit" || cmd == "call" || cmd == "import" || cmd == "export"
 }
 
 // isValidTarget checks if a string is a valid target name

@@ -2,14 +2,14 @@ package http
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/debug"
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 )
 
 // HTTPRequestConfig holds the components of an HTTP request
@@ -24,28 +24,15 @@ type HTTPRequestConfig struct {
 
 // LoadPresetFile loads a single TOML file as a handler, returns empty handler if file doesn't exist
 // Now uses variant-aware workspace.LoadPresetFile() for proper variant support
-func LoadPresetFile(preset, filename string) *workspace.TomlHandler {
+// Returns error for parse failures (invalid TOML syntax)
+func LoadPresetFile(preset, filename string) (*workspace.TomlHandler, error) {
 	handler, err := workspace.LoadPresetFile(preset, filename)
 	if err != nil {
-		// Return empty handler if file doesn't exist or can't be loaded
-		return createEmptyHandler()
+		return nil, fmt.Errorf("%s.toml: %w", filename, err)
 	}
-	return handler
+	return handler, nil
 }
 
-// createEmptyHandler creates an empty TOML handler for missing files
-func createEmptyHandler() *workspace.TomlHandler {
-	// Create a temporary file to initialize empty handler
-	tempFile, err := os.CreateTemp("", "empty*.toml")
-	if err != nil {
-		return nil
-	}
-	defer os.Remove(tempFile.Name())
-	tempFile.Close()
-
-	handler, _ := workspace.NewTomlHandler(tempFile.Name())
-	return handler
-}
 
 // BuildHTTPRequestFromHandlers builds HTTP request from separate handlers - no guessing
 func BuildHTTPRequestFromHandlers(requestHandler, headersHandler, bodyHandler, queryHandler *workspace.TomlHandler) (*HTTPRequestConfig, error) {
@@ -113,6 +100,12 @@ func BuildHTTPRequestFromHandlers(requestHandler, headersHandler, bodyHandler, q
 
 // ExecuteHTTPRequest performs the actual HTTP request using resty
 func ExecuteHTTPRequest(config *HTTPRequestConfig) (*resty.Response, error) {
+	debug.Log("ExecuteHTTPRequest called")
+	debug.Log("  Method: %s", config.Method)
+	debug.Log("  URL: %s", config.URL)
+	debug.Log("  Body length: %d", len(config.Body))
+	debug.Log("  Body: %s", string(config.Body))
+
 	client := resty.New()
 	client.SetTimeout(time.Duration(config.Timeout) * time.Second)
 
@@ -121,6 +114,7 @@ func ExecuteHTTPRequest(config *HTTPRequestConfig) (*resty.Response, error) {
 	// Set headers
 	for key, value := range config.Headers {
 		request.SetHeader(key, value)
+		debug.Log("  Header: %s = %s", key, value)
 	}
 
 	// Set query parameters
@@ -131,6 +125,9 @@ func ExecuteHTTPRequest(config *HTTPRequestConfig) (*resty.Response, error) {
 	// Set body if present
 	if len(config.Body) > 0 {
 		request.SetBody(config.Body)
+		debug.Log("  SetBody called with %d bytes", len(config.Body))
+	} else {
+		debug.Log("  No body to set (length=0)")
 	}
 
 	// Execute request based on method

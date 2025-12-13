@@ -35,6 +35,8 @@ func parseFlags(args []string, cmd *Command) ([]string, error) {
 				cmd.Call = true
 			case "--create":
 				cmd.Create = true
+			case "--debug":
+				cmd.Debug = true
 			default:
 				return nil, fmt.Errorf(display.ErrUnknownFlag, arg)
 			}

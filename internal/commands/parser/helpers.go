@@ -54,9 +54,9 @@ func normalizeTarget(target string) string {
 	}
 }
 
-// isExplicitCommand checks if a string is an explicit command (set, get, edit, call)
+// isExplicitCommand checks if a string is an explicit command (set, get, edit, call, import, export)
 func isExplicitCommand(cmd string) bool {
-	explicitCommands := []string{"set", "get", "edit", "call", "check"}
+	explicitCommands := []string{"set", "get", "edit", "call", "check", "import", "export"}
 	cmdLower := strings.ToLower(cmd)
 	for _, explicit := range explicitCommands {
 		if cmdLower == explicit {

@@ -6,11 +6,16 @@ import (
 
 	"github.com/DeprecatedLuar/better-curl-saul/internal/commands/parser"
 	"github.com/DeprecatedLuar/better-curl-saul/internal/workspace"
+	"github.com/DeprecatedLuar/better-curl-saul/pkg/debug"
 	"github.com/DeprecatedLuar/better-curl-saul/pkg/display"
 )
 
 // Execute routes and executes the parsed command
 func Execute(cmd parser.Command, sessionManager *workspace.SessionManager) error {
+	if cmd.Debug {
+		debug.Enable()
+	}
+
 	// Handle variant switching first (before updating session)
 	if cmd.Global == "switch" || cmd.Global == "switch-variant" {
 		return executeVariantSwitch(cmd, sessionManager)
@@ -208,6 +213,12 @@ func executePresetCommand(cmd parser.Command) error {
 
 	case "call":
 		err = Call(cmd)
+
+	case "import":
+		err = Import(cmd)
+
+	case "export":
+		err = Export(cmd)
 
 	default:
 		return fmt.Errorf(display.ErrCommandUnknownPreset, cmd.Command)

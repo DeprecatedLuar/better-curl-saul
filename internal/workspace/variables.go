@@ -37,13 +37,13 @@ func DetectVariableType(value string) (isVariable bool, varType string, varName 
 	}
 
 	// Check for hard variable: {@name} or bare {@}
-	hardRegex := regexp.MustCompile(`^\{@(\w*)\}$`)
+	hardRegex := regexp.MustCompile(`^\{@([\w-]*)\}$`)
 	if matches := hardRegex.FindStringSubmatch(value); matches != nil {
 		return true, "hard", matches[1] // matches[1] is the captured name (empty if bare {@})
 	}
 
 	// Check for soft variable: {?name} or bare {?}
-	softRegex := regexp.MustCompile(`^\{\?(\w*)\}$`)
+	softRegex := regexp.MustCompile(`^\{\?([\w-]*)\}$`)
 	if matches := softRegex.FindStringSubmatch(value); matches != nil {
 		return true, "soft", matches[1] // matches[1] is the captured name (empty if bare {?})
 	}
@@ -84,7 +84,7 @@ func findVariablesInText(content, fileContext string) []VariableInfo {
 	var variables []VariableInfo
 
 	// Regex to find {@} and {?} patterns
-	regex := regexp.MustCompile(`\{([@?])(\w*)\}`)
+	regex := regexp.MustCompile(`\{([@?])([\w-]*)\}`)
 	matches := regex.FindAllStringSubmatch(content, -1)
 
 	// Track unique variables to avoid duplicates
@@ -338,7 +338,7 @@ func SubstituteVariables(handler *TomlHandler, substitutions map[string]string) 
 // because substitutions map already contains the full key (e.g., "body.pokename")
 func substituteVariablesInText(text string, substitutions map[string]string) string {
 	// Regex to find all {@} and {?} patterns
-	regex := regexp.MustCompile(`\{([@?])(\w*)\}`)
+	regex := regexp.MustCompile(`\{([@?])([\w-]*)\}`)
 
 	return regex.ReplaceAllStringFunc(text, func(match string) string {
 		// Parse the variable from the match

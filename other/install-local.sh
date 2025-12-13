@@ -6,7 +6,7 @@
 set -e
 
 echo "Building saul..."
-go build -o saul cmd/main.go
+go build -o saul cmd/saul/main.go
 
 if [ $? -eq 0 ]; then
     echo "Build successful!"

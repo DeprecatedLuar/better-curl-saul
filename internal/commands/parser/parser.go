@@ -26,6 +26,7 @@ type Command struct {
 	DryRun          bool
 	Call            bool
 	Create          bool
+	Debug           bool
 }
 
 // KeyValuePair represents a key-value pair from command arguments

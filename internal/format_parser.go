@@ -80,6 +80,7 @@ func ParseCurl(curlCmd string) (*CurlRequest, error) {
 		}
 	}
 
+	// Handle -d/--data (JSON body)
 	bodyRegex := regexp.MustCompile(`(?:-d|--data|--data-raw)\s+(?:'([^']*)'|"([^"]*)"|(\S+))`)
 	if match := bodyRegex.FindStringSubmatch(curlCmd); len(match) > 1 {
 		if match[1] != "" {
@@ -89,6 +90,30 @@ func ParseCurl(curlCmd string) (*CurlRequest, error) {
 		} else if match[3] != "" {
 			req.Body = match[3]
 		}
+	}
+
+	// Handle -F/--form (form data) - store as key=value format
+	formRegex := regexp.MustCompile(`(?:-F|--form)\s+(?:'([^']+)'|"([^"]+)"|(\S+))`)
+	var formParts []string
+	for _, match := range formRegex.FindAllStringSubmatch(curlCmd, -1) {
+		formData := match[1]
+		if formData == "" {
+			formData = match[2]
+		}
+		if formData == "" {
+			formData = match[3]
+		}
+		if formData != "" {
+			// Strip curl's @ file upload prefix: field=@path -> field=path
+			if strings.Contains(formData, "=@") {
+				formData = strings.Replace(formData, "=@", "=", 1)
+			}
+			formParts = append(formParts, formData)
+		}
+	}
+	if len(formParts) > 0 {
+		// Store form data as newline-separated key=value pairs
+		req.Body = strings.Join(formParts, "\n")
 	}
 
 	return req, nil

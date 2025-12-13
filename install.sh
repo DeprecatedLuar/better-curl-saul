@@ -54,14 +54,14 @@ if [ -z "$LATEST_RELEASE" ]; then
     fi
 
     # Check if we're in the repo directory (local usage)
-    if [ -f "go.mod" ] && [ -f "cmd/main.go" ]; then
+    if [ -f "go.mod" ] && [ -f "cmd/saul/main.go" ]; then
         echo "Building from current directory..."
 
         # Get version from git tag or fallback to "dev"
         VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "dev")
         LDFLAGS="-X github.com/DeprecatedLuar/better-curl-saul/src/project/utils.Version=${VERSION}"
 
-        go build -ldflags="${LDFLAGS}" -o "$BINARY_NAME" cmd/main.go
+        go build -ldflags="${LDFLAGS}" -o "$BINARY_NAME" cmd/saul/main.go
 
         if [ $? -ne 0 ]; then
             echo "Build kinda failed... Probably your fault just saying. Jk I have no idea what happened"
@@ -96,7 +96,7 @@ if [ -z "$LATEST_RELEASE" ]; then
         VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "dev")
         LDFLAGS="-X github.com/DeprecatedLuar/better-curl-saul/src/project/utils.Version=${VERSION}"
 
-        go build -ldflags="${LDFLAGS}" -o "$BINARY_NAME" cmd/main.go
+        go build -ldflags="${LDFLAGS}" -o "$BINARY_NAME" cmd/saul/main.go
 
         if [ $? -ne 0 ]; then
             echo "Build kinda failed... Probably your fault just saying. Jk don't take it personal"
